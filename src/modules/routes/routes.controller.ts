@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Post, Req, Res, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req, Res, UseGuards, Body, Query } from '@nestjs/common';
 import { RoutesService } from './routes.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PracticeFinishDto } from './dto/practice-finish.dto';
+import { RouteHazardsQueryDto } from './dto/route-hazards-query.dto';
 
 @ApiTags('routes')
 @Controller('routes')
@@ -14,6 +15,22 @@ export class RoutesController {
   @Get(':id')
   async getRoute(@Req() req: any, @Param('id') id: string) {
     return this.routesService.getRoute(req.user.userId, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(':id/hazards')
+  async getRouteHazards(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query() query: RouteHazardsQueryDto,
+  ) {
+    return this.routesService.getRouteHazards(
+      req.user.userId,
+      id,
+      query,
+      req.user?.role,
+    );
   }
 
   //@UseGuards(JwtAuthGuard)

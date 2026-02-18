@@ -4,11 +4,36 @@ import { TestCentre } from '../entities/test-centre.entity';
 import { Route, RouteDifficulty } from '../entities/route.entity';
 import { Product, ProductPeriod, ProductType } from '../entities/product.entity';
 import { OsmSpeedService } from '../modules/routes/osm-speed.service';
+import { RoadHazardService } from '../modules/routes/road-hazard.service';
 import { inferSpeedFromRoadClassMph } from '../modules/routes/speed-fallback';
 import { computeBendAdvisoryMph } from '../modules/routes/advisory-speed';
-import { enrichColchesterRoutes, computeBbox as seedComputeBbox } from './colchester-routes-seed';
 import * as fs from 'fs';
 import * as path from 'path';
+
+interface SeedRouteData {
+  name: string;
+  coordinates: number[][];
+  distance?: number;
+  duration?: number;
+  difficulty?: RouteDifficulty;
+}
+
+interface SeedCentreData {
+  name: string;
+  address: string;
+  postcode: string;
+  city: string;
+  country: string;
+  lat: number;
+  lng: number;
+}
+
+interface SeedBundle {
+  key: string;
+  centre: SeedCentreData;
+  routes: SeedRouteData[];
+  computeBbox?: (coordinates: number[][]) => { minLng: number; minLat: number; maxLng: number; maxLat: number };
+}
 
 const coordsFromGeoJson = (geojson: any): number[][] => {
   if (!geojson?.features?.length) return [];
@@ -108,6 +133,121 @@ const resolveSeedFile = (relativeFromRoutesDir: string) => {
     path.resolve(__dirname, 'routes', relativeFromRoutesDir),
   ];
   return firstExistingPath(candidates);
+};
+
+const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+const titleFromSlug = (value: string) =>
+  value
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(' ');
+
+const normalizeSeedRoute = (route: SeedRouteData): SeedRouteData => {
+  const coordinates = Array.isArray(route.coordinates) ? route.coordinates : [];
+  const distance = Number(route.distance);
+  const duration = Number(route.duration);
+  return {
+    name: String(route.name),
+    coordinates,
+    distance: Number.isFinite(distance) && distance > 0 ? Math.round(distance) : Math.round(distanceMeters(coordinates)),
+    duration:
+      Number.isFinite(duration) && duration > 0
+        ? Math.round(duration)
+        : Math.round((Math.max(distanceMeters(coordinates), 1) / 30) * (3600 / 1000)),
+    difficulty: route.difficulty ?? RouteDifficulty.MEDIUM,
+  };
+};
+
+const normalizeSeedCentre = (key: string, centreInput: Partial<SeedCentreData> | undefined, routes: SeedRouteData[]): SeedCentreData => {
+  const firstCoord = routes[0]?.coordinates?.[0];
+  const fallbackCity = titleFromSlug(key);
+  return {
+    name: centreInput?.name || `${fallbackCity} Test Centre`,
+    address: centreInput?.address || `${fallbackCity} Test Centre`,
+    postcode: centreInput?.postcode || 'UNKNOWN',
+    city: centreInput?.city || fallbackCity,
+    country: centreInput?.country || 'UK',
+    lat: Number(centreInput?.lat ?? firstCoord?.[1] ?? 0),
+    lng: Number(centreInput?.lng ?? firstCoord?.[0] ?? 0),
+  };
+};
+
+const discoverRouteSeedModules = (): string[] => {
+  const cwd = process.cwd();
+  const candidates = [path.resolve(cwd, 'src/seed'), path.resolve(cwd, 'dist/seed'), __dirname];
+  const score = (filePath: string) => {
+    let total = 0;
+    if (filePath.includes(`${path.sep}src${path.sep}`)) total += 10;
+    if (filePath.endsWith('.ts')) total += 1;
+    return total;
+  };
+
+  const picked = new Map<string, { filePath: string; score: number }>();
+  for (const dir of candidates) {
+    if (!fs.existsSync(dir)) continue;
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      if (!/-routes-seed\.(ts|js)$/i.test(file) || file.endsWith('.d.ts')) continue;
+      const fullPath = path.join(dir, file);
+      const baseName = file.replace(/\.(ts|js)$/i, '');
+      const current = picked.get(baseName);
+      const next = { filePath: fullPath, score: score(fullPath) };
+      if (!current || next.score > current.score) {
+        picked.set(baseName, next);
+      }
+    }
+  }
+  return Array.from(picked.values()).map((entry) => entry.filePath);
+};
+
+const loadSeedBundles = async (): Promise<SeedBundle[]> => {
+  const modulePaths = discoverRouteSeedModules();
+  const bundles: SeedBundle[] = [];
+
+  for (const modulePath of modulePaths) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require(modulePath);
+    const fileBaseName = path.basename(modulePath).replace(/\.(ts|js)$/i, '');
+    const key = slugify(fileBaseName.replace(/-routes-seed$/i, '')) || 'centre';
+    const routeArrayExportName = Object.keys(mod).find((exportName) => /routesseeddata$/i.test(exportName));
+    const enrichExportName = Object.keys(mod).find(
+      (exportName) => /^enrich.*routes$/i.test(exportName) && typeof mod[exportName] === 'function',
+    );
+
+    const exportedRoutesRaw = Array.isArray(mod.seedRoutes)
+      ? mod.seedRoutes
+      : routeArrayExportName && Array.isArray(mod[routeArrayExportName])
+        ? mod[routeArrayExportName]
+        : enrichExportName
+          ? mod[enrichExportName]()
+          : [];
+
+    if (!Array.isArray(exportedRoutesRaw) || !exportedRoutesRaw.length) {
+      console.warn(`Skipping ${fileBaseName}: no routes exported`);
+      continue;
+    }
+
+    const normalizedRoutes = exportedRoutesRaw
+      .filter((route: any) => route && typeof route.name === 'string' && Array.isArray(route.coordinates))
+      .map((route: SeedRouteData) => normalizeSeedRoute(route));
+
+    if (!normalizedRoutes.length) {
+      console.warn(`Skipping ${fileBaseName}: route list exists but no valid route rows found`);
+      continue;
+    }
+
+    const centre = normalizeSeedCentre(key, mod.seedCentre, normalizedRoutes);
+    bundles.push({
+      key,
+      centre,
+      routes: normalizedRoutes,
+      computeBbox: typeof mod.computeBbox === 'function' ? mod.computeBbox : undefined,
+    });
+  }
+
+  return bundles;
 };
 
 const pickCoordForInstruction = (coords: number[][], idx: number, total: number) => {
@@ -585,18 +725,26 @@ const turnAngleDeg = (a: number[], b: number[], c: number[]) => {
 async function run() {
   await dataSource.initialize();
 
-  // Load sample OSM data for testing
-  console.log('Loading sample OSM data...');
-  const osmDataPath = path.resolve(__dirname, 'osm-sample-data.sql');
-  if (fs.existsSync(osmDataPath)) {
-    const osmSql = fs.readFileSync(osmDataPath, 'utf8');
-    await dataSource.query(osmSql);
-    console.log('Sample OSM data loaded successfully');
+  await dataSource.query('CREATE EXTENSION IF NOT EXISTS hstore');
+
+  const useSampleOsm = String(process.env.SEED_USE_SAMPLE_OSM ?? 'false') === 'true';
+  if (useSampleOsm) {
+    // Load sample OSM data for testing only when explicitly enabled.
+    console.log('Loading sample OSM data...');
+    const osmDataPath = path.resolve(__dirname, 'osm-sample-data.sql');
+    if (fs.existsSync(osmDataPath)) {
+      const osmSql = fs.readFileSync(osmDataPath, 'utf8');
+      await dataSource.query(osmSql);
+      console.log('Sample OSM data loaded successfully');
+    } else {
+      console.warn('OSM sample data file not found, OSM lookups will use fallbacks');
+    }
   } else {
-    console.warn('OSM sample data file not found, OSM lookups will use fallbacks');
+    console.log('SEED_USE_SAMPLE_OSM=false, keeping existing OSM tables untouched');
   }
 
   const osmSpeedService = new OsmSpeedService(dataSource);
+  const roadHazardService = new RoadHazardService(dataSource);
 
   const centreRepo = dataSource.getRepository(TestCentre);
   const routeRepo = dataSource.getRepository(Route);
@@ -608,27 +756,25 @@ async function run() {
   await centreRepo.query('TRUNCATE test_centres RESTART IDENTITY CASCADE');
   await productRepo.query('TRUNCATE purchases, entitlements, products RESTART IDENTITY CASCADE');
 
-  const centres: Partial<TestCentre>[] = [
-    {
-      name: 'Colchester Test Centre',
-      address: 'DVSA Test Centre -> Monkwick -> Fingringhoe -> Rowhedge -> Finish',
-      postcode: 'CO3 0LT',
-      city: 'Colchester',
-      country: 'UK',
-      lat: 51.889,
-      lng: 0.9373,
-    },
-  ];
+  const seedBundles = await loadSeedBundles();
+  if (!seedBundles.length) {
+    throw new Error('No *-routes-seed.ts modules found. Add at least one routes seed file under src/seed.');
+  }
 
   const savedCentres: TestCentre[] = [];
-  for (const centre of centres) {
+  const centreByKey = new Map<string, TestCentre>();
+  for (const bundle of seedBundles) {
+    const centre = bundle.centre;
     const insertResult = await centreRepo.query(
       `INSERT INTO test_centres (name, address, postcode, city, country, lat, lng, geo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($7, $6), 4326))
        RETURNING *`,
       [centre.name, centre.address, centre.postcode, centre.city, centre.country, centre.lat, centre.lng],
     );
-    savedCentres.push(insertResult[0] as TestCentre);
+    const saved = insertResult[0] as TestCentre;
+    savedCentres.push(saved);
+    centreByKey.set(bundle.key, saved);
+    console.log(`Created test centre ${saved.name} (${bundle.key})`);
   }
 
   const colchesterRouteCoords: number[][] = [];
@@ -638,71 +784,103 @@ async function run() {
   const payloadJson: any[] | null =
     defaultPayloadFile && fs.existsSync(defaultPayloadFile) ? JSON.parse(fs.readFileSync(defaultPayloadFile, 'utf8')) : null;
 
-  // Load Colchester routes from hardcoded coordinates
-  const enrichedColchesterRoutes = enrichColchesterRoutes();
-  
-  for (const seedRoute of enrichedColchesterRoutes) {
-    try {
-      const coords = seedRoute.coordinates;
-      const bboxObj = seedComputeBbox(coords);
+  for (const bundle of seedBundles) {
+    const savedCentre = centreByKey.get(bundle.key);
+    if (!savedCentre) {
+      console.warn(`Skipping routes for ${bundle.key}: centre was not created`);
+      continue;
+    }
+
+    const isColchesterBundle = bundle.key === 'colchester';
+    console.log(`Seeding ${bundle.routes.length} routes for ${savedCentre.name}`);
+    for (const seedRoute of bundle.routes) {
+      try {
+        const coords = seedRoute.coordinates;
+        const bboxObj = (bundle.computeBbox || computeBbox)(coords);
       // Convert bbox object to array format [minLng, minLat, maxLng, maxLat]
-      const bboxLocal = [bboxObj.minLng, bboxObj.minLat, bboxObj.maxLng, bboxObj.maxLat];
-      const polyline = JSON.stringify(coords);
+        const bboxLocal = [bboxObj.minLng, bboxObj.minLat, bboxObj.maxLng, bboxObj.maxLat];
+        const polyline = JSON.stringify(coords);
 
-      const geojsonToStore = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: { name: seedRoute.name },
-            geometry: { type: 'LineString', coordinates: coords },
-          },
-        ],
-      };
+        const geojsonToStore = {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: { name: seedRoute.name },
+              geometry: { type: 'LineString', coordinates: coords },
+            },
+          ],
+        };
 
-      const dist = seedRoute.distance || 12000;
-      const duration = seedRoute.duration || 2400;
+        const dist = seedRoute.distance || 12000;
+        const duration = seedRoute.duration || 2400;
 
-      const routePayload = payloadJson
-        ? payloadJson.find((r: any) => {
-            const routeNum = seedRoute.name.match(/(\d+)/)?.[1];
-            return routeNum && r.route === Number(routeNum);
-          }) ?? null
-        : null;
+        const routePayload =
+          isColchesterBundle && payloadJson
+            ? payloadJson.find((r: any) => {
+                const routeNum = seedRoute.name.match(/(\d+)/)?.[1];
+                return routeNum && r.route === Number(routeNum);
+              }) ?? null
+            : null;
 
-      if (routePayload && coords.length) {
-        const instructions = Array.isArray(routePayload) ? routePayload : routePayload.instructions;
-        await applyOsmSpeedsToInstructions(osmSpeedService, coords, instructions);
+        if (routePayload && coords.length) {
+          const instructions = Array.isArray(routePayload) ? routePayload : routePayload.instructions;
+          await applyOsmSpeedsToInstructions(osmSpeedService, coords, instructions);
+        }
+
+        const p = routePayload || {};
+        const ins = Array.isArray(p.instructions) ? p.instructions : [];
+        const routeHash = roadHazardService.computeRouteHash(coords, geojsonToStore);
+        let roadHazardsV1: any = {
+          version: 'road_hazards_v1',
+          generatedAt: new Date().toISOString(),
+          corridorWidthM: 45,
+          routeHash,
+          osmSnapshot: null,
+          source_status: 'no_route_geometry',
+          items: [],
+        };
+        try {
+          roadHazardsV1 = await roadHazardService.buildRouteHazards(coords, {
+            rawGeojson: geojsonToStore,
+          });
+        } catch (error) {
+          console.warn(
+            `Road hazard payload generation failed for ${seedRoute.name}:`,
+            (error as Error).message,
+          );
+        }
+        const finalPayload = { ...p, instructions: ins, road_hazards_v1: roadHazardsV1 };
+
+        await routeRepo.save({
+          centreId: savedCentre.id,
+          name: seedRoute.name,
+          distanceM: dist,
+          durationEstS: duration,
+          difficulty: seedRoute.difficulty || RouteDifficulty.MEDIUM,
+          polyline,
+          geojson: geojsonToStore,
+          gpx: null, // No GPX for coordinate-based routes
+          bbox: bboxLocal,
+          coordinates: coords,
+          payload: finalPayload,
+          version: 1,
+          isActive: true,
+        } as Route);
+
+        console.log(`Created route ${seedRoute.name} (${bundle.key}) with ${coords.length} coordinate points`);
+      } catch (err) {
+        console.warn(`Failed to create route ${seedRoute.name} (${bundle.key}):`, err);
       }
-
-      const p = routePayload || {};
-      const ins = Array.isArray(p.instructions) ? p.instructions : [];
-      const finalPayload = { ...p, instructions: ins };
-
-      await routeRepo.save({
-        centreId: savedCentres[0].id,
-        name: seedRoute.name,
-        distanceM: dist,
-        durationEstS: duration,
-        difficulty: seedRoute.difficulty,
-        polyline,
-        geojson: geojsonToStore,
-        gpx: null, // No GPX for coordinate-based routes
-        bbox: bboxLocal,
-        coordinates: coords,
-        payload: finalPayload,
-        version: 1,
-        isActive: true,
-      } as Route);
-
-      console.log(`Created route ${seedRoute.name} with ${coords.length} coordinate points`);
-    } catch (err) {
-      console.warn(`Failed to create route ${seedRoute.name}:`, err);
     }
   }
 
   // Optional: Still load any GPX files from the routes directory (for backward compatibility)
   const routesDir = resolveSeedRoutesDir();
+  const gpxTargetCentre = centreByKey.get('colchester') ?? savedCentres[0];
+  if (!gpxTargetCentre) {
+    throw new Error('No test centre available for GPX route import');
+  }
   if (routesDir && fs.existsSync(routesDir)) {
     const files = fs.readdirSync(routesDir);
     const gpxFiles = files.filter((f) => f.toLowerCase().endsWith('.gpx'));
@@ -769,12 +947,32 @@ async function run() {
           await applyOsmSpeedsToInstructions(osmSpeedService, coords, instructions);
         }
 
-        const p = routePayload || {};
-        const ins = Array.isArray(p.instructions) ? p.instructions : [];
-        const finalPayload = { ...p, instructions: ins };
+      const p = routePayload || {};
+      const ins = Array.isArray(p.instructions) ? p.instructions : [];
+      const routeHash = roadHazardService.computeRouteHash(coords, geojsonToStore);
+      let roadHazardsV1: any = {
+          version: 'road_hazards_v1',
+          generatedAt: new Date().toISOString(),
+          corridorWidthM: 45,
+          routeHash,
+          osmSnapshot: null,
+          source_status: 'no_route_geometry',
+          items: [],
+        };
+        try {
+          roadHazardsV1 = await roadHazardService.buildRouteHazards(coords, {
+            rawGeojson: geojsonToStore,
+          });
+        } catch (error) {
+          console.warn(
+            `Road hazard payload generation failed for ${routeName}:`,
+            (error as Error).message,
+          );
+        }
+        const finalPayload = { ...p, instructions: ins, road_hazards_v1: roadHazardsV1 };
 
         await routeRepo.save({
-          centreId: savedCentres[0].id,
+          centreId: gpxTargetCentre.id,
           name: routeName,
           distanceM: dist || 12000,
           durationEstS: duration || 2400,
@@ -783,6 +981,7 @@ async function run() {
           geojson: geojsonToStore,
           gpx: gpxContent,
           bbox: bboxLocal,
+          coordinates: coords,
           payload: finalPayload,
           version: 1,
           isActive: true,
@@ -797,47 +996,50 @@ async function run() {
     console.warn('Seed routes directory not found');
   }
 
-  const centreProduct: Partial<Product> = {
-    type: ProductType.CENTRE_PACK,
-    pricePence: 1000,
-    period: ProductPeriod.NONE,
-    iosProductId: 'centre_colchester_ios',
-    androidProductId: 'centre_colchester_android',
-    active: true,
-    metadata: { centreId: savedCentres[0].id, scope: 'CENTRE' },
-  };
+  const productsToCreate: Partial<Product>[] = [];
+  for (const [key, centre] of centreByKey.entries()) {
+    const centreSlug = slugify(key) || 'centre';
+    productsToCreate.push(
+      {
+        type: ProductType.CENTRE_PACK,
+        pricePence: 1000,
+        period: ProductPeriod.NONE,
+        iosProductId: `centre_${centreSlug}_ios`,
+        androidProductId: `centre_${centreSlug}_android`,
+        active: true,
+        metadata: { centreId: centre.id, scope: 'CENTRE' },
+      },
+      {
+        type: ProductType.SUBSCRIPTION,
+        pricePence: 1000,
+        period: ProductPeriod.WEEK,
+        iosProductId: `centre_${centreSlug}_week_ios`,
+        androidProductId: `centre_${centreSlug}_week_android`,
+        active: true,
+        metadata: { centreId: centre.id, scope: 'CENTRE' },
+      },
+      {
+        type: ProductType.SUBSCRIPTION,
+        pricePence: 2900,
+        period: ProductPeriod.MONTH,
+        iosProductId: `centre_${centreSlug}_month_ios`,
+        androidProductId: `centre_${centreSlug}_month_android`,
+        active: true,
+        metadata: { centreId: centre.id, scope: 'CENTRE' },
+      },
+      {
+        type: ProductType.SUBSCRIPTION,
+        pricePence: 4900,
+        period: ProductPeriod.QUARTER,
+        iosProductId: `centre_${centreSlug}_quarter_ios`,
+        androidProductId: `centre_${centreSlug}_quarter_android`,
+        active: true,
+        metadata: { centreId: centre.id, scope: 'CENTRE' },
+      },
+    );
+  }
 
-  const weeklySubscription: Partial<Product> = {
-    type: ProductType.SUBSCRIPTION,
-    pricePence: 1000,
-    period: ProductPeriod.WEEK,
-    iosProductId: 'centre_colchester_week_ios',
-    androidProductId: 'centre_colchester_week_android',
-    active: true,
-    metadata: { centreId: savedCentres[0].id, scope: 'CENTRE' },
-  };
-
-  const monthlySubscription: Partial<Product> = {
-    type: ProductType.SUBSCRIPTION,
-    pricePence: 2900,
-    period: ProductPeriod.MONTH,
-    iosProductId: 'centre_colchester_month_ios',
-    androidProductId: 'centre_colchester_month_android',
-    active: true,
-    metadata: { centreId: savedCentres[0].id, scope: 'CENTRE' },
-  };
-
-  const quarterSubscription: Partial<Product> = {
-    type: ProductType.SUBSCRIPTION,
-    pricePence: 4900,
-    period: ProductPeriod.QUARTER,
-    iosProductId: 'centre_colchester_quarter_ios',
-    androidProductId: 'centre_colchester_quarter_android',
-    active: true,
-    metadata: { centreId: savedCentres[0].id, scope: 'CENTRE' },
-  };
-
-  await productRepo.save([centreProduct, weeklySubscription, monthlySubscription, quarterSubscription] as Product[]);
+  await productRepo.save(productsToCreate as Product[]);
 
   console.log('Seed complete');
   await dataSource.destroy();

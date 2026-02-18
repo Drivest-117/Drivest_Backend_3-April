@@ -13,6 +13,16 @@ export interface ColchesterRouteData {
   difficulty: RouteDifficulty;
 }
 
+export const seedCentre = {
+  name: 'Colchester Test Centre',
+  address: 'DVSA Test Centre -> Monkwick -> Fingringhoe -> Rowhedge -> Finish',
+  postcode: 'CO3 0LT',
+  city: 'Colchester',
+  country: 'UK',
+  lat: 51.889,
+  lng: 0.9373,
+};
+
 export const colchesterRoutesSeedData: ColchesterRouteData[] = [
     {
   name: "Colchester Dev Route",
@@ -2362,6 +2372,8 @@ export const colchesterRoutesSeedData: ColchesterRouteData[] = [
     ],
   },
 ];
+
+export const seedRoutes: ColchesterRouteData[] = colchesterRoutesSeedData;
 
 // Helper function to calculate distance between two points using Haversine formula
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {

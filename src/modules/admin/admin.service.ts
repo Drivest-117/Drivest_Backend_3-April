@@ -4,6 +4,7 @@ import { ILike, Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { TestCentre } from '../../entities/test-centre.entity';
 import { Route, RouteDifficulty } from '../../entities/route.entity';
+import { RoadHazardService } from '../routes/road-hazard.service';
 
 interface RouteCoordinate {
   lat: number;
@@ -16,6 +17,7 @@ export class AdminService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(TestCentre) private centreRepo: Repository<TestCentre>,
     @InjectRepository(Route) private routeRepo: Repository<Route>,
+    private readonly roadHazardService: RoadHazardService,
   ) {}
 
   async getStats() {
@@ -72,7 +74,25 @@ export class AdminService {
       isActive: true,
     });
 
-    return this.routeRepo.save(route);
+    const saved = await this.routeRepo.save(route);
+
+    try {
+      const roadHazards = await this.roadHazardService.buildRouteHazards(
+        saved.coordinates,
+        { rawGeojson: saved.geojson },
+      );
+      saved.payload = {
+        ...(saved.payload ?? {}),
+        road_hazards_v1: roadHazards,
+      };
+      return this.routeRepo.save(saved);
+    } catch (error) {
+      console.warn(
+        'Road hazard enrichment failed for uploaded route:',
+        (error as Error).message,
+      );
+      return saved;
+    }
   }
 
   /**
