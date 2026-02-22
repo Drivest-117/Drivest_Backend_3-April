@@ -94,13 +94,15 @@ export class WebhooksService {
     const byAppUserId = await this.userRepo.findOne({ where: { appUserId } });
     if (byAppUserId) return byAppUserId;
 
-    const byInternalId = await this.userRepo.findOne({ where: { id: appUserId } });
-    if (byInternalId) {
-      if (!byInternalId.appUserId) {
-        byInternalId.appUserId = appUserId;
-        return this.userRepo.save(byInternalId);
+    if (this.looksLikeUuid(appUserId)) {
+      const byInternalId = await this.userRepo.findOne({ where: { id: appUserId } });
+      if (byInternalId) {
+        if (!byInternalId.appUserId) {
+          byInternalId.appUserId = appUserId;
+          return this.userRepo.save(byInternalId);
+        }
+        return byInternalId;
       }
-      return byInternalId;
     }
 
     const created = this.userRepo.create({
@@ -114,5 +116,11 @@ export class WebhooksService {
       activeDeviceAt: null,
     });
     return this.userRepo.save(created);
+  }
+
+  private looksLikeUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value.trim(),
+    );
   }
 }
