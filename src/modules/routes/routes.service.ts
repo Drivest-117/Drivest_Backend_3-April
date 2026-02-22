@@ -378,9 +378,12 @@ export class RoutesService {
     const hasOsmSnapshotField =
       existing != null &&
       Object.prototype.hasOwnProperty.call(existing, 'osmSnapshot');
+    const hasUsableSourceStatus =
+      existing != null && existing.source_status === 'ok';
     const isStale =
       !existing ||
       !Array.isArray(existing.items) ||
+      !hasUsableSourceStatus ||
       !existingRouteHash ||
       existingRouteHash !== currentRouteHash ||
       !hasOsmSnapshotField;
