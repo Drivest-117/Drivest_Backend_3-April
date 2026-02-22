@@ -15,6 +15,7 @@ import { TestCentre } from '../../entities/test-centre.entity';
 import { NearbyHazardsDto } from './dto/nearby-hazards.dto';
 import {
   RoadHazardItem,
+  ROAD_HAZARD_TYPES,
   RoadHazardService,
   RoadHazardType,
   RouteHazardsV1,
@@ -111,6 +112,19 @@ export class RoutesService {
   }
 
   async getNearbyHazards(userId: string, dto: NearbyHazardsDto) {
+    const lat = dto.lat ?? dto.center?.lat;
+    const lon = dto.lon ?? dto.lng ?? dto.center?.lng;
+    if (typeof lat !== 'number' || typeof lon !== 'number') {
+      throw new BadRequestException('lat/lon or center.lat/center.lng is required');
+    }
+
+    if (!dto.routeId && dto.centreId) {
+      const centre = await this.resolveCentre(dto.centreId);
+      if (!centre) throw new NotFoundException('Test centre not found');
+      const allowed = await this.entService.hasAccess(userId, centre.id);
+      if (!allowed) throw new ForbiddenException('Entitlement required');
+    }
+
     let routeCoordinates: any = null;
 
     if (dto.routeId) {
@@ -120,16 +134,18 @@ export class RoutesService {
       routeCoordinates = route.coordinates ?? route.geojson ?? null;
     }
 
+    const mappedTypes = this.normalizeNearbyTypes(dto.types);
+
     return this.roadHazardService.getNearbyHazards({
-      lat: dto.lat,
-      lon: dto.lon,
+      lat,
+      lon,
       mode: dto.mode,
       radiusM: dto.radiusM,
       limit: dto.limit,
       routeId: dto.routeId ?? null,
       routeCoordinates,
       routeCorridorM: dto.routeCorridorM,
-      types: dto.types,
+      types: mappedTypes.length ? mappedTypes : undefined,
       aheadOnly: dto.aheadOnly,
       aheadDistanceM: dto.aheadDistanceM,
       backtrackToleranceM: dto.backtrackToleranceM,
@@ -451,6 +467,35 @@ export class RoutesService {
       }
     }
     return Array.from(mapped);
+  }
+
+  private normalizeNearbyTypes(rawTypes?: string[]): RoadHazardType[] {
+    if (!rawTypes?.length) return [];
+
+    const direct = new Set<RoadHazardType>();
+    const promptInput: string[] = [];
+
+    for (const raw of rawTypes) {
+      const normalized = String(raw ?? '')
+        .trim()
+        .replace(/-/g, '_')
+        .toLowerCase();
+      if (!normalized) continue;
+
+      if ((ROAD_HAZARD_TYPES as readonly string[]).includes(normalized)) {
+        direct.add(normalized as RoadHazardType);
+        continue;
+      }
+
+      promptInput.push(raw);
+    }
+
+    const mapped = this.toRoadHazardTypesFromPromptTypes(promptInput);
+    for (const type of mapped) {
+      direct.add(type);
+    }
+
+    return Array.from(direct);
   }
 
   private computeBboxRadiusMeters(query: BboxHazardsQuery): number {

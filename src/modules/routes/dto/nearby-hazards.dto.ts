@@ -10,17 +10,43 @@ import {
   IsUUID,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { ROAD_HAZARD_TYPES } from '../road-hazard.service';
 
-export class NearbyHazardsDto {
+class NearbyCenterDto {
   @Type(() => Number)
   @IsNumber()
   lat: number;
 
   @Type(() => Number)
   @IsNumber()
+  lng: number;
+}
+
+export class NearbyHazardsDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   lon: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NearbyCenterDto)
+  center?: NearbyCenterDto;
+
+  @IsOptional()
+  @IsString()
+  centreId?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -67,8 +93,8 @@ export class NearbyHazardsDto {
       .filter(Boolean);
   })
   @IsArray()
-  @ArrayMaxSize(6)
-  @IsIn(ROAD_HAZARD_TYPES, { each: true })
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
   types?: string[];
 
   @IsOptional()
