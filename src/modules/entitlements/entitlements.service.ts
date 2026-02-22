@@ -179,12 +179,20 @@ export class EntitlementsService {
     return String(value).trim();
   }
 
+  private looksLikeUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value.trim(),
+    );
+  }
+
   private async resolveCentre(idOrSlug: string): Promise<TestCentre | null> {
     const key = String(idOrSlug || '').trim();
     if (!key) return null;
 
-    const byId = await this.centreRepo.findOne({ where: { id: key } });
-    if (byId) return byId;
+    if (this.looksLikeUuid(key)) {
+      const byId = await this.centreRepo.findOne({ where: { id: key } });
+      if (byId) return byId;
+    }
 
     const normalized = key.toLowerCase();
     return this.centreRepo

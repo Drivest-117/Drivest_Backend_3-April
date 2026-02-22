@@ -1,4 +1,11 @@
-import { Body, Controller, Headers, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Headers,
+  Post,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { RevenueCatEventDto } from './dto/revenuecat-event.dto';
 import { ConfigService } from '@nestjs/config';
@@ -19,10 +26,10 @@ export class WebhooksController {
   ) {
     const secret = this.configService.get<string>('REVENUECAT_WEBHOOK_SECRET');
     if (!secret) {
-      throw new Error('Webhook secret not configured');
+      throw new ServiceUnavailableException('Webhook secret not configured');
     }
     if (!signature) {
-      throw new Error('Signature missing');
+      throw new BadRequestException('Signature missing');
     }
     this.webhookService.verifySignature(JSON.stringify(body), signature, secret);
     const event: RevenueCatEventDto = {
