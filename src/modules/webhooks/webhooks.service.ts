@@ -10,6 +10,7 @@ import {
 import { Product, ProductType } from '../../entities/product.entity';
 import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
+import { User } from '../../entities/user.entity';
 import { createHmac } from 'crypto';
 
 @Injectable()
@@ -19,6 +20,7 @@ export class WebhooksService {
     @InjectRepository(Product) private productRepo: Repository<Product>,
     @InjectRepository(Entitlement) private entRepo: Repository<Entitlement>,
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
+    @InjectRepository(User) private userRepo: Repository<User>,
   ) {}
 
   verifySignature(body: string, signature: string, secret: string) {
@@ -29,6 +31,8 @@ export class WebhooksService {
   }
 
   async handleRevenueCat(event: RevenueCatEventDto) {
+    const user = await this.resolveOrCreateAppUser(event.userId);
+
     const product = await this.productRepo.findOne({
       where: [{ iosProductId: event.productId }, { androidProductId: event.productId }],
     });
@@ -42,7 +46,7 @@ export class WebhooksService {
     }
 
     const purchase = this.purchaseRepo.create({
-      userId: event.userId,
+      userId: user.id,
       productId: product.id,
       provider: PurchaseProvider.REVCAT,
       transactionId: event.transactionId,
@@ -59,7 +63,7 @@ export class WebhooksService {
       (!isSubscription && centreId);
     const endsAt = event.expiresAt ? new Date(event.expiresAt) : null;
     const entitlement = this.entRepo.create({
-      userId: event.userId,
+      userId: user.id,
       scope: centreScoped ? EntitlementScope.CENTRE : EntitlementScope.GLOBAL,
       centreId: centreScoped ? centreId : null,
       startsAt: new Date(event.purchasedAt),
@@ -70,10 +74,45 @@ export class WebhooksService {
     await this.entRepo.save(entitlement);
 
     await this.auditRepo.save({
-      userId: event.userId,
+      userId: user.id,
       action: 'REVENUECAT_EVENT',
-      metadata: { transactionId: event.transactionId, productId: product.id },
+      metadata: {
+        transactionId: event.transactionId,
+        productId: product.id,
+        appUserId: user.appUserId,
+      },
     });
     return { success: true };
+  }
+
+  private async resolveOrCreateAppUser(userIdRaw: string): Promise<User> {
+    const appUserId = String(userIdRaw ?? '').trim();
+    if (!appUserId) {
+      throw new UnauthorizedException('RevenueCat app user id is required');
+    }
+
+    const byAppUserId = await this.userRepo.findOne({ where: { appUserId } });
+    if (byAppUserId) return byAppUserId;
+
+    const byInternalId = await this.userRepo.findOne({ where: { id: appUserId } });
+    if (byInternalId) {
+      if (!byInternalId.appUserId) {
+        byInternalId.appUserId = appUserId;
+        return this.userRepo.save(byInternalId);
+      }
+      return byInternalId;
+    }
+
+    const created = this.userRepo.create({
+      appUserId,
+      email: null,
+      phone: null,
+      name: 'Drivest User',
+      passwordHash: 'ANON_APP_USER',
+      role: 'USER',
+      activeDeviceId: null,
+      activeDeviceAt: null,
+    });
+    return this.userRepo.save(created);
   }
 }

@@ -1,8 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
 import { User } from '../../entities/user.entity';
+import { TestCentre } from '../../entities/test-centre.entity';
 
 @Injectable()
 export class EntitlementsService {
@@ -11,6 +17,8 @@ export class EntitlementsService {
     private entRepo: Repository<Entitlement>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(TestCentre)
+    private centreRepo: Repository<TestCentre>,
   ) {}
 
   async userEntitlements(userId: string) {
@@ -22,6 +30,11 @@ export class EntitlementsService {
       .andWhere('(ent.endsAt IS NULL OR ent.endsAt > :now)', { now: new Date() })
       .orderBy('ent.endsAt', 'ASC')
       .getMany();
+  }
+
+  async userEntitlementsByAppUserId(appUserId: string, deviceId?: string) {
+    const user = await this.resolveOrCreateAppUser(appUserId, deviceId);
+    return this.userEntitlements(user.id);
   }
 
   async hasAccess(userId: string, centreId: string): Promise<boolean> {
@@ -38,6 +51,127 @@ export class EntitlementsService {
       .limit(1);
     const entitlement = await qb.getOne();
     return Boolean(entitlement);
+  }
+
+  async hasAccessByAppUserId(
+    appUserId: string,
+    centreId: string,
+    deviceId?: string,
+  ): Promise<boolean> {
+    const user = await this.resolveOrCreateAppUser(appUserId, deviceId);
+    return this.hasAccess(user.id, centreId);
+  }
+
+  async resolveOrCreateAppUser(appUserIdRaw: string, deviceId?: string) {
+    const appUserId = this.normalizeAppUserId(appUserIdRaw);
+    if (!appUserId) {
+      throw new BadRequestException('x-app-user-id is required');
+    }
+
+    let user = await this.userRepo.findOne({ where: { appUserId } });
+    if (!user) {
+      user = this.userRepo.create({
+        appUserId,
+        email: null,
+        phone: null,
+        name: 'Drivest User',
+        passwordHash: 'ANON_APP_USER',
+        role: 'USER',
+        activeDeviceId: deviceId ?? null,
+        activeDeviceAt: deviceId ? new Date() : null,
+      });
+      user = await this.userRepo.save(user);
+      return user;
+    }
+
+    if (deviceId && (!user.activeDeviceId || user.activeDeviceId !== deviceId)) {
+      user.activeDeviceId = deviceId;
+      user.activeDeviceAt = new Date();
+      user = await this.userRepo.save(user);
+    }
+
+    return user;
+  }
+
+  async selectCentreForPractice(
+    appUserIdRaw: string,
+    centreIdOrSlug: string,
+    deviceId?: string,
+  ) {
+    const user = await this.resolveOrCreateAppUser(appUserIdRaw, deviceId);
+    const centre = await this.resolveCentre(centreIdOrSlug);
+    if (!centre) {
+      throw new NotFoundException('Test centre not found');
+    }
+
+    const activeGlobal = await this.entRepo
+      .createQueryBuilder('ent')
+      .where('ent.userId = :userId', { userId: user.id })
+      .andWhere('ent.scope = :scope', { scope: EntitlementScope.GLOBAL })
+      .andWhere('ent.isActive = true')
+      .andWhere('(ent.endsAt IS NULL OR ent.endsAt > :now)', { now: new Date() })
+      .orderBy('ent.endsAt', 'DESC', 'NULLS FIRST')
+      .getOne();
+
+    if (!activeGlobal) {
+      throw new ForbiddenException(
+        'Active subscription is required to select a practice centre',
+      );
+    }
+
+    await this.entRepo
+      .createQueryBuilder()
+      .update(Entitlement)
+      .set({ isActive: false })
+      .where('userId = :userId', { userId: user.id })
+      .andWhere('scope = :scope', { scope: EntitlementScope.CENTRE })
+      .andWhere('sourcePurchaseId IS NULL')
+      .execute();
+
+    const selected = this.entRepo.create({
+      userId: user.id,
+      scope: EntitlementScope.CENTRE,
+      centreId: centre.id,
+      startsAt: new Date(),
+      endsAt: activeGlobal.endsAt ?? null,
+      isActive: true,
+      sourcePurchaseId: null,
+    });
+    await this.entRepo.save(selected);
+
+    return {
+      appUserId: user.appUserId,
+      selectedCentre: {
+        id: centre.id,
+        slug: centre.slug,
+        name: centre.name,
+      },
+      entitlementId: selected.id,
+      endsAt: selected.endsAt,
+    };
+  }
+
+  private normalizeAppUserId(value: string | undefined | null): string {
+    if (!value) return '';
+    return String(value).trim();
+  }
+
+  private async resolveCentre(idOrSlug: string): Promise<TestCentre | null> {
+    const key = String(idOrSlug || '').trim();
+    if (!key) return null;
+
+    const byId = await this.centreRepo.findOne({ where: { id: key } });
+    if (byId) return byId;
+
+    const normalized = key.toLowerCase();
+    return this.centreRepo
+      .createQueryBuilder('centre')
+      .where('LOWER(centre.slug) = :slug', { slug: normalized })
+      .orWhere('LOWER(centre.name) LIKE :namePrefix', {
+        namePrefix: `${normalized.replace(/-/g, ' ')}%`,
+      })
+      .orderBy('centre.createdAt', 'ASC')
+      .getOne();
   }
 
   private async ensureWhitelist(userId: string) {

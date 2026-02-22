@@ -16,6 +16,9 @@ export class TestCentre {
   @Column()
   name: string;
 
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  slug: string | null;
+
   @Column()
   address: string;
 

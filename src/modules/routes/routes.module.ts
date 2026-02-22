@@ -10,13 +10,20 @@ import { TestCentre } from "../../entities/test-centre.entity";
 import { OsmSpeedService } from "./osm-speed.service";
 import { RoadHazardService } from './road-hazard.service';
 import { NavigationController } from './navigation.controller';
+import { HazardsController } from './hazards.controller';
+import { CentreHazardsController } from './centre-hazards.controller';
 
 @Module({
   imports: [
     EntitlementsModule,
     TypeOrmModule.forFeature([Route, PracticeSession, RouteStat, TestCentre]),
   ],
-  controllers: [RoutesController, NavigationController],
+  controllers: [
+    RoutesController,
+    NavigationController,
+    HazardsController,
+    CentreHazardsController,
+  ],
   providers: [RoutesService, OsmSpeedService, RoadHazardService],
   exports: [RoadHazardService],
 })

@@ -25,6 +25,46 @@ export class CentresService {
     return /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/.test(s)
   }
 
+  private looksLikeUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value.trim(),
+    )
+  }
+
+  private normalizeSlug(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-')
+  }
+
+  private async resolveCentre(idOrSlug: string): Promise<TestCentre | null> {
+    const key = (idOrSlug || '').trim()
+    if (!key) return null
+
+    if (this.looksLikeUuid(key)) {
+      const byId = await this.centresRepo.findOne({ where: { id: key } })
+      if (byId) return byId
+    }
+
+    const normalized = this.normalizeSlug(key)
+    if (normalized) {
+      const bySlug = await this.centresRepo
+        .createQueryBuilder('centre')
+        .where('LOWER(centre.slug) = :slug', { slug: normalized })
+        .orWhere('LOWER(centre.name) LIKE :namePrefix', {
+          namePrefix: `${normalized.replace(/-/g, ' ')}%`,
+        })
+        .orderBy('centre.createdAt', 'ASC')
+        .getOne()
+      if (bySlug) return bySlug
+    }
+
+    return null
+  }
+
   async search(dto: CentreQueryDto) {
     const page = dto.page ? parseInt(dto.page, 10) : 1
     const limit = dto.limit ? Math.min(parseInt(dto.limit, 10), 50) : 20
@@ -123,13 +163,16 @@ export class CentresService {
     }
   }
 
-  async findOne(id: string) {
-    return this.centresRepo.findOne({ where: { id } })
+  async findOne(idOrSlug: string) {
+    return this.resolveCentre(idOrSlug)
   }
 
-  async routesForCentre(id: string) {
+  async routesForCentre(idOrSlug: string) {
+    const centre = await this.resolveCentre(idOrSlug)
+    if (!centre) return []
+
     const routes = await this.routesRepo.find({
-      where: { centreId: id, isActive: true },
+      where: { centreId: centre.id, isActive: true },
     });
     
     // Remove gpx field from each route before returning
