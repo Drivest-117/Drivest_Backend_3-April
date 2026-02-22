@@ -1627,7 +1627,9 @@ export class RoadHazardService {
           CASE
             WHEN refs.polygon_table IS NOT NULL THEN EXISTS (SELECT 1 FROM planet_osm_polygon LIMIT 1)
             ELSE false
-          END AS polygon_has_rows;
+          END AS polygon_has_rows
+        FROM refs
+        CROSS JOIN ext;
         `,
       );
 
