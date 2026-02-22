@@ -114,6 +114,29 @@ export class EntitlementsService {
       .getOne();
 
     if (!activeGlobal) {
+      const activeCentre = await this.entRepo
+        .createQueryBuilder('ent')
+        .where('ent.userId = :userId', { userId: user.id })
+        .andWhere('ent.scope = :scope', { scope: EntitlementScope.CENTRE })
+        .andWhere('ent.centreId = :centreId', { centreId: centre.id })
+        .andWhere('ent.isActive = true')
+        .andWhere('(ent.endsAt IS NULL OR ent.endsAt > :now)', { now: new Date() })
+        .orderBy('ent.endsAt', 'DESC', 'NULLS FIRST')
+        .getOne();
+
+      if (activeCentre) {
+        return {
+          appUserId: user.appUserId,
+          selectedCentre: {
+            id: centre.id,
+            slug: centre.slug,
+            name: centre.name,
+          },
+          entitlementId: activeCentre.id,
+          endsAt: activeCentre.endsAt,
+        };
+      }
+
       throw new ForbiddenException(
         'Active subscription is required to select a practice centre',
       );
