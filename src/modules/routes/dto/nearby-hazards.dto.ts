@@ -83,6 +83,14 @@ export class NearbyHazardsDto {
   @Max(500)
   routeCorridorM?: number;
 
+  // iOS client alias for routeCorridorM
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(20)
+  @Max(500)
+  corridorWidthM?: number;
+
   @IsOptional()
   @Transform(({ value }) => {
     if (value == null || value === '') return undefined;
@@ -115,6 +123,14 @@ export class NearbyHazardsDto {
   @Min(50)
   @Max(10000)
   aheadDistanceM?: number;
+
+  // iOS client alias for aheadDistanceM
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(50)
+  @Max(10000)
+  lookaheadM?: number;
 
   @IsOptional()
   @Type(() => Number)

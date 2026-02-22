@@ -144,10 +144,10 @@ export class RoutesService {
       limit: dto.limit,
       routeId: dto.routeId ?? null,
       routeCoordinates,
-      routeCorridorM: dto.routeCorridorM,
+      routeCorridorM: dto.routeCorridorM ?? dto.corridorWidthM,
       types: mappedTypes.length ? mappedTypes : undefined,
       aheadOnly: dto.aheadOnly,
-      aheadDistanceM: dto.aheadDistanceM,
+      aheadDistanceM: dto.aheadDistanceM ?? dto.lookaheadM,
       backtrackToleranceM: dto.backtrackToleranceM,
     });
   }
