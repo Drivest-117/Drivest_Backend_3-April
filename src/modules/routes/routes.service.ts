@@ -253,7 +253,8 @@ export class RoutesService {
 
     await this.ensureEntitlement(userId, route);
 
-    if (!route.gpx) {
+    const gpx = route.gpx ?? this.buildGpxFromRoute(route);
+    if (!gpx) {
       return res.status(404).send('GPX not available');
     }
 
@@ -263,7 +264,7 @@ export class RoutesService {
       `attachment; filename="route-${route.id}.gpx"`,
     );
 
-    return res.send(route.gpx);
+    return res.send(gpx);
   }
 
   async downloadByAppUserId(
@@ -566,5 +567,62 @@ export class RoutesService {
       })
       .orderBy('centre.createdAt', 'ASC')
       .getOne();
+  }
+
+  private buildGpxFromRoute(route: Route): string | null {
+    const coords = this.extractRouteCoordinates(route);
+    if (coords.length < 2) return null;
+
+    const trackPoints = coords
+      .map(([lon, lat]) => `      <trkpt lat="${lat}" lon="${lon}" />`)
+      .join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Drivest" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>${route.name ?? 'Route'}</name>
+    <trkseg>
+${trackPoints}
+    </trkseg>
+  </trk>
+</gpx>`;
+  }
+
+  private extractRouteCoordinates(route: Route): Array<[number, number]> {
+    const fromCoordinates = this.toLonLatPairs(route.coordinates);
+    if (fromCoordinates.length >= 2) return fromCoordinates;
+
+    const fromPolyline = this.toLonLatPairs(route.polyline);
+    if (fromPolyline.length >= 2) return fromPolyline;
+
+    const geojsonCoords =
+      route.geojson && typeof route.geojson === 'object'
+        ? (route.geojson as any).coordinates
+        : null;
+    return this.toLonLatPairs(geojsonCoords);
+  }
+
+  private toLonLatPairs(raw: unknown): Array<[number, number]> {
+    let input = raw as any;
+    if (typeof raw === 'string') {
+      try {
+        input = JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+
+    if (!Array.isArray(input)) return [];
+
+    const pairs: Array<[number, number]> = [];
+    for (const item of input) {
+      if (!Array.isArray(item) || item.length < 2) continue;
+      const lon = Number(item[0]);
+      const lat = Number(item[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+      pairs.push([Number(lon.toFixed(6)), Number(lat.toFixed(6))]);
+    }
+    return pairs;
   }
 }
