@@ -8,6 +8,7 @@ export type RoadHazardType =
   | 'zebra_crossing'
   | 'roundabout'
   | 'mini_roundabout'
+  | 'bus_lane'
   | 'bus_stop'
   | 'stop_sign'
   | 'give_way'
@@ -19,6 +20,7 @@ export const ROAD_HAZARD_TYPES: ReadonlyArray<RoadHazardType> = [
   'zebra_crossing',
   'roundabout',
   'mini_roundabout',
+  'bus_lane',
   'bus_stop',
   'stop_sign',
   'give_way',
@@ -78,6 +80,7 @@ type HazardRuleKey =
   | 'traffic_signals'
   | 'roundabout'
   | 'mini_roundabout'
+  | 'bus_lane'
   | 'bus_stop'
   | 'stop_sign'
   | 'give_way'
@@ -98,6 +101,7 @@ const HAZARD_RULES: Readonly<Record<HazardRuleKey, HazardRuleSpec>> = {
   traffic_signals: { type: 'traffic_light', priority: 80, confidence: 0.9 },
   roundabout: { type: 'roundabout', priority: 88, confidence: 0.88 },
   mini_roundabout: { type: 'mini_roundabout', priority: 86, confidence: 0.86 },
+  bus_lane: { type: 'bus_lane', priority: 72, confidence: 0.78 },
   bus_stop: { type: 'bus_stop', priority: 66, confidence: 0.72 },
   stop_sign: { type: 'stop_sign', priority: 78, confidence: 0.9 },
   give_way: { type: 'give_way', priority: 74, confidence: 0.9 },
@@ -653,6 +657,7 @@ export class RoadHazardService {
     if (availability.hasLineTable && geomColumns.line) {
       const lineGeomExpr = this.geomColumnRef('l', geomColumns.line);
       segments.push(this.lineRoundaboutSql('route', osmSrid, lineGeomExpr));
+      segments.push(this.lineBusLaneSql('route', osmSrid, lineGeomExpr));
       segments.push(this.lineZebraSql('route', osmSrid, lineGeomExpr));
       segments.push(this.lineCrossingGenericSql('route', osmSrid, lineGeomExpr));
     }
@@ -689,6 +694,7 @@ export class RoadHazardService {
     if (availability.hasLineTable && geomColumns.line) {
       const lineGeomExpr = this.geomColumnRef('l', geomColumns.line);
       segments.push(this.lineRoundaboutSql('nearby', osmSrid, lineGeomExpr));
+      segments.push(this.lineBusLaneSql('nearby', osmSrid, lineGeomExpr));
       segments.push(this.lineZebraSql('nearby', osmSrid, lineGeomExpr));
       segments.push(this.lineCrossingGenericSql('nearby', osmSrid, lineGeomExpr));
     }
@@ -1049,6 +1055,41 @@ export class RoadHazardService {
         AND (
           l.junction = 'roundabout'
           OR (l.tags -> 'junction') = 'roundabout'
+        )
+    `;
+  }
+
+  private lineBusLaneSql(
+    mode: 'route' | 'nearby',
+    osmSrid: number,
+    lineGeomExpr: string,
+  ): string {
+    return `
+      SELECT
+        'osm'::text AS source,
+        'line'::text AS osm_type,
+        l.osm_id,
+        'bus_lane'::text AS hazard_rule,
+        ST_PointOnSurface(${lineGeomExpr}) AS geom,
+        'bus_lane'::text AS hazard_type,
+        72::int AS priority,
+        0.78::float AS confidence,
+        COALESCE((l.tags -> 'name'), 'Bus lane') AS label,
+        ${this.distanceExpr(lineGeomExpr, mode, osmSrid)} AS dist_m
+      FROM planet_osm_line l
+      ${this.scopeSql(mode)}
+      WHERE
+        -- Spatial predicate first so GiST index narrows candidates before tag/hstore predicates.
+        ${this.withinPrimaryExpr(lineGeomExpr, mode, osmSrid)}
+        ${this.routeGuardExpr(lineGeomExpr, mode, osmSrid)}
+        AND (
+          (l.tags ? 'bus:lanes')
+          OR (l.tags ? 'lanes:bus')
+          OR COALESCE((l.tags -> 'busway'), '') <> ''
+          OR COALESCE((l.tags -> 'busway:left'), '') <> ''
+          OR COALESCE((l.tags -> 'busway:right'), '') <> ''
+          OR (l.tags -> 'bus') = 'designated'
+          OR (l.tags -> 'psv') = 'designated'
         )
     `;
   }

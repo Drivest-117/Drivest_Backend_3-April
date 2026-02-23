@@ -432,6 +432,8 @@ export class RoutesService {
         return 'ROUNDABOUT';
       case 'mini_roundabout':
         return 'MINI_ROUNDABOUT';
+      case 'bus_lane':
+        return 'BUS_LANE';
       case 'bus_stop':
         return 'BUS_STOP';
       case 'give_way':
@@ -468,6 +470,9 @@ export class RoutesService {
           break;
         case 'MINI_ROUNDABOUT':
           mapped.add('mini_roundabout');
+          break;
+        case 'BUS_LANE':
+          mapped.add('bus_lane');
           break;
         case 'BUS_STOP':
           mapped.add('bus_stop');
