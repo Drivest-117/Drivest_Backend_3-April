@@ -433,7 +433,7 @@ export class RoutesService {
       case 'school_warning':
         return 'SCHOOL_ZONE';
       case 'stop_sign':
-        return 'NO_ENTRY';
+        return 'UNKNOWN';
       default:
         return 'UNKNOWN';
     }

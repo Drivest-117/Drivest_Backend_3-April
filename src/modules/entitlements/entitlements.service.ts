@@ -12,6 +12,11 @@ import { TestCentre } from '../../entities/test-centre.entity';
 
 @Injectable()
 export class EntitlementsService {
+  private readonly entitlementsEnforced = this.envBool(
+    'APP_ENTITLEMENTS_ENFORCED',
+    false,
+  );
+
   constructor(
     @InjectRepository(Entitlement)
     private entRepo: Repository<Entitlement>,
@@ -38,6 +43,9 @@ export class EntitlementsService {
   }
 
   async hasAccess(userId: string, centreId: string): Promise<boolean> {
+    if (!this.entitlementsEnforced) {
+      return true;
+    }
     await this.ensureWhitelist(userId);
     const qb = this.entRepo
       .createQueryBuilder('ent')
@@ -102,6 +110,19 @@ export class EntitlementsService {
     const centre = await this.resolveCentre(centreIdOrSlug);
     if (!centre) {
       throw new NotFoundException('Test centre not found');
+    }
+
+    if (!this.entitlementsEnforced) {
+      return {
+        appUserId: user.appUserId,
+        selectedCentre: {
+          id: centre.id,
+          slug: centre.slug,
+          name: centre.name,
+        },
+        entitlementId: null,
+        endsAt: null,
+      };
     }
 
     const activeGlobal = await this.entRepo
@@ -231,5 +252,14 @@ export class EntitlementsService {
         sourcePurchaseId: null,
       }),
     );
+  }
+
+  private envBool(key: string, fallback: boolean): boolean {
+    const raw = process.env[key];
+    if (raw == null || raw === '') return fallback;
+    const normalized = raw.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+    return fallback;
   }
 }
