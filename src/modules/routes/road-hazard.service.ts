@@ -374,10 +374,23 @@ export class RoadHazardService {
     backtrackToleranceM?: number;
   }): Promise<NearbyHazardsResult> {
     const mode = String(params.mode ?? '').toUpperCase();
+    const isWidePreviewMode = mode === 'PREVIEW';
     const defaultRadius =
-      mode === 'TO_START' ? 550 : mode === 'ON_ROUTE' ? 450 : 380;
-    const radiusM = this.clamp(Number(params.radiusM ?? defaultRadius), 80, 1200);
-    const limit = this.clampInt(Number(params.limit ?? 20), 1, 20);
+      mode === 'TO_START'
+        ? 550
+        : mode === 'ON_ROUTE'
+          ? 450
+          : isWidePreviewMode
+            ? 1800
+            : 380;
+    const maxRadiusM = isWidePreviewMode ? 25_000 : 1_200;
+    const maxLimit = isWidePreviewMode ? 1_200 : 20;
+    const radiusM = this.clamp(
+      Number(params.radiusM ?? defaultRadius),
+      80,
+      maxRadiusM,
+    );
+    const limit = this.clampInt(Number(params.limit ?? 20), 1, maxLimit);
     const routeCorridorM = this.clamp(Number(params.routeCorridorM ?? 120), 20, 500);
     const types = this.normalizeTypes(params.types);
 

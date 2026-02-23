@@ -48,8 +48,9 @@ export class BboxHazardsQueryDto {
   @Max(180)
   east!: number;
 
+  @IsOptional()
   @IsString()
-  centreId!: string;
+  centreId?: string;
 
   @IsOptional()
   @Transform(toTypeArray)

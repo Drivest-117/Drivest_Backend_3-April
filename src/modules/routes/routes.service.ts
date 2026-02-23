@@ -28,6 +28,11 @@ type AppHazardFeature = {
   lat: number;
   lon: number;
   confidenceHint: number;
+  sourceHazardType?: RoadHazardType;
+  label?: string;
+  signTitle?: string;
+  signCode?: string;
+  signImagePath?: string;
 };
 
 type BboxHazardsQuery = {
@@ -35,7 +40,7 @@ type BboxHazardsQuery = {
   west: number;
   north: number;
   east: number;
-  centreId: string;
+  centreId?: string;
   types?: string[];
 };
 
@@ -196,15 +201,20 @@ export class RoutesService {
     query: BboxHazardsQuery,
     deviceId?: string,
   ) {
-    const centre = await this.resolveCentre(query.centreId);
-    if (!centre) throw new NotFoundException('Test centre not found');
+    const centreIdOrSlug = String(query.centreId ?? '').trim();
+    if (centreIdOrSlug) {
+      const centre = await this.resolveCentre(centreIdOrSlug);
+      if (!centre) throw new NotFoundException('Test centre not found');
 
-    const allowed = await this.entService.hasAccessByAppUserId(
-      appUserId,
-      centre.id,
-      deviceId,
-    );
-    if (!allowed) throw new ForbiddenException('Entitlement required');
+      const allowed = await this.entService.hasAccessByAppUserId(
+        appUserId,
+        centre.id,
+        deviceId,
+      );
+      if (!allowed) throw new ForbiddenException('Entitlement required');
+    } else {
+      await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+    }
 
     const mappedTypes = this.toRoadHazardTypesFromPromptTypes(query.types);
     if ((query.types?.length ?? 0) > 0 && mappedTypes.length === 0) {
@@ -410,16 +420,88 @@ export class RoutesService {
     const deduped = new Map<string, AppHazardFeature>();
     for (const item of items) {
       const key = `${item.type}:${Number(item.lat).toFixed(6)}:${Number(item.lon).toFixed(6)}`;
+      const signMeta = this.signMetadataForHazard(item.type);
       const mapped: AppHazardFeature = {
         id: String(item.id),
         type: this.toPromptType(item.type),
         lat: Number(item.lat),
         lon: Number(item.lon),
         confidenceHint: Number(item.confidence ?? 0.5),
+        sourceHazardType: item.type,
+        label: item.labels?.primary ?? undefined,
+        signTitle: signMeta.title,
+        signCode: signMeta.code,
+        signImagePath: signMeta.imagePath,
       };
       deduped.set(key, mapped);
     }
     return Array.from(deduped.values());
+  }
+
+  private signMetadataForHazard(type: RoadHazardType): {
+    title?: string;
+    code?: string;
+    imagePath?: string;
+  } {
+    switch (type) {
+      case 'traffic_light':
+        return {
+          title: 'Traffic signals ahead',
+          code: '543',
+          imagePath: 'warning-signs-jpg/543.jpg',
+        };
+      case 'zebra_crossing':
+        return {
+          title: 'Zebra crossing ahead',
+          code: '544',
+          imagePath: 'warning-signs-jpg/544.jpg',
+        };
+      case 'roundabout':
+        return {
+          title: 'Roundabout',
+          code: '611',
+          imagePath: 'regulatory-signs-jpg/611.jpg',
+        };
+      case 'mini_roundabout':
+        return {
+          title: 'Mini roundabout',
+          code: '611.1',
+          imagePath: 'regulatory-signs-jpg/611.1.jpg',
+        };
+      case 'bus_lane':
+        return {
+          title: 'Bus lane',
+          code: '958',
+          imagePath: 'bus-and-cycle-signs-jpg/958.jpg',
+        };
+      case 'bus_stop':
+        return {
+          title: 'Bus stop',
+          code: '975',
+          imagePath: 'bus-and-cycle-signs-jpg/975.jpg',
+        };
+      case 'give_way':
+        return {
+          title: 'Give way',
+          code: '602',
+          imagePath: 'regulatory-signs-jpg/602.jpg',
+        };
+      case 'school_warning':
+        return {
+          title: 'School warning',
+          code: '545',
+          imagePath: 'warning-signs-jpg/545.jpg',
+        };
+      case 'stop_sign':
+        return {
+          title: 'No entry',
+          code: '616',
+          imagePath: 'regulatory-signs-jpg/616.jpg',
+        };
+      case 'hazard_generic':
+      default:
+        return {};
+    }
   }
 
   private toPromptType(type: RoadHazardType): string {
@@ -534,7 +616,7 @@ export class RoutesService {
       cornerLon,
     );
     const radius = Math.round(diagonalHalf + 50);
-    return Math.max(200, Math.min(5000, radius));
+    return Math.max(200, Math.min(25_000, radius));
   }
 
   private haversineMeters(
