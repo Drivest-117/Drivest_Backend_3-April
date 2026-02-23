@@ -428,6 +428,12 @@ export class RoutesService {
         return 'TRAFFIC_SIGNAL';
       case 'zebra_crossing':
         return 'ZEBRA_CROSSING';
+      case 'roundabout':
+        return 'ROUNDABOUT';
+      case 'mini_roundabout':
+        return 'MINI_ROUNDABOUT';
+      case 'bus_stop':
+        return 'BUS_STOP';
       case 'give_way':
         return 'GIVE_WAY';
       case 'school_warning':
@@ -456,6 +462,15 @@ export class RoutesService {
           break;
         case 'ZEBRA_CROSSING':
           mapped.add('zebra_crossing');
+          break;
+        case 'ROUNDABOUT':
+          mapped.add('roundabout');
+          break;
+        case 'MINI_ROUNDABOUT':
+          mapped.add('mini_roundabout');
+          break;
+        case 'BUS_STOP':
+          mapped.add('bus_stop');
           break;
         case 'GIVE_WAY':
           mapped.add('give_way');
