@@ -31,14 +31,23 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   const configService = app.get(ConfigService);
-  const swaggerPath = configService.get<string>('SWAGGER_PATH', '/docs');
-  const config = new DocumentBuilder()
-    .setTitle('Route Master API')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(swaggerPath, app, document);
+  const bootstrapLogger = new Logger('Bootstrap');
+  const swaggerEnabled = configService.get<string>('SWAGGER_ENABLED', 'true') !== 'false';
+  if (swaggerEnabled) {
+    try {
+      const swaggerPath = configService.get<string>('SWAGGER_PATH', '/docs');
+      const config = new DocumentBuilder()
+        .setTitle('Route Master API')
+        .setVersion('1.0.0')
+        .addBearerAuth()
+        .build();
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup(swaggerPath, app, document);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      bootstrapLogger.error(`Swagger initialisation skipped: ${message}`);
+    }
+  }
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
