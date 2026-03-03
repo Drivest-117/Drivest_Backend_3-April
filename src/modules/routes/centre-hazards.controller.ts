@@ -11,15 +11,9 @@ export class CentreHazardsController {
   async centreHazards(
     @Param('id') centreIdOrSlug: string,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.getCentreHazardsByAppUserId(
-      appUserId,
-      centreIdOrSlug,
-      deviceId,
-    );
+    return this.routesService.getCentreHazardsByAppUserId(appUserId, centreIdOrSlug);
   }
 
   private readHeader(value: string | string[] | undefined): string {

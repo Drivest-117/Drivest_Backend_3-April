@@ -5,16 +5,38 @@ import { LoginDto } from './dto/login.dto';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('auth')
-@Controller('auth')
+@Controller()
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
+  @Post('v1/auth/sign-up')
+  async signUp(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
+  @Post('auth/sign-up')
+  async signUpLegacy(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
+  @Post('v1/auth/sign-in')
+  @HttpCode(200)
+  async signIn(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  @Post('auth/sign-in')
+  @HttpCode(200)
+  async signInLegacy(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  @Post('auth/register')
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
-  @Post('login')
+  @Post('auth/login')
   @HttpCode(200)
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);

@@ -12,6 +12,9 @@ import { RouteStat } from '../entities/route-stat.entity';
 import { CashbackClaim } from '../entities/cashback-claim.entity';
 import { Track } from '../entities/track.entity';
 import { AuditLog } from '../entities/audit-log.entity';
+import { InstructorEntity } from '../modules/instructors/entities/instructor.entity';
+import { InstructorReviewEntity } from '../modules/instructors/entities/instructor-review.entity';
+import { LessonEntity } from '../modules/instructors/entities/lesson.entity';
 
 @Module({
   imports: [
@@ -33,6 +36,9 @@ import { AuditLog } from '../entities/audit-log.entity';
           CashbackClaim,
           Track,
           AuditLog,
+          InstructorEntity,
+          InstructorReviewEntity,
+          LessonEntity,
         ],
         synchronize: false,
         logging: false,

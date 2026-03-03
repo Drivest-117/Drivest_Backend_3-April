@@ -112,8 +112,6 @@ export class WebhooksService {
       name: 'Drivest User',
       passwordHash: 'ANON_APP_USER',
       role: 'USER',
-      activeDeviceId: null,
-      activeDeviceAt: null,
     });
     return this.userRepo.save(created);
   }

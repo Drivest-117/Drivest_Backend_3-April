@@ -37,8 +37,8 @@ export class EntitlementsService {
       .getMany();
   }
 
-  async userEntitlementsByAppUserId(appUserId: string, deviceId?: string) {
-    const user = await this.resolveOrCreateAppUser(appUserId, deviceId);
+  async userEntitlementsByAppUserId(appUserId: string) {
+    const user = await this.resolveOrCreateAppUser(appUserId);
     return this.userEntitlements(user.id);
   }
 
@@ -61,16 +61,12 @@ export class EntitlementsService {
     return Boolean(entitlement);
   }
 
-  async hasAccessByAppUserId(
-    appUserId: string,
-    centreId: string,
-    deviceId?: string,
-  ): Promise<boolean> {
-    const user = await this.resolveOrCreateAppUser(appUserId, deviceId);
+  async hasAccessByAppUserId(appUserId: string, centreId: string): Promise<boolean> {
+    const user = await this.resolveOrCreateAppUser(appUserId);
     return this.hasAccess(user.id, centreId);
   }
 
-  async resolveOrCreateAppUser(appUserIdRaw: string, deviceId?: string) {
+  async resolveOrCreateAppUser(appUserIdRaw: string) {
     const appUserId = this.normalizeAppUserId(appUserIdRaw);
     if (!appUserId) {
       throw new BadRequestException('x-app-user-id is required');
@@ -85,28 +81,16 @@ export class EntitlementsService {
         name: 'Drivest User',
         passwordHash: 'ANON_APP_USER',
         role: 'USER',
-        activeDeviceId: deviceId ?? null,
-        activeDeviceAt: deviceId ? new Date() : null,
       });
       user = await this.userRepo.save(user);
       return user;
     }
 
-    if (deviceId && (!user.activeDeviceId || user.activeDeviceId !== deviceId)) {
-      user.activeDeviceId = deviceId;
-      user.activeDeviceAt = new Date();
-      user = await this.userRepo.save(user);
-    }
-
     return user;
   }
 
-  async selectCentreForPractice(
-    appUserIdRaw: string,
-    centreIdOrSlug: string,
-    deviceId?: string,
-  ) {
-    const user = await this.resolveOrCreateAppUser(appUserIdRaw, deviceId);
+  async selectCentreForPractice(appUserIdRaw: string, centreIdOrSlug: string) {
+    const user = await this.resolveOrCreateAppUser(appUserIdRaw);
     const centre = await this.resolveCentre(centreIdOrSlug);
     if (!centre) {
       throw new NotFoundException('Test centre not found');

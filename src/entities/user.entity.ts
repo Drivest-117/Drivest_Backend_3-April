@@ -36,7 +36,7 @@ export class User {
   passwordHash: string;
 
   @Column({ default: 'USER' })
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'INSTRUCTOR' | 'ADMIN';
 
   @Column({ type: 'timestamptz', nullable: true })
   baseAcceptedAt?: Date | null;
@@ -67,12 +67,6 @@ export class User {
 
   @Column({ type: 'timestamptz', nullable: true })
   safetyAcceptedAt?: Date | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  activeDeviceId?: string | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  activeDeviceAt?: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;

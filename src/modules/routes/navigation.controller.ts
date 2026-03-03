@@ -19,8 +19,7 @@ export class NavigationController {
   @Post('app/hazards/nearby')
   async nearbyHazardsForAppUser(@Req() req: any, @Body() dto: NearbyHazardsDto) {
     const appUserId = this.readHeader(req?.headers?.['x-app-user-id']);
-    const deviceId = this.readHeader(req?.headers?.['x-device-id']);
-    return this.routesService.getNearbyHazardsByAppUserId(appUserId, dto, deviceId);
+    return this.routesService.getNearbyHazardsByAppUserId(appUserId, dto);
   }
 
   private readHeader(value: string | string[] | undefined): string {

@@ -12,15 +12,9 @@ export class HazardsController {
   async routeHazards(
     @Query() query: BboxHazardsQueryDto,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.getRouteHazardsForBoundsByAppUserId(
-      appUserId,
-      query,
-      deviceId,
-    );
+    return this.routesService.getRouteHazardsForBoundsByAppUserId(appUserId, query);
   }
 
   private readHeader(value: string | string[] | undefined): string {

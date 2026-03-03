@@ -5,7 +5,6 @@ import path from 'node:path';
 
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const appUserId = `qa-app-${Date.now()}`;
-const deviceId = `ios-sim-${Date.now()}`;
 
 function loadEnv(filePath) {
   if (!fs.existsSync(filePath)) return {};
@@ -58,7 +57,7 @@ function ensure(condition, message) {
 async function main() {
   const envPath = path.resolve(process.cwd(), '.env');
   const env = loadEnv(envPath);
-  const headers = { 'x-app-user-id': appUserId, 'x-device-id': deviceId };
+  const headers = { 'x-app-user-id': appUserId };
   const allowedTypes = 'traffic_light,zebra_crossing,stop_sign';
 
   const health = await req('GET', '/health');

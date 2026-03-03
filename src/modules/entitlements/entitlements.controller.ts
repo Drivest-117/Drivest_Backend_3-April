@@ -33,22 +33,18 @@ export class EntitlementsController {
   @Get('app')
   async listForAppUser(
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.entService.userEntitlementsByAppUserId(appUserId, deviceId);
+    return this.entService.userEntitlementsByAppUserId(appUserId);
   }
 
   @Post('app/select-centre')
   async selectCentreForPractice(
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
     @Body() dto: SelectCentreDto,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.entService.selectCentreForPractice(appUserId, dto.centreId, deviceId);
+    return this.entService.selectCentreForPractice(appUserId, dto.centreId);
   }
 
   private readHeader(value: string | string[] | undefined): string {

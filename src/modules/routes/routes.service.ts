@@ -78,8 +78,8 @@ export class RoutesService {
     return route;
   }
 
-  async getRouteByAppUserId(appUserId: string, id: string, deviceId?: string) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+  async getRouteByAppUserId(appUserId: string, id: string) {
+    const user = await this.entService.resolveOrCreateAppUser(appUserId);
     return this.getRoute(user.id, id);
   }
 
@@ -110,9 +110,8 @@ export class RoutesService {
     appUserId: string,
     routeId: string,
     query?: RouteHazardsQueryDto,
-    deviceId?: string,
   ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+    const user = await this.entService.resolveOrCreateAppUser(appUserId);
     return this.getRouteHazards(user.id, routeId, query, null);
   }
 
@@ -157,28 +156,16 @@ export class RoutesService {
     });
   }
 
-  async getNearbyHazardsByAppUserId(
-    appUserId: string,
-    dto: NearbyHazardsDto,
-    deviceId?: string,
-  ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+  async getNearbyHazardsByAppUserId(appUserId: string, dto: NearbyHazardsDto) {
+    const user = await this.entService.resolveOrCreateAppUser(appUserId);
     return this.getNearbyHazards(user.id, dto);
   }
 
-  async getCentreHazardsByAppUserId(
-    appUserId: string,
-    centreIdOrSlug: string,
-    deviceId?: string,
-  ) {
+  async getCentreHazardsByAppUserId(appUserId: string, centreIdOrSlug: string) {
     const centre = await this.resolveCentre(centreIdOrSlug);
     if (!centre) throw new NotFoundException('Test centre not found');
 
-    const allowed = await this.entService.hasAccessByAppUserId(
-      appUserId,
-      centre.id,
-      deviceId,
-    );
+    const allowed = await this.entService.hasAccessByAppUserId(appUserId, centre.id);
     if (!allowed) throw new ForbiddenException('Entitlement required');
 
     const routes = await this.routesRepo.find({
@@ -199,21 +186,16 @@ export class RoutesService {
   async getRouteHazardsForBoundsByAppUserId(
     appUserId: string,
     query: BboxHazardsQuery,
-    deviceId?: string,
   ) {
     const centreIdOrSlug = String(query.centreId ?? '').trim();
     if (centreIdOrSlug) {
       const centre = await this.resolveCentre(centreIdOrSlug);
       if (!centre) throw new NotFoundException('Test centre not found');
 
-      const allowed = await this.entService.hasAccessByAppUserId(
-        appUserId,
-        centre.id,
-        deviceId,
-      );
+      const allowed = await this.entService.hasAccessByAppUserId(appUserId, centre.id);
       if (!allowed) throw new ForbiddenException('Entitlement required');
     } else {
-      await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+      await this.entService.resolveOrCreateAppUser(appUserId);
     }
 
     const mappedTypes = this.toRoadHazardTypesFromPromptTypes(query.types);
@@ -277,13 +259,8 @@ export class RoutesService {
     return res.send(gpx);
   }
 
-  async downloadByAppUserId(
-    appUserId: string,
-    id: string,
-    res: any,
-    deviceId?: string,
-  ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+  async downloadByAppUserId(appUserId: string, id: string, res: any) {
+    const user = await this.entService.resolveOrCreateAppUser(appUserId);
     return this.download(user.id, id, res);
   }
 
@@ -303,12 +280,8 @@ export class RoutesService {
     return this.sessionRepo.save(session);
   }
 
-  async startPracticeByAppUserId(
-    appUserId: string,
-    routeId: string,
-    deviceId?: string,
-  ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+  async startPracticeByAppUserId(appUserId: string, routeId: string) {
+    const user = await this.entService.resolveOrCreateAppUser(appUserId);
     return this.startPractice(user.id, routeId);
   }
 
@@ -349,9 +322,8 @@ export class RoutesService {
     appUserId: string,
     routeId: string,
     dto: PracticeFinishDto,
-    deviceId?: string,
   ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId, deviceId);
+    const user = await this.entService.resolveOrCreateAppUser(appUserId);
     return this.finishPractice(user.id, routeId, dto);
   }
 

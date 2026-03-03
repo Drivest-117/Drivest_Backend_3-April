@@ -33,11 +33,9 @@ export class RoutesController {
   async getRouteForAppUser(
     @Param('id') id: string,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.getRouteByAppUserId(appUserId, id, deviceId);
+    return this.routesService.getRouteByAppUserId(appUserId, id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -60,17 +58,10 @@ export class RoutesController {
   async getRouteHazardsForAppUser(
     @Param('id') id: string,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
     @Query() query: RouteHazardsQueryDto,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.getRouteHazardsByAppUserId(
-      appUserId,
-      id,
-      query,
-      deviceId,
-    );
+    return this.routesService.getRouteHazardsByAppUserId(appUserId, id, query);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -84,12 +75,10 @@ export class RoutesController {
   async downloadForAppUser(
     @Param('id') id: string,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
     @Res() res: Response,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.downloadByAppUserId(appUserId, id, res, deviceId);
+    return this.routesService.downloadByAppUserId(appUserId, id, res);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -103,11 +92,9 @@ export class RoutesController {
   async startForAppUser(
     @Param('id') id: string,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.startPracticeByAppUserId(appUserId, id, deviceId);
+    return this.routesService.startPracticeByAppUserId(appUserId, id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -125,12 +112,10 @@ export class RoutesController {
   async finishForAppUser(
     @Param('id') id: string,
     @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Headers('x-device-id') deviceIdHeader: string | string[] | undefined,
     @Body() dto: PracticeFinishDto,
   ) {
     const appUserId = this.readHeader(appUserIdHeader);
-    const deviceId = this.readHeader(deviceIdHeader);
-    return this.routesService.finishPracticeByAppUserId(appUserId, id, dto, deviceId);
+    return this.routesService.finishPracticeByAppUserId(appUserId, id, dto);
   }
 
   private readHeader(value: string | string[] | undefined): string {
