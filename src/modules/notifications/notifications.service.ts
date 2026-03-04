@@ -1,8 +1,11 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { CashbackClaim } from '../../entities/cashback-claim.entity';
 import { User } from '../../entities/user.entity';
+import { UserNotification, UserNotificationCategory } from '../../entities/user-notification.entity';
+import { CreateBroadcastNotificationDto } from './dto/create-broadcast-notification.dto';
+import { ListMyNotificationsDto } from './dto/list-my-notifications.dto';
 
 @Injectable()
 export class NotificationsService implements OnModuleInit {
@@ -12,6 +15,7 @@ export class NotificationsService implements OnModuleInit {
   constructor(
     @InjectRepository(CashbackClaim) private cashbackRepo: Repository<CashbackClaim>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(UserNotification) private notificationsRepo: Repository<UserNotification>,
   ) {}
 
   onModuleInit() {
@@ -74,5 +78,144 @@ export class NotificationsService implements OnModuleInit {
       this.logger.warn(`Push error: ${String(e)}`);
       return false;
     }
+  }
+
+  async createForUser(
+    userId: string,
+    category: UserNotificationCategory,
+    title: string,
+    body: string,
+    payload?: Record<string, unknown>,
+    actorUserId?: string | null,
+  ) {
+    const notification = this.notificationsRepo.create({
+      userId,
+      actorUserId: actorUserId ?? null,
+      category,
+      title,
+      body,
+      payload: payload ?? null,
+      readAt: null,
+    });
+    return this.notificationsRepo.save(notification);
+  }
+
+  async createForUsers(
+    userIds: string[],
+    category: UserNotificationCategory,
+    title: string,
+    body: string,
+    payload?: Record<string, unknown>,
+    actorUserId?: string | null,
+  ) {
+    const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
+    if (!uniqueUserIds.length) return { created: 0 };
+
+    const rows = uniqueUserIds.map((userId) =>
+      this.notificationsRepo.create({
+        userId,
+        actorUserId: actorUserId ?? null,
+        category,
+        title,
+        body,
+        payload: payload ?? null,
+        readAt: null,
+      }),
+    );
+    await this.notificationsRepo.save(rows);
+    return { created: rows.length };
+  }
+
+  async listForUser(userId: string, query: ListMyNotificationsDto) {
+    const limit = query.limit ?? 30;
+    const qb = this.notificationsRepo
+      .createQueryBuilder('n')
+      .where('n.user_id = :userId', { userId })
+      .andWhere('n.deleted_at IS NULL');
+
+    if (query.after) {
+      const afterDate = new Date(query.after);
+      if (!Number.isNaN(afterDate.getTime())) {
+        qb.andWhere('n.created_at > :after', { after: afterDate.toISOString() });
+      }
+    }
+
+    if (query.unreadOnly) {
+      qb.andWhere('n.read_at IS NULL');
+    }
+
+    const items = await qb.orderBy('n.created_at', 'DESC').limit(limit).getMany();
+    const unreadCount = await this.notificationsRepo.count({
+      where: { userId, readAt: IsNull(), deletedAt: IsNull() },
+    });
+
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        category: item.category,
+        title: item.title,
+        body: item.body,
+        payload: item.payload,
+        createdAt: item.createdAt,
+        readAt: item.readAt,
+      })),
+      unreadCount,
+    };
+  }
+
+  async markRead(userId: string, notificationId: string) {
+    const notification = await this.notificationsRepo.findOne({
+      where: { id: notificationId, userId, deletedAt: IsNull() },
+    });
+    if (!notification) return { success: false };
+    if (!notification.readAt) {
+      notification.readAt = new Date();
+      await this.notificationsRepo.save(notification);
+    }
+    return { success: true };
+  }
+
+  async markAllRead(userId: string) {
+    await this.notificationsRepo
+      .createQueryBuilder()
+      .update(UserNotification)
+      .set({ readAt: new Date() })
+      .where('user_id = :userId', { userId })
+      .andWhere('deleted_at IS NULL')
+      .andWhere('read_at IS NULL')
+      .execute();
+    return { success: true };
+  }
+
+  async broadcast(actorUserId: string, dto: CreateBroadcastNotificationDto) {
+    if (dto.targetUserId) {
+      await this.createForUser(
+        dto.targetUserId,
+        dto.category ?? 'admin_message',
+        dto.title,
+        dto.body,
+        dto.payload,
+        actorUserId,
+      );
+      return { created: 1 };
+    }
+
+    const qb = this.userRepo.createQueryBuilder('u').where('u.deletedAt IS NULL');
+    const targetRole = dto.targetRole ?? 'all';
+    if (targetRole === 'learner') {
+      qb.andWhere("u.role = 'USER'");
+    } else if (targetRole === 'instructor') {
+      qb.andWhere("u.role = 'INSTRUCTOR'");
+    }
+    const users = await qb.select('u.id', 'id').getRawMany<{ id: string }>();
+
+    return this.createForUsers(
+      users.map((u) => u.id),
+      dto.category ?? 'admin_message',
+      dto.title,
+      dto.body,
+      dto.payload,
+      actorUserId,
+    );
   }
 }

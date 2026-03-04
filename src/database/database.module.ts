@@ -16,6 +16,7 @@ import { InstructorEntity } from '../modules/instructors/entities/instructor.ent
 import { InstructorReviewEntity } from '../modules/instructors/entities/instructor-review.entity';
 import { LessonEntity } from '../modules/instructors/entities/lesson.entity';
 import { InstructorAvailabilityEntity } from '../modules/instructors/entities/instructor-availability.entity';
+import { UserNotification } from '../entities/user-notification.entity';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { InstructorAvailabilityEntity } from '../modules/instructors/entities/in
           InstructorReviewEntity,
           LessonEntity,
           InstructorAvailabilityEntity,
+          UserNotification,
         ],
         synchronize: false,
         logging: false,

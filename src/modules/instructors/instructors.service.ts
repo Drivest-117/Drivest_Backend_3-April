@@ -18,6 +18,7 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonStatusDto } from './dto/update-lesson-status.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class InstructorsService {
@@ -30,6 +31,7 @@ export class InstructorsService {
     private readonly lessonsRepo: Repository<LessonEntity>,
     @InjectRepository(InstructorAvailabilityEntity)
     private readonly availabilityRepo: Repository<InstructorAvailabilityEntity>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createProfile(user: AuthenticatedRequestUser, dto: CreateInstructorProfileDto) {
@@ -354,7 +356,15 @@ export class InstructorsService {
     profile.isApproved = true;
     profile.approvedAt = new Date();
     profile.suspendedAt = null;
-    return this.instructorsRepo.save(profile);
+    const saved = await this.instructorsRepo.save(profile);
+    await this.notificationsService.createForUser(
+      profile.userId,
+      'app_update',
+      'Instructor profile approved',
+      'Your instructor profile is now approved and visible to learners.',
+      { instructorId: profile.id },
+    );
+    return saved;
   }
 
   async suspendInstructor(instructorId: string) {
@@ -364,7 +374,15 @@ export class InstructorsService {
     }
     profile.suspendedAt = new Date();
     profile.isApproved = false;
-    return this.instructorsRepo.save(profile);
+    const saved = await this.instructorsRepo.save(profile);
+    await this.notificationsService.createForUser(
+      profile.userId,
+      'app_update',
+      'Instructor profile suspended',
+      'Your instructor profile is suspended. Contact support for details.',
+      { instructorId: profile.id },
+    );
+    return saved;
   }
 
   async hideReview(reviewId: string) {
@@ -417,8 +435,22 @@ export class InstructorsService {
       learnerNote: dto.learnerNote ?? null,
       availabilitySlotId: null,
     });
-
-    return this.lessonsRepo.save(lesson);
+    const savedLesson = await this.lessonsRepo.save(lesson);
+    await this.notificationsService.createForUser(
+      instructor.userId,
+      'booking_request',
+      'New lesson request',
+      'A learner has requested a booking with you.',
+      {
+        lessonId: savedLesson.id,
+        instructorId: instructor.id,
+        learnerUserId: user.userId,
+        scheduledAt: savedLesson.scheduledAt,
+        durationMinutes: savedLesson.durationMinutes,
+      },
+      user.userId,
+    );
+    return savedLesson;
   }
 
   async updateLessonStatus(
@@ -472,6 +504,19 @@ export class InstructorsService {
     lesson.status = nextStatus;
     const saved = await this.lessonsRepo.save(lesson);
     await this.syncAvailabilitySlotForLessonStatus(saved);
+    await this.notificationsService.createForUser(
+      saved.learnerUserId,
+      'booking_status',
+      'Booking status updated',
+      `Your booking is now ${nextStatus}.`,
+      {
+        lessonId: saved.id,
+        instructorId: saved.instructorId,
+        status: nextStatus,
+        availabilitySlotId: saved.availabilitySlotId,
+      },
+      user.userId,
+    );
     return saved;
   }
 
@@ -574,8 +619,20 @@ export class InstructorsService {
       reviewText: dto.reviewText ?? null,
       status: 'visible',
     });
-
-    return this.reviewsRepo.save(review);
+    const savedReview = await this.reviewsRepo.save(review);
+    await this.notificationsService.createForUser(
+      instructor.userId,
+      'lesson_update',
+      'New learner review',
+      `A learner left a ${dto.rating}-star review after a completed lesson.`,
+      {
+        reviewId: savedReview.id,
+        lessonId: dto.lessonId,
+        rating: dto.rating,
+      },
+      user.userId,
+    );
+    return savedReview;
   }
 
   private async createLessonFromAvailabilitySlot(
@@ -630,6 +687,20 @@ export class InstructorsService {
       slot.status = 'booked';
       slot.bookedLessonId = savedLesson.id;
       await slotRepo.save(slot);
+      await this.notificationsService.createForUser(
+        instructor.userId,
+        'booking_request',
+        'New lesson request',
+        'A learner requested one of your published time slots.',
+        {
+          lessonId: savedLesson.id,
+          availabilitySlotId: slot.id,
+          startsAt: slot.startsAt,
+          endsAt: slot.endsAt,
+          learnerUserId: user.userId,
+        },
+        user.userId,
+      );
       return savedLesson;
     });
   }

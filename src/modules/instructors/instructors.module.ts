@@ -9,9 +9,11 @@ import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { User } from '../../entities/user.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
+    NotificationsModule,
     TypeOrmModule.forFeature([
       InstructorEntity,
       InstructorReviewEntity,
