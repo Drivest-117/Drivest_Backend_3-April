@@ -9,6 +9,7 @@ import { IsNull, Repository } from 'typeorm';
 import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
+import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { CreateInstructorProfileDto } from './dto/create-instructor-profile.dto';
 import { UpdateInstructorProfileDto } from './dto/update-instructor-profile.dto';
 import { ListInstructorsQueryDto } from './dto/list-instructors-query.dto';
@@ -16,6 +17,7 @@ import { AuthenticatedRequestUser, normaliseRole } from './instructors.types';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonStatusDto } from './dto/update-lesson-status.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
 
 @Injectable()
 export class InstructorsService {
@@ -26,6 +28,8 @@ export class InstructorsService {
     private readonly reviewsRepo: Repository<InstructorReviewEntity>,
     @InjectRepository(LessonEntity)
     private readonly lessonsRepo: Repository<LessonEntity>,
+    @InjectRepository(InstructorAvailabilityEntity)
+    private readonly availabilityRepo: Repository<InstructorAvailabilityEntity>,
   ) {}
 
   async createProfile(user: AuthenticatedRequestUser, dto: CreateInstructorProfileDto) {
@@ -241,6 +245,100 @@ export class InstructorsService {
     };
   }
 
+  async getPublicAvailability(instructorId: string, month?: string) {
+    const profile = await this.instructorsRepo.findOne({
+      where: {
+        id: instructorId,
+        isApproved: true,
+        suspendedAt: IsNull(),
+      },
+    });
+
+    if (!profile || profile.deletedAt) {
+      throw new NotFoundException('Instructor not found');
+    }
+
+    const { monthStart, monthEnd } = this.resolveMonthWindow(month);
+    const slots = await this.availabilityRepo
+      .createQueryBuilder('s')
+      .where('s.instructor_id = :instructorId', { instructorId })
+      .andWhere('s.deleted_at IS NULL')
+      .andWhere("s.status = 'open'")
+      .andWhere('s.starts_at >= :monthStart', { monthStart })
+      .andWhere('s.starts_at < :monthEnd', { monthEnd })
+      .orderBy('s.starts_at', 'ASC')
+      .getMany();
+
+    return slots.map((slot) => ({
+      id: slot.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt,
+      status: slot.status,
+    }));
+  }
+
+  async listMyAvailability(user: AuthenticatedRequestUser, month?: string) {
+    this.requireRole(user, 'instructor');
+    const instructor = await this.getInstructorForUser(user.userId);
+    const { monthStart, monthEnd } = this.resolveMonthWindow(month);
+
+    const slots = await this.availabilityRepo
+      .createQueryBuilder('s')
+      .where('s.instructor_id = :instructorId', { instructorId: instructor.id })
+      .andWhere('s.deleted_at IS NULL')
+      .andWhere('s.starts_at >= :monthStart', { monthStart })
+      .andWhere('s.starts_at < :monthEnd', { monthEnd })
+      .orderBy('s.starts_at', 'ASC')
+      .getMany();
+
+    return slots.map((slot) => ({
+      id: slot.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt,
+      status: slot.status,
+      bookedLessonId: slot.bookedLessonId,
+    }));
+  }
+
+  async createAvailabilitySlot(user: AuthenticatedRequestUser, dto: CreateAvailabilitySlotDto) {
+    this.requireRole(user, 'instructor');
+    const instructor = await this.getInstructorForUser(user.userId);
+
+    const startsAt = new Date(dto.startsAt);
+    const endsAt = new Date(dto.endsAt);
+    this.validateSlotWindow(startsAt, endsAt);
+
+    await this.ensureNoAvailabilityOverlap(instructor.id, startsAt, endsAt);
+
+    const slot = this.availabilityRepo.create({
+      instructorId: instructor.id,
+      startsAt,
+      endsAt,
+      status: 'open',
+      bookedLessonId: null,
+    });
+    return this.availabilityRepo.save(slot);
+  }
+
+  async cancelAvailabilitySlot(user: AuthenticatedRequestUser, slotId: string) {
+    this.requireRole(user, 'instructor');
+    const instructor = await this.getInstructorForUser(user.userId);
+    const slot = await this.availabilityRepo.findOne({ where: { id: slotId } });
+    if (!slot || slot.deletedAt) {
+      throw new NotFoundException('Availability slot not found');
+    }
+    if (slot.instructorId !== instructor.id) {
+      throw new ForbiddenException('You can only manage your own availability');
+    }
+    if (slot.bookedLessonId) {
+      throw new BadRequestException('Booked slot cannot be cancelled');
+    }
+    slot.status = 'cancelled';
+    await this.availabilityRepo.save(slot);
+    await this.availabilityRepo.softDelete(slot.id);
+    return { success: true };
+  }
+
   async getPendingProfiles() {
     return this.instructorsRepo.find({
       where: { isApproved: false, suspendedAt: IsNull() },
@@ -292,6 +390,9 @@ export class InstructorsService {
   async createLesson(user: AuthenticatedRequestUser, dto: CreateLessonDto) {
     // Phase 1 decision: learner creates lesson requests, instructors later mark status.
     this.requireRole(user, 'learner');
+    if (dto.availabilitySlotId) {
+      return this.createLessonFromAvailabilitySlot(user, dto);
+    }
 
     const instructor = await this.instructorsRepo.findOne({ where: { id: dto.instructorId } });
     if (!instructor || instructor.deletedAt) {
@@ -301,12 +402,20 @@ export class InstructorsService {
       throw new BadRequestException('Instructor is not available for lessons');
     }
 
+    const scheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : null;
+    const durationMinutes = dto.durationMinutes ?? null;
+    if (scheduledAt && durationMinutes) {
+      await this.ensureNoLessonConflicts(instructor.id, scheduledAt, durationMinutes);
+    }
+
     const lesson = this.lessonsRepo.create({
       instructorId: dto.instructorId,
       learnerUserId: user.userId,
-      scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
-      durationMinutes: dto.durationMinutes ?? null,
-      status: 'planned',
+      scheduledAt,
+      durationMinutes,
+      status: 'requested',
+      learnerNote: dto.learnerNote ?? null,
+      availabilitySlotId: null,
     });
 
     return this.lessonsRepo.save(lesson);
@@ -332,8 +441,80 @@ export class InstructorsService {
       throw new ForbiddenException('Only the lesson instructor can update lesson status');
     }
 
-    lesson.status = dto.status;
-    return this.lessonsRepo.save(lesson);
+    const nextStatus = dto.status;
+    const validTransitions: Record<string, string[]> = {
+      requested: ['accepted', 'declined', 'completed', 'cancelled'],
+      accepted: ['completed', 'cancelled'],
+      planned: ['completed', 'cancelled'],
+      completed: [],
+      declined: [],
+      cancelled: [],
+    };
+    const allowed = validTransitions[lesson.status] ?? [];
+    if (!allowed.includes(nextStatus)) {
+      throw new BadRequestException(`Cannot change lesson from ${lesson.status} to ${nextStatus}`);
+    }
+
+    if (
+      nextStatus === 'accepted' &&
+      lesson.scheduledAt &&
+      lesson.durationMinutes &&
+      lesson.status !== 'accepted'
+    ) {
+      await this.ensureNoLessonConflicts(
+        instructor.id,
+        lesson.scheduledAt,
+        lesson.durationMinutes,
+        lesson.id,
+      );
+    }
+
+    lesson.status = nextStatus;
+    const saved = await this.lessonsRepo.save(lesson);
+    await this.syncAvailabilitySlotForLessonStatus(saved);
+    return saved;
+  }
+
+  async listMyLessons(user: AuthenticatedRequestUser) {
+    const role = normaliseRole(user.role);
+    if (!role) {
+      throw new ForbiddenException('Role is required');
+    }
+
+    if (role === 'instructor') {
+      const instructor = await this.getInstructorForUser(user.userId);
+      const lessons = await this.lessonsRepo.find({
+        where: { instructorId: instructor.id, deletedAt: IsNull() },
+        order: { scheduledAt: 'ASC', createdAt: 'DESC' },
+      });
+      return lessons.map((lesson) => ({
+        id: lesson.id,
+        instructorId: lesson.instructorId,
+        learnerUserId: lesson.learnerUserId,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
+        status: lesson.status,
+        availabilitySlotId: lesson.availabilitySlotId,
+      }));
+    }
+
+    if (role === 'learner') {
+      const lessons = await this.lessonsRepo.find({
+        where: { learnerUserId: user.userId, deletedAt: IsNull() },
+        order: { scheduledAt: 'ASC', createdAt: 'DESC' },
+      });
+      return lessons.map((lesson) => ({
+        id: lesson.id,
+        instructorId: lesson.instructorId,
+        learnerUserId: lesson.learnerUserId,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
+        status: lesson.status,
+        availabilitySlotId: lesson.availabilitySlotId,
+      }));
+    }
+
+    throw new ForbiddenException('Unsupported role');
   }
 
   async createReview(
@@ -395,6 +576,184 @@ export class InstructorsService {
     });
 
     return this.reviewsRepo.save(review);
+  }
+
+  private async createLessonFromAvailabilitySlot(
+    user: AuthenticatedRequestUser,
+    dto: CreateLessonDto,
+  ) {
+    return this.lessonsRepo.manager.transaction(async (manager) => {
+      const slotRepo = manager.getRepository(InstructorAvailabilityEntity);
+      const lessonRepo = manager.getRepository(LessonEntity);
+      const instructorRepo = manager.getRepository(InstructorEntity);
+
+      const slot = await slotRepo
+        .createQueryBuilder('s')
+        .setLock('pessimistic_write')
+        .where('s.id = :slotId', { slotId: dto.availabilitySlotId })
+        .andWhere('s.deleted_at IS NULL')
+        .getOne();
+
+      if (!slot) {
+        throw new NotFoundException('Availability slot not found');
+      }
+      if (slot.status !== 'open' || slot.bookedLessonId) {
+        throw new BadRequestException('This time slot is no longer available');
+      }
+
+      const instructor = await instructorRepo.findOne({ where: { id: slot.instructorId } });
+      if (!instructor || instructor.deletedAt || !instructor.isApproved || instructor.suspendedAt) {
+        throw new BadRequestException('Instructor is not available for lessons');
+      }
+
+      if (dto.instructorId && dto.instructorId !== slot.instructorId) {
+        throw new BadRequestException('Instructor does not match selected time slot');
+      }
+
+      await this.ensureNoLessonConflicts(
+        slot.instructorId,
+        slot.startsAt,
+        this.diffMinutes(slot.startsAt, slot.endsAt),
+      );
+
+      const lesson = lessonRepo.create({
+        instructorId: slot.instructorId,
+        learnerUserId: user.userId,
+        scheduledAt: slot.startsAt,
+        durationMinutes: this.diffMinutes(slot.startsAt, slot.endsAt),
+        status: 'requested',
+        learnerNote: dto.learnerNote ?? null,
+        availabilitySlotId: slot.id,
+      });
+
+      const savedLesson = await lessonRepo.save(lesson);
+      slot.status = 'booked';
+      slot.bookedLessonId = savedLesson.id;
+      await slotRepo.save(slot);
+      return savedLesson;
+    });
+  }
+
+  private async syncAvailabilitySlotForLessonStatus(lesson: LessonEntity) {
+    if (!lesson.availabilitySlotId) return;
+    const slot = await this.availabilityRepo.findOne({ where: { id: lesson.availabilitySlotId } });
+    if (!slot || slot.deletedAt) return;
+
+    if (lesson.status === 'declined' || lesson.status === 'cancelled') {
+      slot.status = 'open';
+      slot.bookedLessonId = null;
+      await this.availabilityRepo.save(slot);
+      return;
+    }
+
+    if (lesson.status === 'accepted' || lesson.status === 'completed') {
+      slot.status = 'booked';
+      slot.bookedLessonId = lesson.id;
+      await this.availabilityRepo.save(slot);
+    }
+  }
+
+  private async getInstructorForUser(userId: string) {
+    const instructor = await this.instructorsRepo.findOne({ where: { userId } });
+    if (!instructor || instructor.deletedAt) {
+      throw new NotFoundException('Instructor profile not found');
+    }
+    return instructor;
+  }
+
+  private validateSlotWindow(startsAt: Date, endsAt: Date) {
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+      throw new BadRequestException('Invalid slot date');
+    }
+    if (endsAt <= startsAt) {
+      throw new BadRequestException('Slot end time must be after start time');
+    }
+    if ((endsAt.getTime() - startsAt.getTime()) / 60000 > 600) {
+      throw new BadRequestException('Slot duration is too long');
+    }
+  }
+
+  private async ensureNoAvailabilityOverlap(
+    instructorId: string,
+    startsAt: Date,
+    endsAt: Date,
+    ignoreSlotId?: string,
+  ) {
+    const qb = this.availabilityRepo
+      .createQueryBuilder('s')
+      .where('s.instructor_id = :instructorId', { instructorId })
+      .andWhere('s.deleted_at IS NULL')
+      .andWhere("s.status IN ('open', 'booked')")
+      .andWhere('s.starts_at < :endsAt', { endsAt })
+      .andWhere('s.ends_at > :startsAt', { startsAt });
+
+    if (ignoreSlotId) {
+      qb.andWhere('s.id != :ignoreSlotId', { ignoreSlotId });
+    }
+
+    const overlap = await qb.getOne();
+    if (overlap) {
+      throw new BadRequestException('Availability conflicts with an existing slot');
+    }
+  }
+
+  private async ensureNoLessonConflicts(
+    instructorId: string,
+    startsAt: Date,
+    durationMinutes: number,
+    ignoreLessonId?: string,
+  ) {
+    const endsAt = new Date(startsAt.getTime() + durationMinutes * 60_000);
+    const qb = this.lessonsRepo
+      .createQueryBuilder('l')
+      .where('l.instructor_id = :instructorId', { instructorId })
+      .andWhere('l.deleted_at IS NULL')
+      .andWhere("l.status IN ('requested', 'accepted', 'completed')")
+      .andWhere('l.scheduled_at IS NOT NULL')
+      .andWhere('l.duration_minutes IS NOT NULL')
+      .andWhere('l.scheduled_at < :endsAt', { endsAt })
+      .andWhere("(l.scheduled_at + (l.duration_minutes || ' minutes')::interval) > :startsAt", {
+        startsAt,
+      });
+
+    if (ignoreLessonId) {
+      qb.andWhere('l.id != :ignoreLessonId', { ignoreLessonId });
+    }
+
+    const clash = await qb.getOne();
+    if (clash) {
+      throw new BadRequestException('Booking conflicts with another lesson');
+    }
+  }
+
+  private resolveMonthWindow(month?: string) {
+    if (!month) {
+      const now = new Date();
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+      const monthEnd = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0),
+      );
+      return { monthStart, monthEnd };
+    }
+
+    const [yearText, monthText] = month.split('-');
+    const year = Number(yearText);
+    const monthNumber = Number(monthText);
+    if (
+      Number.isNaN(year) ||
+      Number.isNaN(monthNumber) ||
+      monthNumber < 1 ||
+      monthNumber > 12
+    ) {
+      throw new BadRequestException('Invalid month format. Use YYYY-MM');
+    }
+    const monthStart = new Date(Date.UTC(year, monthNumber - 1, 1, 0, 0, 0));
+    const monthEnd = new Date(Date.UTC(year, monthNumber, 1, 0, 0, 0));
+    return { monthStart, monthEnd };
+  }
+
+  private diffMinutes(startsAt: Date, endsAt: Date): number {
+    return Math.max(15, Math.round((endsAt.getTime() - startsAt.getTime()) / 60000));
   }
 
   private requireRole(user: AuthenticatedRequestUser, expectedRole: 'learner' | 'instructor') {

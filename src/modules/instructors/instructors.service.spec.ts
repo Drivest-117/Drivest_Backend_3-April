@@ -5,6 +5,7 @@ import { InstructorsService } from './instructors.service';
 import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
+import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 
 type MockRepo<T extends object> = {
   findOne: jest.Mock;
@@ -31,11 +32,13 @@ describe('InstructorsService', () => {
   let instructorsRepo: MockRepo<InstructorEntity>;
   let reviewsRepo: MockRepo<InstructorReviewEntity>;
   let lessonsRepo: MockRepo<LessonEntity>;
+  let availabilityRepo: MockRepo<InstructorAvailabilityEntity>;
 
   beforeEach(async () => {
     instructorsRepo = createMockRepo<InstructorEntity>();
     reviewsRepo = createMockRepo<InstructorReviewEntity>();
     lessonsRepo = createMockRepo<LessonEntity>();
+    availabilityRepo = createMockRepo<InstructorAvailabilityEntity>();
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -43,6 +46,7 @@ describe('InstructorsService', () => {
         { provide: getRepositoryToken(InstructorEntity), useValue: instructorsRepo },
         { provide: getRepositoryToken(InstructorReviewEntity), useValue: reviewsRepo },
         { provide: getRepositoryToken(LessonEntity), useValue: lessonsRepo },
+        { provide: getRepositoryToken(InstructorAvailabilityEntity), useValue: availabilityRepo },
       ],
     }).compile();
 

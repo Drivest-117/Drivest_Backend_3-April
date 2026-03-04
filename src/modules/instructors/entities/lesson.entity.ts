@@ -13,7 +13,7 @@ import { InstructorEntity } from './instructor.entity';
 import { User } from '../../../entities/user.entity';
 import { InstructorReviewEntity } from './instructor-review.entity';
 
-export type LessonStatus = 'planned' | 'completed' | 'cancelled';
+export type LessonStatus = 'planned' | 'requested' | 'accepted' | 'declined' | 'completed' | 'cancelled';
 
 @Entity({ name: 'lessons' })
 export class LessonEntity {
@@ -42,6 +42,12 @@ export class LessonEntity {
 
   @Column({ name: 'status', type: 'text', default: 'planned' })
   status: LessonStatus;
+
+  @Column({ name: 'availability_slot_id', type: 'uuid', nullable: true })
+  availabilitySlotId: string | null;
+
+  @Column({ name: 'learner_note', type: 'text', nullable: true })
+  learnerNote: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

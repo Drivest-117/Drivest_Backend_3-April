@@ -15,6 +15,7 @@ import { AuditLog } from '../entities/audit-log.entity';
 import { InstructorEntity } from '../modules/instructors/entities/instructor.entity';
 import { InstructorReviewEntity } from '../modules/instructors/entities/instructor-review.entity';
 import { LessonEntity } from '../modules/instructors/entities/lesson.entity';
+import { InstructorAvailabilityEntity } from '../modules/instructors/entities/instructor-availability.entity';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { LessonEntity } from '../modules/instructors/entities/lesson.entity';
           InstructorEntity,
           InstructorReviewEntity,
           LessonEntity,
+          InstructorAvailabilityEntity,
         ],
         synchronize: false,
         logging: false,

@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
 export class CreateLessonDto {
   @IsUUID()
@@ -13,4 +13,12 @@ export class CreateLessonDto {
   @Min(15)
   @Max(480)
   durationMinutes?: number;
+
+  @IsOptional()
+  @IsUUID()
+  availabilitySlotId?: string;
+
+  @IsOptional()
+  @IsString()
+  learnerNote?: string;
 }

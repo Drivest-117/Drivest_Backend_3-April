@@ -7,10 +7,19 @@ import { InstructorsService } from './instructors.service';
 import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
+import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { User } from '../../entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([InstructorEntity, InstructorReviewEntity, LessonEntity, User])],
+  imports: [
+    TypeOrmModule.forFeature([
+      InstructorEntity,
+      InstructorReviewEntity,
+      LessonEntity,
+      InstructorAvailabilityEntity,
+      User,
+    ]),
+  ],
   controllers: [InstructorsController, LessonsController, InstructorsAdminController],
   providers: [InstructorsService],
   exports: [InstructorsService],

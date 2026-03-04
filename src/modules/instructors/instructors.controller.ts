@@ -15,6 +15,8 @@ import { CreateInstructorProfileDto } from './dto/create-instructor-profile.dto'
 import { UpdateInstructorProfileDto } from './dto/update-instructor-profile.dto';
 import { ListInstructorsQueryDto } from './dto/list-instructors-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
+import { ListAvailabilityQueryDto } from './dto/list-availability-query.dto';
 
 @Controller('v1/instructors')
 export class InstructorsController {
@@ -42,6 +44,11 @@ export class InstructorsController {
     return this.instructorsService.getPublicProfile(id);
   }
 
+  @Get('public/:id/availability')
+  async publicAvailability(@Param('id') id: string, @Query() query: ListAvailabilityQueryDto) {
+    return this.instructorsService.getPublicAvailability(id, query.month);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post(':id/reviews')
   async createReview(
@@ -50,5 +57,32 @@ export class InstructorsController {
     @Body() dto: CreateReviewDto,
   ) {
     return this.instructorsService.createReview(req.user, instructorId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('availability/me')
+  async myAvailability(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Query() query: ListAvailabilityQueryDto,
+  ) {
+    return this.instructorsService.listMyAvailability(req.user, query.month);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('availability')
+  async createAvailability(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Body() dto: CreateAvailabilitySlotDto,
+  ) {
+    return this.instructorsService.createAvailabilitySlot(req.user, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('availability/:id/cancel')
+  async cancelAvailability(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Param('id') slotId: string,
+  ) {
+    return this.instructorsService.cancelAvailabilitySlot(req.user, slotId);
   }
 }
