@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   Post,
   Req,
   UseGuards,
@@ -30,27 +29,17 @@ export class EntitlementsController {
     return entitlements;
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('app')
-  async listForAppUser(
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-  ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.entService.userEntitlementsByAppUserId(appUserId);
+  async listForAppUser(@Req() req: any) {
+    return this.entService.userEntitlements(req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('app/select-centre')
-  async selectCentreForPractice(
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-    @Body() dto: SelectCentreDto,
-  ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.entService.selectCentreForPractice(appUserId, dto.centreId);
-  }
-
-  private readHeader(value: string | string[] | undefined): string {
-    if (Array.isArray(value)) {
-      return String(value[0] ?? '').trim();
-    }
-    return String(value ?? '').trim();
+  async selectCentreForPractice(@Req() req: any, @Body() dto: SelectCentreDto) {
+    return this.entService.selectCentreForPractice(req.user.userId, dto.centreId);
   }
 }

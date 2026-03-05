@@ -31,7 +31,7 @@ export class WebhooksService {
   }
 
   async handleRevenueCat(event: RevenueCatEventDto) {
-    const user = await this.resolveOrCreateAppUser(event.userId);
+    const user = await this.resolveRevenueCatUser(event.userId);
 
     const product = await this.productRepo.findOne({
       where: [{ iosProductId: event.productId }, { androidProductId: event.productId }],
@@ -79,46 +79,47 @@ export class WebhooksService {
       metadata: {
         transactionId: event.transactionId,
         productId: product.id,
-        appUserId: user.appUserId,
+        userId: user.id,
       },
     });
     return { success: true };
   }
 
-  private async resolveOrCreateAppUser(userIdRaw: string): Promise<User> {
-    const appUserId = String(userIdRaw ?? '').trim();
-    if (!appUserId) {
-      throw new UnauthorizedException('RevenueCat app user id is required');
+  private async resolveRevenueCatUser(userIdRaw: string): Promise<User> {
+    const externalUserId = String(userIdRaw ?? '').trim();
+    if (!externalUserId) {
+      throw new UnauthorizedException('RevenueCat user id is required');
     }
 
-    const byAppUserId = await this.userRepo.findOne({ where: { appUserId } });
-    if (byAppUserId) return byAppUserId;
-
-    if (this.looksLikeUuid(appUserId)) {
-      const byInternalId = await this.userRepo.findOne({ where: { id: appUserId } });
+    if (this.looksLikeUuid(externalUserId)) {
+      const byInternalId = await this.userRepo.findOne({ where: { id: externalUserId } });
       if (byInternalId) {
-        if (!byInternalId.appUserId) {
-          byInternalId.appUserId = appUserId;
-          return this.userRepo.save(byInternalId);
-        }
         return byInternalId;
       }
     }
 
-    const created = this.userRepo.create({
-      appUserId,
-      email: null,
-      phone: null,
-      name: 'Drivest User',
-      passwordHash: 'ANON_APP_USER',
-      role: 'USER',
-    });
-    return this.userRepo.save(created);
+    if (this.looksLikeEmail(externalUserId)) {
+      const byEmail = await this.userRepo
+        .createQueryBuilder('user')
+        .where('LOWER(user.email) = :email', { email: externalUserId.toLowerCase() })
+        .getOne();
+      if (byEmail) {
+        return byEmail;
+      }
+    }
+
+    throw new UnauthorizedException(
+      'RevenueCat user id does not match an existing account',
+    );
   }
 
   private looksLikeUuid(value: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       value.trim(),
     );
+  }
+
+  private looksLikeEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
   }
 }

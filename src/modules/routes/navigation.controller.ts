@@ -16,16 +16,10 @@ export class NavigationController {
     return this.routesService.getNearbyHazards(req.user.userId, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('app/hazards/nearby')
   async nearbyHazardsForAppUser(@Req() req: any, @Body() dto: NearbyHazardsDto) {
-    const appUserId = this.readHeader(req?.headers?.['x-app-user-id']);
-    return this.routesService.getNearbyHazardsByAppUserId(appUserId, dto);
-  }
-
-  private readHeader(value: string | string[] | undefined): string {
-    if (Array.isArray(value)) {
-      return String(value[0] ?? '').trim();
-    }
-    return String(value ?? '').trim();
+    return this.routesService.getNearbyHazardsForAppUser(req.user.userId, dto);
   }
 }

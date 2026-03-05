@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
@@ -37,11 +32,6 @@ export class EntitlementsService {
       .getMany();
   }
 
-  async userEntitlementsByAppUserId(appUserId: string) {
-    const user = await this.resolveOrCreateAppUser(appUserId);
-    return this.userEntitlements(user.id);
-  }
-
   async hasAccess(userId: string, centreId: string): Promise<boolean> {
     if (!this.entitlementsEnforced) {
       return true;
@@ -61,36 +51,8 @@ export class EntitlementsService {
     return Boolean(entitlement);
   }
 
-  async hasAccessByAppUserId(appUserId: string, centreId: string): Promise<boolean> {
-    const user = await this.resolveOrCreateAppUser(appUserId);
-    return this.hasAccess(user.id, centreId);
-  }
-
-  async resolveOrCreateAppUser(appUserIdRaw: string) {
-    const appUserId = this.normalizeAppUserId(appUserIdRaw);
-    if (!appUserId) {
-      throw new BadRequestException('x-app-user-id is required');
-    }
-
-    let user = await this.userRepo.findOne({ where: { appUserId } });
-    if (!user) {
-      user = this.userRepo.create({
-        appUserId,
-        email: null,
-        phone: null,
-        name: 'Drivest User',
-        passwordHash: 'ANON_APP_USER',
-        role: 'USER',
-      });
-      user = await this.userRepo.save(user);
-      return user;
-    }
-
-    return user;
-  }
-
-  async selectCentreForPractice(appUserIdRaw: string, centreIdOrSlug: string) {
-    const user = await this.resolveOrCreateAppUser(appUserIdRaw);
+  async selectCentreForPractice(userId: string, centreIdOrSlug: string) {
+    await this.ensureWhitelist(userId);
     const centre = await this.resolveCentre(centreIdOrSlug);
     if (!centre) {
       throw new NotFoundException('Test centre not found');
@@ -98,7 +60,7 @@ export class EntitlementsService {
 
     if (!this.entitlementsEnforced) {
       return {
-        appUserId: user.appUserId,
+        userId,
         selectedCentre: {
           id: centre.id,
           slug: centre.slug,
@@ -111,7 +73,7 @@ export class EntitlementsService {
 
     const activeGlobal = await this.entRepo
       .createQueryBuilder('ent')
-      .where('ent.userId = :userId', { userId: user.id })
+      .where('ent.userId = :userId', { userId })
       .andWhere('ent.scope = :scope', { scope: EntitlementScope.GLOBAL })
       .andWhere('ent.isActive = true')
       .andWhere('(ent.endsAt IS NULL OR ent.endsAt > :now)', { now: new Date() })
@@ -121,7 +83,7 @@ export class EntitlementsService {
     if (!activeGlobal) {
       const activeCentre = await this.entRepo
         .createQueryBuilder('ent')
-        .where('ent.userId = :userId', { userId: user.id })
+        .where('ent.userId = :userId', { userId })
         .andWhere('ent.scope = :scope', { scope: EntitlementScope.CENTRE })
         .andWhere('ent.centreId = :centreId', { centreId: centre.id })
         .andWhere('ent.isActive = true')
@@ -131,7 +93,7 @@ export class EntitlementsService {
 
       if (activeCentre) {
         return {
-          appUserId: user.appUserId,
+          userId,
           selectedCentre: {
             id: centre.id,
             slug: centre.slug,
@@ -151,13 +113,13 @@ export class EntitlementsService {
       .createQueryBuilder()
       .update(Entitlement)
       .set({ isActive: false })
-      .where('userId = :userId', { userId: user.id })
+      .where('userId = :userId', { userId })
       .andWhere('scope = :scope', { scope: EntitlementScope.CENTRE })
       .andWhere('sourcePurchaseId IS NULL')
       .execute();
 
     const selected = this.entRepo.create({
-      userId: user.id,
+      userId,
       scope: EntitlementScope.CENTRE,
       centreId: centre.id,
       startsAt: new Date(),
@@ -168,7 +130,7 @@ export class EntitlementsService {
     await this.entRepo.save(selected);
 
     return {
-      appUserId: user.appUserId,
+      userId,
       selectedCentre: {
         id: centre.id,
         slug: centre.slug,
@@ -177,11 +139,6 @@ export class EntitlementsService {
       entitlementId: selected.id,
       endsAt: selected.endsAt,
     };
-  }
-
-  private normalizeAppUserId(value: string | undefined | null): string {
-    if (!value) return '';
-    return String(value).trim();
   }
 
   private looksLikeUuid(value: string): boolean {

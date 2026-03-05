@@ -78,9 +78,8 @@ export class RoutesService {
     return route;
   }
 
-  async getRouteByAppUserId(appUserId: string, id: string) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId);
-    return this.getRoute(user.id, id);
+  async getRouteForAppUser(userId: string, id: string) {
+    return this.getRoute(userId, id);
   }
 
   async getRouteHazards(
@@ -106,13 +105,12 @@ export class RoutesService {
     });
   }
 
-  async getRouteHazardsByAppUserId(
-    appUserId: string,
+  async getRouteHazardsForAppUser(
+    userId: string,
     routeId: string,
     query?: RouteHazardsQueryDto,
   ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId);
-    return this.getRouteHazards(user.id, routeId, query, null);
+    return this.getRouteHazards(userId, routeId, query, null);
   }
 
   async getNearbyHazards(userId: string, dto: NearbyHazardsDto) {
@@ -156,17 +154,13 @@ export class RoutesService {
     });
   }
 
-  async getNearbyHazardsByAppUserId(appUserId: string, dto: NearbyHazardsDto) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId);
-    return this.getNearbyHazards(user.id, dto);
+  async getNearbyHazardsForAppUser(userId: string, dto: NearbyHazardsDto) {
+    return this.getNearbyHazards(userId, dto);
   }
 
-  async getCentreHazardsByAppUserId(appUserId: string, centreIdOrSlug: string) {
+  async getCentreHazardsPublic(centreIdOrSlug: string) {
     const centre = await this.resolveCentre(centreIdOrSlug);
     if (!centre) throw new NotFoundException('Test centre not found');
-
-    const allowed = await this.entService.hasAccessByAppUserId(appUserId, centre.id);
-    if (!allowed) throw new ForbiddenException('Entitlement required');
 
     const routes = await this.routesRepo.find({
       where: { centreId: centre.id, isActive: true },
@@ -183,19 +177,11 @@ export class RoutesService {
     return { hazards: this.toAppHazards(items) };
   }
 
-  async getRouteHazardsForBoundsByAppUserId(
-    appUserId: string,
-    query: BboxHazardsQuery,
-  ) {
+  async getRouteHazardsForBounds(query: BboxHazardsQuery) {
     const centreIdOrSlug = String(query.centreId ?? '').trim();
     if (centreIdOrSlug) {
       const centre = await this.resolveCentre(centreIdOrSlug);
       if (!centre) throw new NotFoundException('Test centre not found');
-
-      const allowed = await this.entService.hasAccessByAppUserId(appUserId, centre.id);
-      if (!allowed) throw new ForbiddenException('Entitlement required');
-    } else {
-      await this.entService.resolveOrCreateAppUser(appUserId);
     }
 
     const mappedTypes = this.toRoadHazardTypesFromPromptTypes(query.types);
@@ -259,9 +245,8 @@ export class RoutesService {
     return res.send(gpx);
   }
 
-  async downloadByAppUserId(appUserId: string, id: string, res: any) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId);
-    return this.download(user.id, id, res);
+  async downloadForAppUser(userId: string, id: string, res: any) {
+    return this.download(userId, id, res);
   }
 
   async startPractice(userId: string, routeId: string) {
@@ -280,9 +265,8 @@ export class RoutesService {
     return this.sessionRepo.save(session);
   }
 
-  async startPracticeByAppUserId(appUserId: string, routeId: string) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId);
-    return this.startPractice(user.id, routeId);
+  async startPracticeForAppUser(userId: string, routeId: string) {
+    return this.startPractice(userId, routeId);
   }
 
   async finishPractice(userId: string, routeId: string, dto: PracticeFinishDto) {
@@ -318,13 +302,12 @@ export class RoutesService {
     return session;
   }
 
-  async finishPracticeByAppUserId(
-    appUserId: string,
+  async finishPracticeForAppUser(
+    userId: string,
     routeId: string,
     dto: PracticeFinishDto,
   ) {
-    const user = await this.entService.resolveOrCreateAppUser(appUserId);
-    return this.finishPractice(user.id, routeId, dto);
+    return this.finishPractice(userId, routeId, dto);
   }
 
   private async resolveRouteHazards(

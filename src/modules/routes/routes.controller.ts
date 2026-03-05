@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   Param,
   Post,
   Query,
@@ -29,13 +28,11 @@ export class RoutesController {
     return this.routesService.getRoute(req.user.userId, id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('app/:id')
-  async getRouteForAppUser(
-    @Param('id') id: string,
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-  ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.routesService.getRouteByAppUserId(appUserId, id);
+  async getRouteForAppUser(@Req() req: any, @Param('id') id: string) {
+    return this.routesService.getRouteForAppUser(req.user.userId, id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -54,14 +51,15 @@ export class RoutesController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('app/:id/hazards')
   async getRouteHazardsForAppUser(
+    @Req() req: any,
     @Param('id') id: string,
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
     @Query() query: RouteHazardsQueryDto,
   ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.routesService.getRouteHazardsByAppUserId(appUserId, id, query);
+    return this.routesService.getRouteHazardsForAppUser(req.user.userId, id, query);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -71,14 +69,15 @@ export class RoutesController {
     return this.routesService.download(req.user.userId, id, res);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('app/:id/download')
   async downloadForAppUser(
+    @Req() req: any,
     @Param('id') id: string,
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
     @Res() res: Response,
   ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.routesService.downloadByAppUserId(appUserId, id, res);
+    return this.routesService.downloadForAppUser(req.user.userId, id, res);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -88,13 +87,11 @@ export class RoutesController {
     return this.routesService.startPractice(req.user.userId, id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('app/:id/practice/start')
-  async startForAppUser(
-    @Param('id') id: string,
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
-  ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.routesService.startPracticeByAppUserId(appUserId, id);
+  async startForAppUser(@Req() req: any, @Param('id') id: string) {
+    return this.routesService.startPracticeForAppUser(req.user.userId, id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -108,20 +105,14 @@ export class RoutesController {
     return this.routesService.finishPractice(req.user.userId, id, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('app/:id/practice/finish')
   async finishForAppUser(
+    @Req() req: any,
     @Param('id') id: string,
-    @Headers('x-app-user-id') appUserIdHeader: string | string[] | undefined,
     @Body() dto: PracticeFinishDto,
   ) {
-    const appUserId = this.readHeader(appUserIdHeader);
-    return this.routesService.finishPracticeByAppUserId(appUserId, id, dto);
-  }
-
-  private readHeader(value: string | string[] | undefined): string {
-    if (Array.isArray(value)) {
-      return String(value[0] ?? '').trim();
-    }
-    return String(value ?? '').trim();
+    return this.routesService.finishPracticeForAppUser(req.user.userId, id, dto);
   }
 }
