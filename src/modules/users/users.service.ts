@@ -42,12 +42,12 @@ export class UsersService {
     return this.findById(userId);
   }
 
-  async updatePushToken(userId: string, expoPushToken: string | null) {
-    await this.usersRepo.update(userId, { expoPushToken });
+  async updatePushToken(userId: string, pushToken: string | null) {
+    await this.usersRepo.update(userId, { pushToken });
     await this.auditRepo.save({
       userId,
       action: 'USER_PUSH_TOKEN_UPDATE',
-      metadata: { hasToken: Boolean(expoPushToken) },
+      metadata: { hasToken: Boolean(pushToken) },
     });
     return this.findById(userId);
   }

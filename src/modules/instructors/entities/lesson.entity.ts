@@ -12,6 +12,7 @@ import {
 import { InstructorEntity } from './instructor.entity';
 import { User } from '../../../entities/user.entity';
 import { InstructorReviewEntity } from './instructor-review.entity';
+import { DB_AWARE_TIMESTAMP_TYPE } from '../../../database/db-column-types';
 
 export type LessonStatus = 'planned' | 'requested' | 'accepted' | 'declined' | 'completed' | 'cancelled';
 
@@ -34,7 +35,7 @@ export class LessonEntity {
   @JoinColumn({ name: 'learner_user_id' })
   learnerUser: User;
 
-  @Column({ name: 'scheduled_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'scheduled_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   scheduledAt: Date | null;
 
   @Column({ name: 'duration_minutes', type: 'int', nullable: true })
@@ -49,13 +50,13 @@ export class LessonEntity {
   @Column({ name: 'learner_note', type: 'text', nullable: true })
   learnerNote: string | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: 'updated_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   deletedAt: Date | null;
 
   @OneToMany(() => InstructorReviewEntity, (review) => review.lesson)

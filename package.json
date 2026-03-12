@@ -6,6 +6,7 @@
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "build": "nest build",
+    "deploy:ec2": "bash ./scripts/deploy_ec2.sh",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint --ext .ts src",
     "test": "jest",

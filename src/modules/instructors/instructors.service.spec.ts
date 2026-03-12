@@ -7,6 +7,7 @@ import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { User } from '../../entities/user.entity';
 
 type MockRepo<T extends object> = {
   findOne: jest.Mock;
@@ -34,6 +35,7 @@ describe('InstructorsService', () => {
   let reviewsRepo: MockRepo<InstructorReviewEntity>;
   let lessonsRepo: MockRepo<LessonEntity>;
   let availabilityRepo: MockRepo<InstructorAvailabilityEntity>;
+  let usersRepo: MockRepo<User>;
   let notificationsService: { createForUser: jest.Mock };
 
   beforeEach(async () => {
@@ -41,11 +43,13 @@ describe('InstructorsService', () => {
     reviewsRepo = createMockRepo<InstructorReviewEntity>();
     lessonsRepo = createMockRepo<LessonEntity>();
     availabilityRepo = createMockRepo<InstructorAvailabilityEntity>();
+    usersRepo = createMockRepo<User>();
     notificationsService = { createForUser: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         InstructorsService,
+        { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: getRepositoryToken(InstructorEntity), useValue: instructorsRepo },
         { provide: getRepositoryToken(InstructorReviewEntity), useValue: reviewsRepo },
         { provide: getRepositoryToken(LessonEntity), useValue: lessonsRepo },

@@ -13,6 +13,7 @@ import {
 import { InstructorEntity } from './instructor.entity';
 import { User } from '../../../entities/user.entity';
 import { LessonEntity } from './lesson.entity';
+import { DB_AWARE_TIMESTAMP_TYPE } from '../../../database/db-column-types';
 
 export type InstructorReviewStatus = 'visible' | 'hidden' | 'removed';
 
@@ -53,12 +54,12 @@ export class InstructorReviewEntity {
   @Column({ name: 'status', type: 'text', default: 'visible' })
   status: InstructorReviewStatus;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: 'updated_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   deletedAt: Date | null;
 }

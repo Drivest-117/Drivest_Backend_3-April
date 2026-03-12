@@ -12,6 +12,7 @@ import {
 import { User } from '../../../entities/user.entity';
 import { InstructorReviewEntity } from './instructor-review.entity';
 import { LessonEntity } from './lesson.entity';
+import { DB_AWARE_TIMESTAMP_TYPE } from '../../../database/db-column-types';
 
 export type TransmissionType = 'manual' | 'automatic' | 'both';
 
@@ -72,19 +73,19 @@ export class InstructorEntity {
   @Column({ name: 'is_approved', type: 'boolean', default: false })
   isApproved: boolean;
 
-  @Column({ name: 'approved_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'approved_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   approvedAt: Date | null;
 
-  @Column({ name: 'suspended_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'suspended_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   suspendedAt: Date | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: 'updated_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   deletedAt: Date | null;
 
   @OneToMany(() => InstructorReviewEntity, (review) => review.instructor)

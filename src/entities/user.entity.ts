@@ -14,6 +14,7 @@ import { RouteStat } from './route-stat.entity';
 import { CashbackClaim } from './cashback-claim.entity';
 import { Track } from './track.entity';
 import { AuditLog } from './audit-log.entity';
+import { DB_AWARE_TIMESTAMP_TYPE } from '../database/db-column-types';
 
 @Entity({ name: 'users' })
 export class User {
@@ -35,34 +36,43 @@ export class User {
   @Column({ default: 'USER' })
   role: 'USER' | 'INSTRUCTOR' | 'ADMIN';
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   baseAcceptedAt?: Date | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   ageConfirmedAt?: Date | null;
 
   @Column({ type: 'varchar', nullable: true })
   analyticsChoice?: 'allow' | 'skip' | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   analyticsAt?: Date | null;
 
   @Column({ type: 'varchar', nullable: true })
   notificationsChoice?: 'enable' | 'skip' | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   notificationsAt?: Date | null;
 
+  @Column({ name: 'expoPushToken', type: 'varchar', nullable: true })
+  pushToken?: string | null;
+
   @Column({ type: 'varchar', nullable: true })
-  expoPushToken?: string | null;
+  passwordResetCodeHash?: string | null;
+
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
+  passwordResetCodeExpiresAt?: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  passwordResetFailedAttempts?: number;
 
   @Column({ type: 'varchar', nullable: true })
   locationChoice?: 'allow' | 'deny' | 'skip' | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   locationAt?: Date | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   safetyAcceptedAt?: Date | null;
 
   @CreateDateColumn()

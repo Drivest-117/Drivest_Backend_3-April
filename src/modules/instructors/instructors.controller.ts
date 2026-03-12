@@ -34,6 +34,12 @@ export class InstructorsController {
     return this.instructorsService.updateProfile(req.user, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  async myProfile(@Req() req: { user: { userId: string; role?: string } }) {
+    return this.instructorsService.getMyProfile(req.user);
+  }
+
   @Get('public')
   async listPublic(@Query() query: ListInstructorsQueryDto) {
     return this.instructorsService.listPublic(query);

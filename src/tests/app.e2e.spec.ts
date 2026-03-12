@@ -32,6 +32,8 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'testsecret';
 process.env.JWT_EXPIRES_IN = '1d';
 process.env.REVENUECAT_WEBHOOK_SECRET = 'revsecret';
+process.env.PASSWORD_RESET_EXPOSE_CODE = 'true';
+process.env.APP_ENTITLEMENTS_ENFORCED = 'true';
 jest.setTimeout(20000);
 
 describe('Route Master API (e2e)', () => {
@@ -205,5 +207,57 @@ describe('Route Master API (e2e)', () => {
 
     const purchases = await purchaseRepo.find({ where: { transactionId: 'tx123' } });
     expect(purchases).toHaveLength(1);
+  });
+
+  it('resets password through the v1 auth flow', async () => {
+    await request(app.getHttpServer())
+      .post('/v1/auth/sign-up')
+      .send({ email: 'reset@example.com', password: 'password', name: 'Reset User' })
+      .expect(201);
+
+    const forgot = await request(app.getHttpServer())
+      .post('/v1/auth/forgot-password')
+      .send({ email: 'reset@example.com' })
+      .expect(200);
+
+    const code = forgot.body.data?.devCode;
+    expect(code).toHaveLength(6);
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/reset-password')
+      .send({
+        email: 'reset@example.com',
+        code,
+        newPassword: 'new-password',
+      })
+      .expect(200);
+
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/sign-in')
+      .send({ email: 'reset@example.com', password: 'new-password' })
+      .expect(200);
+    expect(login.body.data.accessToken).toBeDefined();
+  });
+
+  it('accepts both modern and legacy push token payloads', async () => {
+    const register = await request(app.getHttpServer())
+      .post('/v1/auth/sign-up')
+      .send({ email: 'push@example.com', password: 'password', name: 'Push User' })
+      .expect(201);
+    const token = register.body.data.accessToken;
+
+    const modern = await request(app.getHttpServer())
+      .patch('/v1/me/push-token')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ pushToken: 'ExponentPushToken[modern-token]' })
+      .expect(200);
+    expect(modern.body.data.pushToken).toBe('ExponentPushToken[modern-token]');
+
+    const legacy = await request(app.getHttpServer())
+      .patch('/me/push-token')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ expoPushToken: 'ExponentPushToken[legacy-token]' })
+      .expect(200);
+    expect(legacy.body.data.pushToken).toBe('ExponentPushToken[legacy-token]');
   });
 });

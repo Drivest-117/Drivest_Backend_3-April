@@ -21,35 +21,38 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Get('me')
+  @Get(['me', 'v1/me'])
   async me(@Req() req: any) {
     return this.usersService.findById(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Patch('me')
+  @Patch(['me', 'v1/me'])
   async update(@Req() req: any, @Body() dto: UpdateMeDto) {
     return this.usersService.updateMe(req.user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Patch('me/consents')
+  @Patch(['me/consents', 'v1/me/consents'])
   async updateConsents(@Req() req: any, @Body() dto: UpdateConsentsDto) {
     return this.usersService.updateConsents(req.user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Patch('me/push-token')
+  @Patch(['me/push-token', 'v1/me/push-token'])
   async updatePushToken(@Req() req: any, @Body() dto: UpdatePushTokenDto) {
-    return this.usersService.updatePushToken(req.user.userId, dto.expoPushToken ?? null);
+    return this.usersService.updatePushToken(
+      req.user.userId,
+      dto.pushToken ?? dto.expoPushToken ?? null,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Delete('me')
+  @Delete(['me', 'v1/me'])
   async delete(@Req() req: any) {
     return this.usersService.softDelete(req.user.userId);
   }

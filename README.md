@@ -54,12 +54,15 @@ Node.js 20 + NestJS API for the Route Master mobile app. Implements driving test
 
 ## API Overview
 - `GET /health`
-- Auth: `POST /auth/register`, `POST /auth/login`, `GET /me`, `PATCH /me`, `DELETE /me`
+- Auth: `POST /auth/register`, `POST /auth/login`, `POST /v1/auth/sign-up`, `POST /v1/auth/sign-in`, `POST /v1/auth/forgot-password`, `POST /v1/auth/reset-password`
+- Account: `GET /me`, `GET /v1/me`, `PATCH /me`, `PATCH /v1/me`, `PATCH /me/consents`, `PATCH /v1/me/consents`, `PATCH /me/push-token`, `PATCH /v1/me/push-token`, `DELETE /me`, `DELETE /v1/me`
 - Centres: `GET /centres?query=&near=lat,lng&radiusKm=&page=&limit=`, `GET /centres/:id`, `GET /centres/:id/routes`
 - Routes (auth + entitlement): `GET /routes/:id`, `GET /routes/:id/download`, `POST /routes/:id/practice/start`, `POST /routes/:id/practice/finish`
 - Entitlements: `GET /entitlements`
 - Cashback: `POST /cashback/start`, `POST /cashback/submit`, `GET /cashback/status`
 - Webhooks: `POST /webhooks/revenuecat`
+- Parking: `GET /v1/parking/search`, `GET /v1/parking/councils`, `GET /v1/parking/spot/:id`
+- Notifications: `GET /v1/notifications/my`, `PATCH /v1/notifications/:id/read`, `POST /v1/notifications/read-all`
 
 ## Curl Examples
 ```bash
@@ -84,28 +87,13 @@ curl -X POST http://localhost:3000/cashback/start -H "Authorization: Bearer $TOK
 - Redis is available if you want to add caching/rate limits later (container included but not required).
 - When running the API outside docker against the dockerized Postgres, change `DATABASE_URL` host to `localhost`.\n
 
-## CI/CD Deployment
+## EC2 Deployment
 
-The backend includes automated CI/CD deployment to Google Cloud Platform using GitHub Actions.
+The backend now includes an EC2-oriented deployment path:
 
-### Setup
-1. Follow the detailed setup guide in [`CI-CD-SETUP.md`](./CI-CD-SETUP.md)
-2. Create GCP service account with appropriate permissions
-3. Add `GCP_SA_KEY` secret to GitHub repository
-4. Ensure your GCP VM has Node.js, PM2, and PostgreSQL client installed
+- local deploy script: [`scripts/deploy_ec2.sh`](./scripts/deploy_ec2.sh)
+- PM2 runtime config: [`ecosystem.config.cjs`](./ecosystem.config.cjs)
+- GitHub Actions workflow: [`.github/workflows/deploy-ec2.yml`](./.github/workflows/deploy-ec2.yml)
+- setup guide: [`EC2-DEPLOY.md`](./EC2-DEPLOY.md)
 
-### How It Works
-- **Trigger**: Push to `main` branch affecting `backend/` directory
-- **Process**: Build → Test → Deploy to GCP VM
-- **Deployment**: Automatic dependency installation, database migration, and service restart
-
-### Monitoring
-```bash
-# Check deployment status
-pm2 status
-pm2 logs routemaster-backend
-
-# Test deployment
-curl https://your-vm-ip/docs
-```
-# CI/CD Pipeline Test
+The deploy flow is: install dependencies, build, run migrations, then `pm2 startOrReload ecosystem.config.cjs`.

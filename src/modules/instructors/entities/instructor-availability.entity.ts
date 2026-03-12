@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { InstructorEntity } from './instructor.entity';
 import { LessonEntity } from './lesson.entity';
+import { DB_AWARE_TIMESTAMP_TYPE } from '../../../database/db-column-types';
 
 export type InstructorAvailabilityStatus = 'open' | 'booked' | 'cancelled';
 
@@ -26,10 +27,10 @@ export class InstructorAvailabilityEntity {
   @JoinColumn({ name: 'instructor_id' })
   instructor: InstructorEntity;
 
-  @Column({ name: 'starts_at', type: 'timestamptz' })
+  @Column({ name: 'starts_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   startsAt: Date;
 
-  @Column({ name: 'ends_at', type: 'timestamptz' })
+  @Column({ name: 'ends_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   endsAt: Date;
 
   @Column({ name: 'status', type: 'text', default: 'open' })
@@ -42,12 +43,12 @@ export class InstructorAvailabilityEntity {
   @JoinColumn({ name: 'booked_lesson_id' })
   bookedLesson: LessonEntity | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: 'updated_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   deletedAt: Date | null;
 }

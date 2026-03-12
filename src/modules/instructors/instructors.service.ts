@@ -10,6 +10,7 @@ import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
+import { User } from '../../entities/user.entity';
 import { CreateInstructorProfileDto } from './dto/create-instructor-profile.dto';
 import { UpdateInstructorProfileDto } from './dto/update-instructor-profile.dto';
 import { ListInstructorsQueryDto } from './dto/list-instructors-query.dto';
@@ -23,6 +24,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class InstructorsService {
   constructor(
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
     @InjectRepository(InstructorEntity)
     private readonly instructorsRepo: Repository<InstructorEntity>,
     @InjectRepository(InstructorReviewEntity)
@@ -54,7 +57,7 @@ export class InstructorsService {
       hourlyRatePence: dto.hourlyRatePence ?? null,
       bio: dto.bio ?? null,
       languages: dto.languages ?? null,
-      coveragePostcodes: dto.coveragePostcodes?.map((pc) => pc.toUpperCase()) ?? null,
+      coveragePostcodes: this.normaliseCoverageAreas(dto.coveragePostcodes),
       homeLocation: this.toPoint(dto.homeLat, dto.homeLng),
       isApproved: false,
       approvedAt: null,
@@ -86,7 +89,9 @@ export class InstructorsService {
       bio: dto.bio ?? profile.bio,
       languages: dto.languages ?? profile.languages,
       coveragePostcodes:
-        dto.coveragePostcodes?.map((pc) => pc.toUpperCase()) ?? profile.coveragePostcodes,
+        dto.coveragePostcodes !== undefined
+          ? this.normaliseCoverageAreas(dto.coveragePostcodes)
+          : profile.coveragePostcodes,
     });
 
     if (dto.homeLat !== undefined || dto.homeLng !== undefined) {
@@ -101,6 +106,33 @@ export class InstructorsService {
     }
 
     return this.instructorsRepo.save(profile);
+  }
+
+  async getMyProfile(user: AuthenticatedRequestUser) {
+    this.requireRole(user, 'instructor');
+
+    const profile = await this.instructorsRepo.findOne({ where: { userId: user.userId } });
+    if (!profile || profile.deletedAt) {
+      throw new NotFoundException('Instructor profile not found');
+    }
+
+    return {
+      id: profile.id,
+      fullName: profile.fullName,
+      email: profile.email,
+      phone: profile.phone,
+      adiNumber: profile.adiNumber,
+      profilePhotoUrl: profile.profilePhotoUrl,
+      yearsExperience: profile.yearsExperience,
+      transmissionType: profile.transmissionType,
+      hourlyRatePence: profile.hourlyRatePence,
+      bio: profile.bio,
+      languages: profile.languages ?? [],
+      coveragePostcodes: profile.coveragePostcodes ?? [],
+      isApproved: profile.isApproved,
+      approvedAt: profile.approvedAt,
+      suspendedAt: profile.suspendedAt,
+    };
   }
 
   async listPublic(query: ListInstructorsQueryDto) {
@@ -133,13 +165,14 @@ export class InstructorsService {
       );
     }
 
-    if (query.postcode) {
+    const locationQuery = (query.location ?? query.postcode ?? query.city)?.trim();
+    if (locationQuery) {
       qb.andWhere(
         `EXISTS (
           SELECT 1 FROM unnest(i.coverage_postcodes) AS pc
-          WHERE upper(pc) = upper(:postcode)
+          WHERE lower(pc) LIKE lower(:locationLike)
         )`,
-        { postcode: query.postcode },
+        { locationLike: `%${locationQuery}%` },
       );
     }
 
@@ -281,7 +314,10 @@ export class InstructorsService {
 
   async listMyAvailability(user: AuthenticatedRequestUser, month?: string) {
     this.requireRole(user, 'instructor');
-    const instructor = await this.getInstructorForUser(user.userId);
+    const instructor = await this.findInstructorForUser(user.userId);
+    if (!instructor) {
+      return [];
+    }
     const { monthStart, monthEnd } = this.resolveMonthWindow(month);
 
     const slots = await this.availabilityRepo
@@ -304,7 +340,7 @@ export class InstructorsService {
 
   async createAvailabilitySlot(user: AuthenticatedRequestUser, dto: CreateAvailabilitySlotDto) {
     this.requireRole(user, 'instructor');
-    const instructor = await this.getInstructorForUser(user.userId);
+    const instructor = await this.getOrBootstrapInstructorForUser(user.userId);
 
     const startsAt = new Date(dto.startsAt);
     const endsAt = new Date(dto.endsAt);
@@ -527,35 +563,89 @@ export class InstructorsService {
     }
 
     if (role === 'instructor') {
-      const instructor = await this.getInstructorForUser(user.userId);
-      const lessons = await this.lessonsRepo.find({
-        where: { instructorId: instructor.id, deletedAt: IsNull() },
-        order: { scheduledAt: 'ASC', createdAt: 'DESC' },
-      });
-      return lessons.map((lesson) => ({
-        id: lesson.id,
-        instructorId: lesson.instructorId,
-        learnerUserId: lesson.learnerUserId,
-        scheduledAt: lesson.scheduledAt,
-        durationMinutes: lesson.durationMinutes,
-        status: lesson.status,
-        availabilitySlotId: lesson.availabilitySlotId,
+      const instructor = await this.findInstructorForUser(user.userId);
+      if (!instructor) {
+        return [];
+      }
+      const rows = await this.lessonsRepo
+        .createQueryBuilder('l')
+        .leftJoin('users', 'learner', 'learner.id = l.learner_user_id')
+        .where('l.instructor_id = :instructorId', { instructorId: instructor.id })
+        .andWhere('l.deleted_at IS NULL')
+        .select('l.id', 'id')
+        .addSelect('l.instructor_id', 'instructor_id')
+        .addSelect('l.learner_user_id', 'learner_user_id')
+        .addSelect('l.scheduled_at', 'scheduled_at')
+        .addSelect('l.duration_minutes', 'duration_minutes')
+        .addSelect('l.status', 'status')
+        .addSelect('l.availability_slot_id', 'availability_slot_id')
+        .addSelect('learner.name', 'learner_name')
+        .orderBy('l.scheduled_at', 'ASC', 'NULLS LAST')
+        .addOrderBy('l.created_at', 'DESC')
+        .getRawMany<{
+          id: string;
+          instructor_id: string;
+          learner_user_id: string;
+          scheduled_at: Date | null;
+          duration_minutes: number | null;
+          status: LessonEntity['status'];
+          availability_slot_id: string | null;
+          learner_name: string | null;
+        }>();
+
+      return rows.map((row) => ({
+        id: row.id,
+        instructorId: row.instructor_id,
+        learnerUserId: row.learner_user_id,
+        scheduledAt: row.scheduled_at,
+        durationMinutes: row.duration_minutes !== null ? Number(row.duration_minutes) : null,
+        status: row.status,
+        availabilitySlotId: row.availability_slot_id,
+        learnerName: row.learner_name ?? 'Learner',
+        instructorName: instructor.fullName,
       }));
     }
 
     if (role === 'learner') {
-      const lessons = await this.lessonsRepo.find({
-        where: { learnerUserId: user.userId, deletedAt: IsNull() },
-        order: { scheduledAt: 'ASC', createdAt: 'DESC' },
-      });
-      return lessons.map((lesson) => ({
-        id: lesson.id,
-        instructorId: lesson.instructorId,
-        learnerUserId: lesson.learnerUserId,
-        scheduledAt: lesson.scheduledAt,
-        durationMinutes: lesson.durationMinutes,
-        status: lesson.status,
-        availabilitySlotId: lesson.availabilitySlotId,
+      const rows = await this.lessonsRepo
+        .createQueryBuilder('l')
+        .leftJoin('instructors', 'i', 'i.id = l.instructor_id')
+        .leftJoin('users', 'learner', 'learner.id = l.learner_user_id')
+        .where('l.learner_user_id = :learnerUserId', { learnerUserId: user.userId })
+        .andWhere('l.deleted_at IS NULL')
+        .select('l.id', 'id')
+        .addSelect('l.instructor_id', 'instructor_id')
+        .addSelect('l.learner_user_id', 'learner_user_id')
+        .addSelect('l.scheduled_at', 'scheduled_at')
+        .addSelect('l.duration_minutes', 'duration_minutes')
+        .addSelect('l.status', 'status')
+        .addSelect('l.availability_slot_id', 'availability_slot_id')
+        .addSelect('i.full_name', 'instructor_name')
+        .addSelect('learner.name', 'learner_name')
+        .orderBy('l.scheduled_at', 'ASC', 'NULLS LAST')
+        .addOrderBy('l.created_at', 'DESC')
+        .getRawMany<{
+          id: string;
+          instructor_id: string;
+          learner_user_id: string;
+          scheduled_at: Date | null;
+          duration_minutes: number | null;
+          status: LessonEntity['status'];
+          availability_slot_id: string | null;
+          instructor_name: string | null;
+          learner_name: string | null;
+        }>();
+
+      return rows.map((row) => ({
+        id: row.id,
+        instructorId: row.instructor_id,
+        learnerUserId: row.learner_user_id,
+        scheduledAt: row.scheduled_at,
+        durationMinutes: row.duration_minutes !== null ? Number(row.duration_minutes) : null,
+        status: row.status,
+        availabilitySlotId: row.availability_slot_id,
+        instructorName: row.instructor_name ?? 'Instructor',
+        learnerName: row.learner_name ?? null,
       }));
     }
 
@@ -725,11 +815,91 @@ export class InstructorsService {
   }
 
   private async getInstructorForUser(userId: string) {
-    const instructor = await this.instructorsRepo.findOne({ where: { userId } });
-    if (!instructor || instructor.deletedAt) {
+    const instructor = await this.findInstructorForUser(userId);
+    if (!instructor) {
       throw new NotFoundException('Instructor profile not found');
     }
     return instructor;
+  }
+
+  private async findInstructorForUser(userId: string) {
+    const instructor = await this.instructorsRepo.findOne({ where: { userId } });
+    if (!instructor || instructor.deletedAt) {
+      return null;
+    }
+    return instructor;
+  }
+
+  // Let instructor-role users publish a first slot without being blocked on the full profile form.
+  private async getOrBootstrapInstructorForUser(userId: string) {
+    const existing = await this.findInstructorForUser(userId);
+    if (existing) {
+      return existing;
+    }
+
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user || user.deletedAt) {
+      throw new NotFoundException('Instructor profile not found');
+    }
+
+    const fallbackEmail = `pending+${userId.replace(/-/g, '').slice(0, 12)}@drivest.invalid`;
+    const profile = this.instructorsRepo.create({
+      userId,
+      fullName: this.defaultInstructorName(user),
+      email: user.email?.trim() || fallbackEmail,
+      phone: user.phone ?? null,
+      adiNumber: this.temporaryAdiNumber(userId),
+      profilePhotoUrl: null,
+      yearsExperience: null,
+      transmissionType: 'both',
+      hourlyRatePence: null,
+      bio: null,
+      languages: null,
+      coveragePostcodes: null,
+      homeLocation: null,
+      isApproved: false,
+      approvedAt: null,
+      suspendedAt: null,
+    });
+
+    return this.instructorsRepo.save(profile);
+  }
+
+  private defaultInstructorName(user: User): string {
+    const name = user.name?.trim();
+    if (name) {
+      return name;
+    }
+    const email = user.email?.trim();
+    if (email) {
+      const localPart = email.split('@')[0]?.trim();
+      if (localPart) {
+        return localPart;
+      }
+    }
+    return 'Instructor';
+  }
+
+  private temporaryAdiNumber(userId: string): string {
+    const compact = userId.replace(/-/g, '').toUpperCase();
+    return `TMP${compact.slice(0, 12)}`;
+  }
+
+  private normaliseCoverageAreas(raw?: string[] | null): string[] | null {
+    if (!raw) {
+      return null;
+    }
+
+    const cleaned = raw
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0)
+      .map((value) => value.toUpperCase());
+
+    if (cleaned.length === 0) {
+      return null;
+    }
+
+    return Array.from(new Set(cleaned));
   }
 
   private validateSlotWindow(startsAt: Date, endsAt: Date) {

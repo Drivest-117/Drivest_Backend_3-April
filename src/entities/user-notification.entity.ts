@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.entity';
+import { DB_AWARE_JSON_TYPE, DB_AWARE_TIMESTAMP_TYPE } from '../database/db-column-types';
 
 export type UserNotificationCategory =
   | 'booking_request'
@@ -41,15 +42,15 @@ export class UserNotification {
   @Column({ name: 'body', type: 'text' })
   body: string;
 
-  @Column({ name: 'payload', type: 'jsonb', nullable: true })
+  @Column({ name: 'payload', type: DB_AWARE_JSON_TYPE, nullable: true } as any)
   payload: Record<string, unknown> | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 
-  @Column({ name: 'read_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'read_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   readAt: Date | null;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   deletedAt: Date | null;
 }

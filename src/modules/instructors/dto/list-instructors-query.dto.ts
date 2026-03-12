@@ -28,6 +28,14 @@ export class ListInstructorsQueryDto {
   postcode?: string;
 
   @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
   @IsIn(['manual', 'automatic', 'both'])
   transmissionType?: 'manual' | 'automatic' | 'both';
 
