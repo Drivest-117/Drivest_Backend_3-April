@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
 import { User } from '../../entities/user.entity';
 import { TestCentre } from '../../entities/test-centre.entity';
+import { AccessOverridesService } from '../access-overrides/access-overrides.service';
 
 @Injectable()
 export class EntitlementsService {
@@ -19,9 +20,11 @@ export class EntitlementsService {
     private userRepo: Repository<User>,
     @InjectRepository(TestCentre)
     private centreRepo: Repository<TestCentre>,
+    private readonly accessOverrides: AccessOverridesService,
   ) {}
 
   async userEntitlements(userId: string) {
+    await this.accessOverrides.applyToUserId(userId);
     await this.ensureWhitelist(userId);
     return this.entRepo
       .createQueryBuilder('ent')
@@ -33,6 +36,7 @@ export class EntitlementsService {
   }
 
   async hasAccess(userId: string, centreId: string): Promise<boolean> {
+    await this.accessOverrides.applyToUserId(userId);
     if (!this.entitlementsEnforced) {
       return true;
     }
@@ -52,6 +56,7 @@ export class EntitlementsService {
   }
 
   async selectCentreForPractice(userId: string, centreIdOrSlug: string) {
+    await this.accessOverrides.applyToUserId(userId);
     await this.ensureWhitelist(userId);
     const centre = await this.resolveCentre(centreIdOrSlug);
     if (!centre) {

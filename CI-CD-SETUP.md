@@ -90,7 +90,7 @@ Ensure your Cloud SQL PostgreSQL instance is running and accessible from the VM.
 
 ## How It Works
 
-When you push changes to the `backend/` directory on the `main` branch:
+When you push changes to this backend codebase (or `drivestBackend/` in the parent workspace):
 
 1. **Build & Test**: The workflow builds and tests your backend
 2. **Deploy**: Copies files to your GCP VM via SCP

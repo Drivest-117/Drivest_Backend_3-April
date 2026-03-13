@@ -11,6 +11,7 @@ import { AuditLog } from '../../entities/audit-log.entity';
 import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { AccessOverridesService } from '../access-overrides/access-overrides.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
     @InjectRepository(Entitlement) private entitlementRepo: Repository<Entitlement>,
     private jwtService: JwtService,
+    private accessOverrides: AccessOverridesService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -39,6 +41,7 @@ export class AuthService {
       role,
     });
     await this.usersRepo.save(user);
+    await this.accessOverrides.applyToUser(user);
     await this.ensureWhitelistedEntitlement(user);
     await this.auditRepo.save({
       userId: user.id,
@@ -61,6 +64,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.email, dto.password);
+    await this.accessOverrides.applyToUser(user);
     await this.ensureWhitelistedEntitlement(user);
     return this.buildToken(user);
   }
@@ -167,7 +171,7 @@ export class AuthService {
   private buildToken(user: User) {
     const payload = { sub: user.id, email: user.email, role: user.role || 'USER' };
     const accessToken = this.jwtService.sign(payload);
-    return { accessToken };
+    return { accessToken, role: user.role || 'USER' };
   }
 
   private generateResetCode(): string {

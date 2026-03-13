@@ -5,9 +5,13 @@ import { User } from '../../entities/user.entity';
 import { TestCentre } from '../../entities/test-centre.entity';
 import { EntitlementsService } from './entitlements.service';
 import { EntitlementsController } from './entitlements.controller';
+import { AccessOverridesModule } from '../access-overrides/access-overrides.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Entitlement, User, TestCentre])],
+  imports: [
+    TypeOrmModule.forFeature([Entitlement, User, TestCentre]),
+    AccessOverridesModule,
+  ],
   providers: [EntitlementsService],
   controllers: [EntitlementsController],
   exports: [EntitlementsService],

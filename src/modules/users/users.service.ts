@@ -6,18 +6,20 @@ import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateConsentsDto } from './dto/update-consents.dto';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { v4 as uuid } from 'uuid';
+import { AccessOverridesService } from '../access-overrides/access-overrides.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
+    private readonly accessOverrides: AccessOverridesService,
   ) {}
 
   async findById(id: string): Promise<User> {
     const user = await this.usersRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return this.accessOverrides.applyToUser(user);
   }
 
   async updateMe(userId: string, dto: UpdateMeDto) {

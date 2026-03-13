@@ -11,12 +11,13 @@ import { EntitlementsModule } from '../modules/entitlements/entitlements.module'
 import { CashbackModule } from '../modules/cashback/cashback.module';
 import { WebhooksModule } from '../modules/webhooks/webhooks.module';
 import { HealthModule } from '../modules/health/health.module';
+import { AdminModule } from '../modules/admin/admin.module';
 import { User } from '../entities/user.entity';
 import { TestCentre } from '../entities/test-centre.entity';
 import { Route, RouteDifficulty } from '../entities/route.entity';
 import { Product, ProductPeriod, ProductType } from '../entities/product.entity';
 import { Purchase } from '../entities/purchase.entity';
-import { Entitlement } from '../entities/entitlement.entity';
+import { Entitlement, EntitlementScope } from '../entities/entitlement.entity';
 import { PracticeSession } from '../entities/practice-session.entity';
 import { RouteStat } from '../entities/route-stat.entity';
 import { CashbackClaim } from '../entities/cashback-claim.entity';
@@ -27,6 +28,7 @@ import { HttpExceptionFilter } from '../common/http-exception.filter';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createHmac } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'testsecret';
@@ -44,6 +46,8 @@ describe('Route Master API (e2e)', () => {
   let routeRepo: Repository<Route>;
   let productRepo: Repository<Product>;
   let purchaseRepo: Repository<Purchase>;
+  let entitlementRepo: Repository<Entitlement>;
+  let jwtService: JwtService;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -76,6 +80,7 @@ describe('Route Master API (e2e)', () => {
         CashbackModule,
         WebhooksModule,
         HealthModule,
+        AdminModule,
       ],
     }).compile();
 
@@ -90,6 +95,8 @@ describe('Route Master API (e2e)', () => {
     routeRepo = module.get<Repository<Route>>(getRepositoryToken(Route));
     productRepo = module.get<Repository<Product>>(getRepositoryToken(Product));
     purchaseRepo = module.get<Repository<Purchase>>(getRepositoryToken(Purchase));
+    entitlementRepo = module.get<Repository<Entitlement>>(getRepositoryToken(Entitlement));
+    jwtService = module.get<JwtService>(JwtService);
   });
 
   afterAll(async () => {
@@ -144,6 +151,87 @@ describe('Route Master API (e2e)', () => {
       .get(`/routes/${route.id}/download`)
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
+  });
+
+  it('grants admin access to ferror@drivest.uk during auth', async () => {
+    const register = await request(app.getHttpServer())
+      .post('/v1/auth/sign-up')
+      .send({ email: 'ferror@drivest.uk', password: 'password', name: 'Ferris Admin' })
+      .expect(201);
+
+    expect(register.body.data.accessToken).toBeDefined();
+    expect(register.body.data.role).toBe('ADMIN');
+
+    const me = await request(app.getHttpServer())
+      .get('/v1/me')
+      .set('Authorization', `Bearer ${register.body.data.accessToken}`)
+      .expect(200);
+
+    expect(me.body.data.role).toBe('ADMIN');
+  });
+
+  it('resolves admin access for ferror@drivest.uk from a stale token', async () => {
+    const user = await userRepo.save({
+      email: 'ferror@drivest.uk',
+      phone: null,
+      name: 'Ferris Admin',
+      passwordHash: 'hash',
+      role: 'USER',
+    });
+    const staleToken = jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: 'USER',
+    });
+
+    await request(app.getHttpServer())
+      .get('/admin/stats')
+      .set('Authorization', `Bearer ${staleToken}`)
+      .expect(200);
+
+    const refreshedUser = await userRepo.findOne({ where: { id: user.id } });
+    expect(refreshedUser?.role).toBe('ADMIN');
+  });
+
+  it('grants privileged learner route access to afaanmati@gmail.com', async () => {
+    const register = await request(app.getHttpServer())
+      .post('/v1/auth/sign-up')
+      .send({ email: 'afaanmati@gmail.com', password: 'password', name: 'Afaan Mati' })
+      .expect(201);
+    const token = register.body.data.accessToken;
+
+    const centre = await centreRepo.save({
+      name: 'Privileged Centre',
+      address: 'addr',
+      postcode: 'pc',
+      city: 'city',
+      country: 'UK',
+      lat: 0,
+      lng: 0,
+      geo: 'POINT(0 0)' as any,
+    });
+    const route = await routeRepo.save({
+      centreId: centre.id,
+      name: 'R2',
+      distanceM: 1000,
+      durationEstS: 600,
+      difficulty: RouteDifficulty.EASY,
+      polyline: 'abc',
+      bbox: {},
+      version: 1,
+      isActive: true,
+    });
+
+    await request(app.getHttpServer())
+      .get(`/routes/${route.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const user = await userRepo.findOne({ where: { email: 'afaanmati@gmail.com' } });
+    expect(user).toBeDefined();
+
+    const entitlements = await entitlementRepo.find({ where: { userId: user!.id } });
+    expect(entitlements.some((ent) => ent.scope === EntitlementScope.GLOBAL && ent.isActive)).toBe(true);
   });
 
   it('enforces cashback once per lifetime', async () => {

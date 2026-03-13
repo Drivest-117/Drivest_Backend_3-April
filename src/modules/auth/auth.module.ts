@@ -11,11 +11,13 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { Entitlement } from '../../entities/entitlement.entity';
+import { AccessOverridesModule } from '../access-overrides/access-overrides.module';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
+    AccessOverridesModule,
     TypeOrmModule.forFeature([User, AuditLog, Entitlement]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -4,40 +4,40 @@
 This backend subsystem enriches navigation with OSM-derived road hazards and exposes them through existing route/navigation APIs, with CRS-safe spatial queries, route-relative ordering, caching, stale detection, and recompute controls.
 
 ## Main Modules
-1. `backend/src/modules/routes/road-hazard.service.ts`
+1. `src/modules/routes/road-hazard.service.ts`
 - Core hazard engine.
 - Builds route-corridor hazards (`road_hazards_v1` payload).
 - Builds live nearby hazards (optionally route-relative).
 - Handles SRID resolution, geometry transforms, dedup, mapping rules, confidence/priority, caching.
 
-2. `backend/src/modules/routes/routes.service.ts`
+2. `src/modules/routes/routes.service.ts`
 - Orchestrates route hazard retrieval and persistence.
 - Entitlement checks.
 - Stale detection and lazy recompute.
 - `refresh=1` handling with role guard behavior.
 
-3. `backend/src/modules/routes/routes.controller.ts`
+3. `src/modules/routes/routes.controller.ts`
 - `GET /routes/:id/hazards` (JWT protected).
 - Passes query params and requester role to service.
 
-4. `backend/src/modules/routes/navigation.controller.ts`
+4. `src/modules/routes/navigation.controller.ts`
 - `POST /navigation/hazards/nearby` (JWT protected).
 
-5. `backend/src/modules/routes/dto/route-hazards-query.dto.ts`
+5. `src/modules/routes/dto/route-hazards-query.dto.ts`
 - Query DTO for route hazards endpoint:
   - `refresh?: boolean`
   - `corridorWidthM?: number`
   - `limit?: number`
   - `types?: RoadHazardType[]`
 
-6. `backend/src/modules/routes/dto/nearby-hazards.dto.ts`
+6. `src/modules/routes/dto/nearby-hazards.dto.ts`
 - DTO for nearby endpoint:
   - `routeId?`, `aheadOnly?`, `aheadDistanceM?`, `backtrackToleranceM?`, etc.
 
 7. Seed/Admin integration
-- `backend/src/seed/seed.ts`
-- `backend/src/seed/backfill-road-hazards.ts`
-- `backend/src/modules/admin/admin.service.ts`
+- `src/seed/seed.ts`
+- `src/seed/backfill-road-hazards.ts`
+- `src/modules/admin/admin.service.ts`
 - All enrichment paths generate/store `road_hazards_v1` with `routeHash`.
 
 ## Data Sources
