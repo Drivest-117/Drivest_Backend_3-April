@@ -3,6 +3,8 @@ import { InstructorsService } from './instructors.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonStatusDto } from './dto/update-lesson-status.dto';
+import { CancelLessonDto } from './dto/cancel-lesson.dto';
+import { RescheduleLessonDto } from './dto/reschedule-lesson.dto';
 
 @Controller('v1/lessons')
 export class LessonsController {
@@ -25,6 +27,26 @@ export class LessonsController {
     @Body() dto: UpdateLessonStatusDto,
   ) {
     return this.instructorsService.updateLessonStatus(req.user, lessonId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/cancel')
+  async cancelByLearner(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Param('id') lessonId: string,
+    @Body() dto: CancelLessonDto,
+  ) {
+    return this.instructorsService.cancelLessonAsLearner(req.user, lessonId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/reschedule')
+  async rescheduleByLearner(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Param('id') lessonId: string,
+    @Body() dto: RescheduleLessonDto,
+  ) {
+    return this.instructorsService.rescheduleLessonAsLearner(req.user, lessonId, dto);
   }
 
   @UseGuards(JwtAuthGuard)

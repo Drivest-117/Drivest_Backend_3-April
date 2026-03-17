@@ -16,11 +16,11 @@ import { NearbyHazardsDto } from './dto/nearby-hazards.dto';
 import {
   RoadHazardItem,
   ROAD_HAZARD_TYPES,
-  RoadHazardService,
   RoadHazardType,
   RouteHazardsV1,
 } from './road-hazard.service';
 import { RouteHazardsQueryDto } from './dto/route-hazards-query.dto';
+import { OverpassAdvisoryCacheService } from './overpass-advisory-cache.service';
 
 type AppHazardFeature = {
   id: string;
@@ -60,7 +60,7 @@ export class RoutesService {
     private readonly centreRepo: Repository<TestCentre>,
 
     private readonly entService: EntitlementsService,
-    private readonly roadHazardService: RoadHazardService,
+    private readonly advisoryCacheService: OverpassAdvisoryCacheService,
   ) {}
 
   async ensureEntitlement(userId: string, route: Route) {
@@ -138,7 +138,7 @@ export class RoutesService {
 
     const mappedTypes = this.normalizeNearbyTypes(dto.types);
 
-    return this.roadHazardService.getNearbyHazards({
+    return this.advisoryCacheService.getNearbyHazards({
       lat,
       lon,
       mode: dto.mode,
@@ -193,7 +193,7 @@ export class RoutesService {
     const centerLon = (query.west + query.east) / 2;
     const radiusM = this.computeBboxRadiusMeters(query);
 
-    const nearby = await this.roadHazardService.getNearbyHazards({
+    const nearby = await this.advisoryCacheService.getNearbyHazards({
       lat: centerLat,
       lon: centerLon,
       mode: 'PREVIEW',
@@ -325,7 +325,7 @@ export class RoutesService {
         (options.types?.length ?? 0) > 0,
     );
     if (hasCustomQuery) {
-      return this.roadHazardService.buildRouteHazards(route.coordinates, {
+      return this.advisoryCacheService.buildRouteHazards(route.coordinates, {
         rawGeojson: route.geojson,
         corridorWidthM: options.corridorWidthM,
         limit: options.limit,
@@ -334,7 +334,7 @@ export class RoutesService {
     }
 
     const existing = route.payload?.road_hazards_v1 as RouteHazardsV1 | undefined;
-    const currentRouteHash = this.roadHazardService.computeRouteHash(
+    const currentRouteHash = this.advisoryCacheService.computeRouteHash(
       route.coordinates,
       route.geojson,
     );
@@ -357,7 +357,7 @@ export class RoutesService {
       return existing;
     }
 
-    const computed = await this.roadHazardService.buildRouteHazards(
+    const computed = await this.advisoryCacheService.buildRouteHazards(
       route.coordinates,
       { rawGeojson: route.geojson },
     );
@@ -435,6 +435,12 @@ export class RoutesService {
           code: '975',
           imagePath: 'bus-and-cycle-signs-jpg/975.jpg',
         };
+      case 'speed_camera':
+        return {
+          title: 'Speed camera',
+          code: '880',
+          imagePath: 'speed-limit-signs-jpg/880.jpg',
+        };
       case 'give_way':
         return {
           title: 'Give way',
@@ -473,12 +479,14 @@ export class RoutesService {
         return 'BUS_LANE';
       case 'bus_stop':
         return 'BUS_STOP';
+      case 'speed_camera':
+        return 'SPEED_CAMERA';
       case 'give_way':
         return 'GIVE_WAY';
       case 'school_warning':
         return 'SCHOOL_ZONE';
       case 'stop_sign':
-        return 'UNKNOWN';
+        return 'NO_ENTRY';
       default:
         return 'UNKNOWN';
     }
@@ -513,6 +521,9 @@ export class RoutesService {
           break;
         case 'BUS_STOP':
           mapped.add('bus_stop');
+          break;
+        case 'SPEED_CAMERA':
+          mapped.add('speed_camera');
           break;
         case 'GIVE_WAY':
           mapped.add('give_way');

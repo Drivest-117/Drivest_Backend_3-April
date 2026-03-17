@@ -18,6 +18,10 @@ export enum RouteDifficulty {
 }
 
 @Entity({ name: 'routes' })
+@Index(['centreId', 'externalRouteId'], {
+  unique: true,
+  where: '"externalRouteId" IS NOT NULL',
+})
 export class Route {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -31,6 +35,9 @@ export class Route {
 
   @Column()
   name: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalRouteId: string | null;
 
   @Column('int')
   distanceM: number;

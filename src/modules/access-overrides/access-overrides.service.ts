@@ -6,18 +6,19 @@ import { User } from '../../entities/user.entity';
 
 @Injectable()
 export class AccessOverridesService {
-  private readonly adminEmails = new Set(['ferror@drivest.uk']);
-  private readonly privilegedLearnerEmails = new Set([
-    'ferror@drivest.uk',
-    'afaanmati@gmail.com',
-  ]);
+  private readonly adminEmails: Set<string>;
+  private readonly privilegedLearnerEmails: Set<string>;
 
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
     @InjectRepository(Entitlement)
     private readonly entRepo: Repository<Entitlement>,
-  ) {}
+  ) {
+    this.adminEmails = this.readEmailSet('ACCESS_OVERRIDE_ADMIN_EMAILS');
+    const privileged = this.readEmailSet('ACCESS_OVERRIDE_PRIVILEGED_EMAILS');
+    this.privilegedLearnerEmails = new Set([...this.adminEmails, ...privileged]);
+  }
 
   async applyToUser<T extends Pick<User, 'id' | 'email' | 'role'>>(
     user: T,
@@ -72,6 +73,15 @@ export class AccessOverridesService {
     return String(email ?? '')
       .trim()
       .toLowerCase();
+  }
+
+  private readEmailSet(envKey: string): Set<string> {
+    const raw = process.env[envKey] ?? '';
+    const values = raw
+      .split(',')
+      .map((value) => this.normalizeEmail(value))
+      .filter(Boolean);
+    return new Set(values);
   }
 
   private async ensureGlobalEntitlement(userId: string) {

@@ -1,0 +1,658 @@
+{
+  "summary": {
+    "generatedAt": "2026-03-16T00:37:02.631Z",
+    "apply": false,
+    "dryRun": true,
+    "bucket": "contentpackages",
+    "region": "eu-north-1",
+    "prefix": "ios",
+    "rootDir": "/Users/drivest/MapboxDrivest/DrivestJson",
+    "fileCount": 56,
+    "totalSizeMB": 21.44,
+    "sample": [
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_ar.json",
+        "relativePath": "Fines & Penalties/pack_ar.json",
+        "key": "ios/fines_penalties/questions/ar/pack_ar.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "ar",
+        "fileName": "pack_ar.json",
+        "sizeBytes": 174341
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_de.json",
+        "relativePath": "Fines & Penalties/pack_de.json",
+        "key": "ios/fines_penalties/questions/de/pack_de.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "de",
+        "fileName": "pack_de.json",
+        "sizeBytes": 125716
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_en.json",
+        "relativePath": "Fines & Penalties/pack_en.json",
+        "key": "ios/fines_penalties/questions/en/pack_en.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "en",
+        "fileName": "pack_en.json",
+        "sizeBytes": 104792
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_es.json",
+        "relativePath": "Fines & Penalties/pack_es.json",
+        "key": "ios/fines_penalties/questions/es/pack_es.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "es",
+        "fileName": "pack_es.json",
+        "sizeBytes": 109393
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_fr.json",
+        "relativePath": "Fines & Penalties/pack_fr.json",
+        "key": "ios/fines_penalties/questions/fr/pack_fr.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "fr",
+        "fileName": "pack_fr.json",
+        "sizeBytes": 120457
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_it.json",
+        "relativePath": "Fines & Penalties/pack_it.json",
+        "key": "ios/fines_penalties/questions/it/pack_it.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "it",
+        "fileName": "pack_it.json",
+        "sizeBytes": 110862
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_nl.json",
+        "relativePath": "Fines & Penalties/pack_nl.json",
+        "key": "ios/fines_penalties/questions/nl/pack_nl.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "nl",
+        "fileName": "pack_nl.json",
+        "sizeBytes": 121271
+      },
+      {
+        "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_pl.json",
+        "relativePath": "Fines & Penalties/pack_pl.json",
+        "key": "ios/fines_penalties/questions/pl/pack_pl.json",
+        "module": "fines_penalties",
+        "kind": "questions",
+        "language": "pl",
+        "fileName": "pack_pl.json",
+        "sizeBytes": 111615
+      }
+    ],
+    "publicBaseUrl": "https://contentpackages.s3.eu-north-1.amazonaws.com"
+  },
+  "files": [
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_ar.json",
+      "relativePath": "Fines & Penalties/pack_ar.json",
+      "key": "ios/fines_penalties/questions/ar/pack_ar.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "ar",
+      "fileName": "pack_ar.json",
+      "sizeBytes": 174341
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_de.json",
+      "relativePath": "Fines & Penalties/pack_de.json",
+      "key": "ios/fines_penalties/questions/de/pack_de.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "de",
+      "fileName": "pack_de.json",
+      "sizeBytes": 125716
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_en.json",
+      "relativePath": "Fines & Penalties/pack_en.json",
+      "key": "ios/fines_penalties/questions/en/pack_en.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "en",
+      "fileName": "pack_en.json",
+      "sizeBytes": 104792
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_es.json",
+      "relativePath": "Fines & Penalties/pack_es.json",
+      "key": "ios/fines_penalties/questions/es/pack_es.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "es",
+      "fileName": "pack_es.json",
+      "sizeBytes": 109393
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_fr.json",
+      "relativePath": "Fines & Penalties/pack_fr.json",
+      "key": "ios/fines_penalties/questions/fr/pack_fr.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "fr",
+      "fileName": "pack_fr.json",
+      "sizeBytes": 120457
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_it.json",
+      "relativePath": "Fines & Penalties/pack_it.json",
+      "key": "ios/fines_penalties/questions/it/pack_it.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "it",
+      "fileName": "pack_it.json",
+      "sizeBytes": 110862
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_nl.json",
+      "relativePath": "Fines & Penalties/pack_nl.json",
+      "key": "ios/fines_penalties/questions/nl/pack_nl.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "nl",
+      "fileName": "pack_nl.json",
+      "sizeBytes": 121271
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_pl.json",
+      "relativePath": "Fines & Penalties/pack_pl.json",
+      "key": "ios/fines_penalties/questions/pl/pack_pl.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "pl",
+      "fileName": "pack_pl.json",
+      "sizeBytes": 111615
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_pt.json",
+      "relativePath": "Fines & Penalties/pack_pt.json",
+      "key": "ios/fines_penalties/questions/pt/pack_pt.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "pt",
+      "fileName": "pack_pt.json",
+      "sizeBytes": 148617
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_ro.json",
+      "relativePath": "Fines & Penalties/pack_ro.json",
+      "key": "ios/fines_penalties/questions/ro/pack_ro.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "ro",
+      "fileName": "pack_ro.json",
+      "sizeBytes": 152434
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Fines & Penalties/pack_zh.json",
+      "relativePath": "Fines & Penalties/pack_zh.json",
+      "key": "ios/fines_penalties/questions/zh/pack_zh.json",
+      "module": "fines_penalties",
+      "kind": "questions",
+      "language": "zh",
+      "fileName": "pack_zh.json",
+      "sizeBytes": 142203
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_ar.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_ar.json",
+      "key": "ios/highway_code/theory/ar/Drivest_HighwayCode_Theory_ar.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "ar",
+      "fileName": "Drivest_HighwayCode_Theory_ar.json",
+      "sizeBytes": 37506
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_de.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_de.json",
+      "key": "ios/highway_code/theory/de/Drivest_HighwayCode_Theory_de.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "de",
+      "fileName": "Drivest_HighwayCode_Theory_de.json",
+      "sizeBytes": 30658
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_en.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_en.json",
+      "key": "ios/highway_code/theory/en/Drivest_HighwayCode_Theory_en.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "en",
+      "fileName": "Drivest_HighwayCode_Theory_en.json",
+      "sizeBytes": 25917
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_es.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_es.json",
+      "key": "ios/highway_code/theory/es/Drivest_HighwayCode_Theory_es.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "es",
+      "fileName": "Drivest_HighwayCode_Theory_es.json",
+      "sizeBytes": 29672
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_fr.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_fr.json",
+      "key": "ios/highway_code/theory/fr/Drivest_HighwayCode_Theory_fr.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "fr",
+      "fileName": "Drivest_HighwayCode_Theory_fr.json",
+      "sizeBytes": 32015
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_it.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_it.json",
+      "key": "ios/highway_code/theory/it/Drivest_HighwayCode_Theory_it.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "it",
+      "fileName": "Drivest_HighwayCode_Theory_it.json",
+      "sizeBytes": 29759
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_nl.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_nl.json",
+      "key": "ios/highway_code/theory/nl/Drivest_HighwayCode_Theory_nl.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "nl",
+      "fileName": "Drivest_HighwayCode_Theory_nl.json",
+      "sizeBytes": 29010
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_pl.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_pl.json",
+      "key": "ios/highway_code/theory/pl/Drivest_HighwayCode_Theory_pl.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "pl",
+      "fileName": "Drivest_HighwayCode_Theory_pl.json",
+      "sizeBytes": 30078
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_pt.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_pt.json",
+      "key": "ios/highway_code/theory/pt/Drivest_HighwayCode_Theory_pt.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "pt",
+      "fileName": "Drivest_HighwayCode_Theory_pt.json",
+      "sizeBytes": 29246
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_ro.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_ro.json",
+      "key": "ios/highway_code/theory/ro/Drivest_HighwayCode_Theory_ro.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "ro",
+      "fileName": "Drivest_HighwayCode_Theory_ro.json",
+      "sizeBytes": 30425
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Highway Code/Drivest_HighwayCode_Theory_zh.json",
+      "relativePath": "Highway Code/Drivest_HighwayCode_Theory_zh.json",
+      "key": "ios/highway_code/theory/zh/Drivest_HighwayCode_Theory_zh.json",
+      "module": "highway_code",
+      "kind": "theory",
+      "language": "zh",
+      "fileName": "Drivest_HighwayCode_Theory_zh.json",
+      "sizeBytes": 25072
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_ar.json",
+      "relativePath": "Theory/Drivest_1200_Questions_ar.json",
+      "key": "ios/theory/questions/ar/Drivest_1200_Questions_ar.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "ar",
+      "fileName": "Drivest_1200_Questions_ar.json",
+      "sizeBytes": 925595
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_cz.json",
+      "relativePath": "Theory/Drivest_1200_Questions_cz.json",
+      "key": "ios/theory/questions/cz/Drivest_1200_Questions_cz.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "cz",
+      "fileName": "Drivest_1200_Questions_cz.json",
+      "sizeBytes": 615409
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_de.json",
+      "relativePath": "Theory/Drivest_1200_Questions_de.json",
+      "key": "ios/theory/questions/de/Drivest_1200_Questions_de.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "de",
+      "fileName": "Drivest_1200_Questions_de.json",
+      "sizeBytes": 772505
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_en.json",
+      "relativePath": "Theory/Drivest_1200_Questions_en.json",
+      "key": "ios/theory/questions/en/Drivest_1200_Questions_en.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "en",
+      "fileName": "Drivest_1200_Questions_en.json",
+      "sizeBytes": 650757
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_es.json",
+      "relativePath": "Theory/Drivest_1200_Questions_es.json",
+      "key": "ios/theory/questions/es/Drivest_1200_Questions_es.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "es",
+      "fileName": "Drivest_1200_Questions_es.json",
+      "sizeBytes": 754334
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_fr.json",
+      "relativePath": "Theory/Drivest_1200_Questions_fr.json",
+      "key": "ios/theory/questions/fr/Drivest_1200_Questions_fr.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "fr",
+      "fileName": "Drivest_1200_Questions_fr.json",
+      "sizeBytes": 792509
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_it.json",
+      "relativePath": "Theory/Drivest_1200_Questions_it.json",
+      "key": "ios/theory/questions/it/Drivest_1200_Questions_it.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "it",
+      "fileName": "Drivest_1200_Questions_it.json",
+      "sizeBytes": 734288
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_nl.json",
+      "relativePath": "Theory/Drivest_1200_Questions_nl.json",
+      "key": "ios/theory/questions/nl/Drivest_1200_Questions_nl.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "nl",
+      "fileName": "Drivest_1200_Questions_nl.json",
+      "sizeBytes": 725488
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_pl.json",
+      "relativePath": "Theory/Drivest_1200_Questions_pl.json",
+      "key": "ios/theory/questions/pl/Drivest_1200_Questions_pl.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "pl",
+      "fileName": "Drivest_1200_Questions_pl.json",
+      "sizeBytes": 757739
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_pt.json",
+      "relativePath": "Theory/Drivest_1200_Questions_pt.json",
+      "key": "ios/theory/questions/pt/Drivest_1200_Questions_pt.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "pt",
+      "fileName": "Drivest_1200_Questions_pt.json",
+      "sizeBytes": 728124
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_ro.json",
+      "relativePath": "Theory/Drivest_1200_Questions_ro.json",
+      "key": "ios/theory/questions/ro/Drivest_1200_Questions_ro.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "ro",
+      "fileName": "Drivest_1200_Questions_ro.json",
+      "sizeBytes": 771709
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Theory/Drivest_1200_Questions_zh.json",
+      "relativePath": "Theory/Drivest_1200_Questions_zh.json",
+      "key": "ios/theory/questions/zh/Drivest_1200_Questions_zh.json",
+      "module": "theory",
+      "kind": "questions",
+      "language": "zh",
+      "fileName": "Drivest_1200_Questions_zh.json",
+      "sizeBytes": 614439
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_ar.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_ar.json",
+      "key": "ios/know_your_signs/questions/ar/Drivest_KnowYourSigns_Questions_ar.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "ar",
+      "fileName": "Drivest_KnowYourSigns_Questions_ar.json",
+      "sizeBytes": 753267
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_de.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_de.json",
+      "key": "ios/know_your_signs/questions/de/Drivest_KnowYourSigns_Questions_de.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "de",
+      "fileName": "Drivest_KnowYourSigns_Questions_de.json",
+      "sizeBytes": 595514
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_en.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_en.json",
+      "key": "ios/know_your_signs/questions/en/Drivest_KnowYourSigns_Questions_en.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "en",
+      "fileName": "Drivest_KnowYourSigns_Questions_en.json",
+      "sizeBytes": 521219
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_es.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_es.json",
+      "key": "ios/know_your_signs/questions/es/Drivest_KnowYourSigns_Questions_es.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "es",
+      "fileName": "Drivest_KnowYourSigns_Questions_es.json",
+      "sizeBytes": 606802
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_fr.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_fr.json",
+      "key": "ios/know_your_signs/questions/fr/Drivest_KnowYourSigns_Questions_fr.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "fr",
+      "fileName": "Drivest_KnowYourSigns_Questions_fr.json",
+      "sizeBytes": 620805
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_it.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_it.json",
+      "key": "ios/know_your_signs/questions/it/Drivest_KnowYourSigns_Questions_it.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "it",
+      "fileName": "Drivest_KnowYourSigns_Questions_it.json",
+      "sizeBytes": 595347
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_nl.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_nl.json",
+      "key": "ios/know_your_signs/questions/nl/Drivest_KnowYourSigns_Questions_nl.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "nl",
+      "fileName": "Drivest_KnowYourSigns_Questions_nl.json",
+      "sizeBytes": 558841
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_pl.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_pl.json",
+      "key": "ios/know_your_signs/questions/pl/Drivest_KnowYourSigns_Questions_pl.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "pl",
+      "fileName": "Drivest_KnowYourSigns_Questions_pl.json",
+      "sizeBytes": 581601
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_pt.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_pt.json",
+      "key": "ios/know_your_signs/questions/pt/Drivest_KnowYourSigns_Questions_pt.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "pt",
+      "fileName": "Drivest_KnowYourSigns_Questions_pt.json",
+      "sizeBytes": 594399
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_ro.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_ro.json",
+      "key": "ios/know_your_signs/questions/ro/Drivest_KnowYourSigns_Questions_ro.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "ro",
+      "fileName": "Drivest_KnowYourSigns_Questions_ro.json",
+      "sizeBytes": 591347
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Questions_zh.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Questions_zh.json",
+      "key": "ios/know_your_signs/questions/zh/Drivest_KnowYourSigns_Questions_zh.json",
+      "module": "know_your_signs",
+      "kind": "questions",
+      "language": "zh",
+      "fileName": "Drivest_KnowYourSigns_Questions_zh.json",
+      "sizeBytes": 479898
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_ar.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_ar.json",
+      "key": "ios/know_your_signs/theory/ar/Drivest_KnowYourSigns_Theory_Expanded_ar.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "ar",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_ar.json",
+      "sizeBytes": 586685
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_de.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_de.json",
+      "key": "ios/know_your_signs/theory/de/Drivest_KnowYourSigns_Theory_Expanded_de.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "de",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_de.json",
+      "sizeBytes": 498475
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_en.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_en.json",
+      "key": "ios/know_your_signs/theory/en/Drivest_KnowYourSigns_Theory_Expanded_en.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "en",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_en.json",
+      "sizeBytes": 432376
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_es.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_es.json",
+      "key": "ios/know_your_signs/theory/es/Drivest_KnowYourSigns_Theory_Expanded_es.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "es",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_es.json",
+      "sizeBytes": 507048
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_fr.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_fr.json",
+      "key": "ios/know_your_signs/theory/fr/Drivest_KnowYourSigns_Theory_Expanded_fr.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "fr",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_fr.json",
+      "sizeBytes": 508473
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_it.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_it.json",
+      "key": "ios/know_your_signs/theory/it/Drivest_KnowYourSigns_Theory_Expanded_it.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "it",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_it.json",
+      "sizeBytes": 491143
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_nl.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_nl.json",
+      "key": "ios/know_your_signs/theory/nl/Drivest_KnowYourSigns_Theory_Expanded_nl.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "nl",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_nl.json",
+      "sizeBytes": 466784
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_pl.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_pl.json",
+      "key": "ios/know_your_signs/theory/pl/Drivest_KnowYourSigns_Theory_Expanded_pl.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "pl",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_pl.json",
+      "sizeBytes": 491823
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_pt.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_pt.json",
+      "key": "ios/know_your_signs/theory/pt/Drivest_KnowYourSigns_Theory_Expanded_pt.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "pt",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_pt.json",
+      "sizeBytes": 492272
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_ro.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_ro.json",
+      "key": "ios/know_your_signs/theory/ro/Drivest_KnowYourSigns_Theory_Expanded_ro.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "ro",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_ro.json",
+      "sizeBytes": 497311
+    },
+    {
+      "absolutePath": "/Users/drivest/MapboxDrivest/DrivestJson/Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_zh.json",
+      "relativePath": "Traffic Signs/Drivest_KnowYourSigns_Theory_Expanded_zh.json",
+      "key": "ios/know_your_signs/theory/zh/Drivest_KnowYourSigns_Theory_Expanded_zh.json",
+      "module": "know_your_signs",
+      "kind": "theory",
+      "language": "zh",
+      "fileName": "Drivest_KnowYourSigns_Theory_Expanded_zh.json",
+      "sizeBytes": 414138
+    }
+  ]
+}

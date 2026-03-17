@@ -27,15 +27,21 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.usersRepo.findOne({ where: { email: dto.email } });
+    const email = this.normalizeEmail(dto.email);
+    const name = dto.name.trim();
+    this.ensureStrongPassword(dto.password);
+    const existing = await this.usersRepo
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = :email', { email })
+      .getOne();
     if (existing) {
       throw new ConflictException('Email already registered');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const role = dto.role === 'INSTRUCTOR' ? 'INSTRUCTOR' : 'USER';
     const user = this.usersRepo.create({
-      email: dto.email,
-      name: dto.name,
+      email,
+      name,
       phone: dto.phone ?? null,
       passwordHash,
       role,
@@ -52,10 +58,12 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string): Promise<User> {
-    const user = await this.usersRepo.findOne({
-      where: { email },
-      select: ['id', 'email', 'name', 'passwordHash', 'role'],
-    });
+    const normalizedEmail = this.normalizeEmail(email);
+    const user = await this.usersRepo
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.email', 'user.name', 'user.passwordHash', 'user.role'])
+      .where('LOWER(user.email) = :email', { email: normalizedEmail })
+      .getOne();
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) throw new UnauthorizedException('Invalid credentials');
@@ -71,7 +79,7 @@ export class AuthService {
 
   async requestPasswordReset(dto: ForgotPasswordDto) {
     const genericMessage = 'If an account exists for this email, a reset code has been sent.';
-    const email = dto.email.trim().toLowerCase();
+    const email = this.normalizeEmail(dto.email);
     const user = await this.usersRepo
       .createQueryBuilder('user')
       .select(['user.id', 'user.email'])
@@ -109,7 +117,7 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    const email = dto.email.trim().toLowerCase();
+    const email = this.normalizeEmail(dto.email);
     const code = dto.code.trim();
     const user = await this.usersRepo
       .createQueryBuilder('user')
@@ -148,6 +156,7 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset code');
     }
 
+    this.ensureStrongPassword(dto.newPassword);
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.usersRepo.update(
       { id: user.id },
@@ -188,7 +197,7 @@ export class AuthService {
     const raw = (process.env.PASSWORD_RESET_EXPOSE_CODE ?? '').trim().toLowerCase();
     if (raw === 'true') return true;
     if (raw === 'false') return false;
-    return process.env.NODE_ENV !== 'production';
+    return false;
   }
 
   private async clearResetState(userId: string) {
@@ -225,5 +234,21 @@ export class AuthService {
       sourcePurchaseId: null,
     });
     await this.entitlementRepo.save(ent);
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private ensureStrongPassword(password: string) {
+    const normalized = String(password ?? '');
+    const hasUppercase = /[A-Z]/.test(normalized);
+    const hasLowercase = /[a-z]/.test(normalized);
+    const hasNumber = /\d/.test(normalized);
+    if (normalized.length < 8 || !hasUppercase || !hasLowercase || !hasNumber) {
+      throw new BadRequestException(
+        'Password must be at least 8 characters and include uppercase, lowercase, and a number',
+      );
+    }
   }
 }

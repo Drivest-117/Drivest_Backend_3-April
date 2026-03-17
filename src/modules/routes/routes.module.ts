@@ -12,6 +12,7 @@ import { RoadHazardService } from './road-hazard.service';
 import { NavigationController } from './navigation.controller';
 import { HazardsController } from './hazards.controller';
 import { CentreHazardsController } from './centre-hazards.controller';
+import { OverpassAdvisoryCacheService } from './overpass-advisory-cache.service';
 
 @Module({
   imports: [
@@ -24,7 +25,12 @@ import { CentreHazardsController } from './centre-hazards.controller';
     HazardsController,
     CentreHazardsController,
   ],
-  providers: [RoutesService, OsmSpeedService, RoadHazardService],
+  providers: [
+    RoutesService,
+    OsmSpeedService,
+    RoadHazardService,
+    OverpassAdvisoryCacheService,
+  ],
   exports: [RoadHazardService],
 })
 export class RoutesModule {}

@@ -9,10 +9,14 @@ import {
 import { EntitlementsService } from './entitlements.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 class SelectCentreDto {
+  @Transform(({ value }) => String(value ?? '').trim())
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
   centreId!: string;
 }
 

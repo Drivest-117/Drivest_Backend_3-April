@@ -67,7 +67,9 @@ export class CentresService {
 
   async search(dto: CentreQueryDto) {
     const page = dto.page ? parseInt(dto.page, 10) : 1
-    const limit = dto.limit ? Math.min(parseInt(dto.limit, 10), 50) : 20
+    const parsedLimit = dto.limit ? parseInt(dto.limit, 10) : 20
+    const safeLimit = Number.isFinite(parsedLimit) ? parsedLimit : 20
+    const limit = Math.min(Math.max(safeLimit, 1), 500)
 
     const runTextSearch = async () => {
       const qb = this.centresRepo.createQueryBuilder('centre')
@@ -98,6 +100,8 @@ export class CentresService {
             'distance',
           )
           .orderBy('distance', 'ASC')
+      } else {
+        qb.orderBy('LOWER(centre.name)', 'ASC').addOrderBy('centre.createdAt', 'ASC')
       }
 
       qb.skip((page - 1) * limit).take(limit)

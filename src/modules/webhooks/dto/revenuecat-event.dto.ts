@@ -1,4 +1,4 @@
-import { IsObject, IsString } from 'class-validator';
+import { IsObject, IsOptional, IsString } from 'class-validator';
 
 export class RevenueCatEventDto {
   @IsString()
@@ -22,6 +22,7 @@ export class RevenueCatEventDto {
   @IsString()
   purchasedAt: string;
 
+  @IsOptional()
   @IsString()
   expiresAt?: string;
 }

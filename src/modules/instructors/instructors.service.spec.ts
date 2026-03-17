@@ -8,6 +8,7 @@ import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../../entities/user.entity';
+import { AuditLog } from '../../entities/audit-log.entity';
 
 type MockRepo<T extends object> = {
   findOne: jest.Mock;
@@ -36,6 +37,7 @@ describe('InstructorsService', () => {
   let lessonsRepo: MockRepo<LessonEntity>;
   let availabilityRepo: MockRepo<InstructorAvailabilityEntity>;
   let usersRepo: MockRepo<User>;
+  let auditRepo: MockRepo<AuditLog>;
   let notificationsService: { createForUser: jest.Mock };
 
   beforeEach(async () => {
@@ -44,6 +46,7 @@ describe('InstructorsService', () => {
     lessonsRepo = createMockRepo<LessonEntity>();
     availabilityRepo = createMockRepo<InstructorAvailabilityEntity>();
     usersRepo = createMockRepo<User>();
+    auditRepo = createMockRepo<AuditLog>();
     notificationsService = { createForUser: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
@@ -54,6 +57,7 @@ describe('InstructorsService', () => {
         { provide: getRepositoryToken(InstructorReviewEntity), useValue: reviewsRepo },
         { provide: getRepositoryToken(LessonEntity), useValue: lessonsRepo },
         { provide: getRepositoryToken(InstructorAvailabilityEntity), useValue: availabilityRepo },
+        { provide: getRepositoryToken(AuditLog), useValue: auditRepo },
         { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
@@ -141,5 +145,99 @@ describe('InstructorsService', () => {
         { lessonId: 'lesson-1', rating: 4 },
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('blocks learner cancellation under 24h without emergency flag', async () => {
+    const startsSoon = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    lessonsRepo.findOne.mockResolvedValue({
+      id: 'lesson-1',
+      instructorId: 'ins-1',
+      learnerUserId: 'learner-1',
+      scheduledAt: startsSoon,
+      status: 'accepted',
+      deletedAt: null,
+    });
+
+    await expect(
+      service.cancelLessonAsLearner(
+        { userId: 'learner-1', role: 'USER' },
+        'lesson-1',
+        { emergency: false },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('allows learner cancellation over 48h and marks lesson cancelled', async () => {
+    const startsLater = new Date(Date.now() + 72 * 60 * 60 * 1000);
+    const lesson = {
+      id: 'lesson-1',
+      instructorId: 'ins-1',
+      learnerUserId: 'learner-1',
+      scheduledAt: startsLater,
+      status: 'accepted',
+      deletedAt: null,
+      availabilitySlotId: null,
+    };
+    lessonsRepo.findOne.mockResolvedValue(lesson);
+    lessonsRepo.save.mockImplementation(async (input) => input);
+    instructorsRepo.findOne.mockResolvedValue({
+      id: 'ins-1',
+      userId: 'instructor-user-1',
+      deletedAt: null,
+    });
+    availabilityRepo.findOne.mockResolvedValue(null);
+
+    const saved = await service.cancelLessonAsLearner(
+      { userId: 'learner-1', role: 'USER' },
+      'lesson-1',
+      { emergency: false },
+    );
+
+    expect(saved.status).toBe('cancelled');
+    expect(notificationsService.createForUser).toHaveBeenCalled();
+    expect(auditRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'learner-1',
+        action: 'LESSON_CANCELLED_BY_LEARNER',
+      }),
+    );
+  });
+
+  it('records an immutable audit event when instructor updates lesson status', async () => {
+    const lesson = {
+      id: 'lesson-1',
+      instructorId: 'ins-1',
+      learnerUserId: 'learner-1',
+      scheduledAt: null,
+      durationMinutes: null,
+      status: 'requested',
+      availabilitySlotId: null,
+      deletedAt: null,
+    };
+    lessonsRepo.findOne.mockResolvedValue(lesson);
+    lessonsRepo.save.mockImplementation(async (input) => input);
+    instructorsRepo.findOne.mockResolvedValue({
+      id: 'ins-1',
+      userId: 'instructor-user-1',
+      deletedAt: null,
+    });
+
+    await service.updateLessonStatus(
+      { userId: 'instructor-user-1', role: 'instructor' },
+      'lesson-1',
+      { status: 'declined' },
+    );
+
+    expect(auditRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'instructor-user-1',
+        action: 'LESSON_STATUS_UPDATED',
+        metadata: expect.objectContaining({
+          lessonId: 'lesson-1',
+          previousStatus: 'requested',
+          nextStatus: 'declined',
+        }),
+      }),
+    );
   });
 });

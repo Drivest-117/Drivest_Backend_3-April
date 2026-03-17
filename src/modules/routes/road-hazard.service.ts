@@ -10,6 +10,7 @@ export type RoadHazardType =
   | 'mini_roundabout'
   | 'bus_lane'
   | 'bus_stop'
+  | 'speed_camera'
   | 'stop_sign'
   | 'give_way'
   | 'school_warning'
@@ -22,6 +23,7 @@ export const ROAD_HAZARD_TYPES: ReadonlyArray<RoadHazardType> = [
   'mini_roundabout',
   'bus_lane',
   'bus_stop',
+  'speed_camera',
   'stop_sign',
   'give_way',
   'school_warning',
@@ -36,7 +38,7 @@ export type RoadHazardItem = {
   lat: number;
   lon: number;
   priority: number;
-  source: 'osm';
+  source: 'osm' | 'council_tro';
   confidence: number;
   labels?: {
     primary?: string | null;
@@ -82,6 +84,7 @@ type HazardRuleKey =
   | 'mini_roundabout'
   | 'bus_lane'
   | 'bus_stop'
+  | 'speed_camera'
   | 'stop_sign'
   | 'give_way'
   | 'zebra_explicit'
@@ -103,6 +106,7 @@ const HAZARD_RULES: Readonly<Record<HazardRuleKey, HazardRuleSpec>> = {
   mini_roundabout: { type: 'mini_roundabout', priority: 86, confidence: 0.86 },
   bus_lane: { type: 'bus_lane', priority: 72, confidence: 0.78 },
   bus_stop: { type: 'bus_stop', priority: 66, confidence: 0.72 },
+  speed_camera: { type: 'speed_camera', priority: 73, confidence: 0.85 },
   stop_sign: { type: 'stop_sign', priority: 78, confidence: 0.9 },
   give_way: { type: 'give_way', priority: 74, confidence: 0.9 },
   zebra_explicit: { type: 'zebra_crossing', priority: 85, confidence: 0.85 },

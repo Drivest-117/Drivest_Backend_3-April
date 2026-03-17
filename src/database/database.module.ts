@@ -17,6 +17,11 @@ import { InstructorReviewEntity } from '../modules/instructors/entities/instruct
 import { LessonEntity } from '../modules/instructors/entities/lesson.entity';
 import { InstructorAvailabilityEntity } from '../modules/instructors/entities/instructor-availability.entity';
 import { UserNotification } from '../entities/user-notification.entity';
+import { UserModuleProgress } from '../entities/user-module-progress.entity';
+import { UserModulePassStatus } from '../entities/user-module-pass-status.entity';
+import { UserAnalyticsRollup } from '../entities/user-analytics-rollup.entity';
+import { ContentPackManifest } from '../entities/content-pack-manifest.entity';
+import { DisputeCaseEntity } from '../modules/disputes/entities/dispute-case.entity';
 
 @Module({
   imports: [
@@ -43,6 +48,11 @@ import { UserNotification } from '../entities/user-notification.entity';
           LessonEntity,
           InstructorAvailabilityEntity,
           UserNotification,
+          UserModuleProgress,
+          UserModulePassStatus,
+          UserAnalyticsRollup,
+          ContentPackManifest,
+          DisputeCaseEntity,
         ],
         synchronize: false,
         logging: false,

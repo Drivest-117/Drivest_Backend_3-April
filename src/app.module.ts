@@ -14,6 +14,9 @@ import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { InstructorsModule } from './modules/instructors/instructors.module';
 import { ParkingModule } from './modules/parking/parking.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ContentPacksModule } from './modules/content-packs/content-packs.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 
 @Module({
   imports: [
@@ -31,6 +34,9 @@ import { ParkingModule } from './modules/parking/parking.module';
     NotificationsModule,
     InstructorsModule,
     ParkingModule,
+    AnalyticsModule,
+    ContentPacksModule,
+    DisputesModule,
   ],
 })
 export class AppModule {}

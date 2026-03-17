@@ -11,12 +11,15 @@ import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { User } from '../../entities/user.entity';
+import { AuditLog } from '../../entities/audit-log.entity';
 import { CreateInstructorProfileDto } from './dto/create-instructor-profile.dto';
 import { UpdateInstructorProfileDto } from './dto/update-instructor-profile.dto';
 import { ListInstructorsQueryDto } from './dto/list-instructors-query.dto';
 import { AuthenticatedRequestUser, normaliseRole } from './instructors.types';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonStatusDto } from './dto/update-lesson-status.dto';
+import { CancelLessonDto } from './dto/cancel-lesson.dto';
+import { RescheduleLessonDto } from './dto/reschedule-lesson.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -34,6 +37,8 @@ export class InstructorsService {
     private readonly lessonsRepo: Repository<LessonEntity>,
     @InjectRepository(InstructorAvailabilityEntity)
     private readonly availabilityRepo: Repository<InstructorAvailabilityEntity>,
+    @InjectRepository(AuditLog)
+    private readonly auditRepo: Repository<AuditLog>,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -472,6 +477,18 @@ export class InstructorsService {
       availabilitySlotId: null,
     });
     const savedLesson = await this.lessonsRepo.save(lesson);
+    await this.recordLessonAuditEvent(
+      'LESSON_CREATED',
+      user.userId,
+      savedLesson,
+      {
+        eventVersion: 1,
+        actorRole: normaliseRole(user.role) ?? user.role ?? null,
+        source: 'direct_request',
+        requestedInstructorId: dto.instructorId,
+      },
+      this.auditRepo,
+    );
     await this.notificationsService.createForUser(
       instructor.userId,
       'booking_request',
@@ -510,6 +527,7 @@ export class InstructorsService {
     }
 
     const nextStatus = dto.status;
+    const previousStatus = lesson.status;
     const validTransitions: Record<string, string[]> = {
       requested: ['accepted', 'declined', 'completed', 'cancelled'],
       accepted: ['completed', 'cancelled'],
@@ -540,11 +558,27 @@ export class InstructorsService {
     lesson.status = nextStatus;
     const saved = await this.lessonsRepo.save(lesson);
     await this.syncAvailabilitySlotForLessonStatus(saved);
+    await this.recordLessonAuditEvent(
+      'LESSON_STATUS_UPDATED',
+      user.userId,
+      saved,
+      {
+        eventVersion: 1,
+        actorRole: normaliseRole(user.role) ?? user.role ?? null,
+        previousStatus,
+        nextStatus,
+      },
+      this.auditRepo,
+    );
+    const learnerMessage =
+      nextStatus === 'cancelled'
+        ? 'Instructor cancelled this booking. Learner is eligible for full refund and rebooking support.'
+        : `Your booking is now ${nextStatus}.`;
     await this.notificationsService.createForUser(
       saved.learnerUserId,
       'booking_status',
       'Booking status updated',
-      `Your booking is now ${nextStatus}.`,
+      learnerMessage,
       {
         lessonId: saved.id,
         instructorId: saved.instructorId,
@@ -553,7 +587,221 @@ export class InstructorsService {
       },
       user.userId,
     );
+    if (nextStatus === 'cancelled') {
+      await this.notificationsService.createForUser(
+        instructor.userId,
+        'booking_status',
+        'Instructor cancellation policy notice',
+        'This cancellation may trigger learner protection and instructor-side penalties.',
+        {
+          lessonId: saved.id,
+          instructorId: saved.instructorId,
+          status: nextStatus,
+        },
+        user.userId,
+      );
+    }
     return saved;
+  }
+
+  async cancelLessonAsLearner(
+    user: AuthenticatedRequestUser,
+    lessonId: string,
+    dto: CancelLessonDto,
+  ) {
+    this.requireRole(user, 'learner');
+    const lesson = await this.lessonsRepo.findOne({ where: { id: lessonId } });
+    if (!lesson || lesson.deletedAt) {
+      throw new NotFoundException('Lesson not found');
+    }
+    if (lesson.learnerUserId !== user.userId) {
+      throw new ForbiddenException('Only the learner can cancel this lesson');
+    }
+    if (!this.canLearnerManageLesson(lesson.status)) {
+      throw new BadRequestException(`Cannot cancel a lesson in ${lesson.status} state`);
+    }
+
+    const window = this.resolveLearnerPolicyWindow(lesson.scheduledAt);
+    const previousStatus = lesson.status;
+    if (window === 'under_24h' && !dto.emergency) {
+      throw new BadRequestException(
+        'Cancellations within 24 hours require emergency verification',
+      );
+    }
+
+    lesson.status = 'cancelled';
+    const saved = await this.lessonsRepo.save(lesson);
+    await this.syncAvailabilitySlotForLessonStatus(saved);
+    await this.recordLessonAuditEvent(
+      'LESSON_CANCELLED_BY_LEARNER',
+      user.userId,
+      saved,
+      {
+        eventVersion: 1,
+        actorRole: normaliseRole(user.role) ?? user.role ?? null,
+        previousStatus,
+        nextStatus: 'cancelled',
+        policyWindow: window,
+        emergency: dto.emergency === true,
+        note: dto.note ?? null,
+      },
+      this.auditRepo,
+    );
+
+    const instructor = await this.instructorsRepo.findOne({ where: { id: saved.instructorId } });
+    if (instructor && !instructor.deletedAt) {
+      await this.notificationsService.createForUser(
+        instructor.userId,
+        'booking_status',
+        'Learner cancelled booking',
+        this.learnerCancellationMessage(window, dto.emergency === true),
+        {
+          lessonId: saved.id,
+          instructorId: saved.instructorId,
+          learnerUserId: saved.learnerUserId,
+          policyWindow: window,
+          emergency: dto.emergency === true,
+          note: dto.note ?? null,
+        },
+        user.userId,
+      );
+    }
+
+    return saved;
+  }
+
+  async rescheduleLessonAsLearner(
+    user: AuthenticatedRequestUser,
+    lessonId: string,
+    dto: RescheduleLessonDto,
+  ) {
+    this.requireRole(user, 'learner');
+
+    return this.lessonsRepo.manager.transaction(async (manager) => {
+      const lessonRepo = manager.getRepository(LessonEntity);
+      const slotRepo = manager.getRepository(InstructorAvailabilityEntity);
+      const auditRepo = manager.getRepository(AuditLog);
+
+      const lesson = await lessonRepo
+        .createQueryBuilder('l')
+        .setLock('pessimistic_write')
+        .where('l.id = :lessonId', { lessonId })
+        .andWhere('l.deleted_at IS NULL')
+        .getOne();
+
+      if (!lesson) {
+        throw new NotFoundException('Lesson not found');
+      }
+      if (lesson.learnerUserId !== user.userId) {
+        throw new ForbiddenException('Only the learner can reschedule this lesson');
+      }
+      if (!this.canLearnerManageLesson(lesson.status)) {
+        throw new BadRequestException(`Cannot reschedule a lesson in ${lesson.status} state`);
+      }
+
+      const window = this.resolveLearnerPolicyWindow(lesson.scheduledAt);
+      const previousStatus = lesson.status;
+      const previousScheduledAt = lesson.scheduledAt ? lesson.scheduledAt.toISOString() : null;
+      const previousDurationMinutes = lesson.durationMinutes ?? null;
+      const previousAvailabilitySlotId = lesson.availabilitySlotId;
+      if (window === 'under_24h' && !dto.emergency) {
+        throw new BadRequestException(
+          'Rescheduling within 24 hours requires instructor approval or emergency verification',
+        );
+      }
+
+      const targetSlot = await slotRepo
+        .createQueryBuilder('s')
+        .setLock('pessimistic_write')
+        .where('s.id = :slotId', { slotId: dto.availabilitySlotId })
+        .andWhere('s.deleted_at IS NULL')
+        .getOne();
+
+      if (!targetSlot) {
+        throw new NotFoundException('Availability slot not found');
+      }
+      if (targetSlot.status !== 'open' || targetSlot.bookedLessonId) {
+        throw new BadRequestException('This time slot is no longer available');
+      }
+      if (targetSlot.instructorId !== lesson.instructorId) {
+        throw new BadRequestException('Selected slot must belong to the same instructor');
+      }
+
+      const durationMinutes = this.diffMinutes(targetSlot.startsAt, targetSlot.endsAt);
+      await this.ensureNoLessonConflicts(
+        lesson.instructorId,
+        targetSlot.startsAt,
+        durationMinutes,
+        lesson.id,
+      );
+
+      const previousSlotId = lesson.availabilitySlotId;
+      lesson.scheduledAt = targetSlot.startsAt;
+      lesson.durationMinutes = durationMinutes;
+      lesson.availabilitySlotId = targetSlot.id;
+      const savedLesson = await lessonRepo.save(lesson);
+
+      targetSlot.status = 'booked';
+      targetSlot.bookedLessonId = savedLesson.id;
+      await slotRepo.save(targetSlot);
+
+      if (previousSlotId && previousSlotId !== targetSlot.id) {
+        const previousSlot = await slotRepo
+          .createQueryBuilder('s')
+          .setLock('pessimistic_write')
+          .where('s.id = :slotId', { slotId: previousSlotId })
+          .andWhere('s.deleted_at IS NULL')
+          .getOne();
+        if (previousSlot && previousSlot.bookedLessonId === savedLesson.id) {
+          previousSlot.status = 'open';
+          previousSlot.bookedLessonId = null;
+          await slotRepo.save(previousSlot);
+        }
+      }
+
+      const instructor = await this.instructorsRepo.findOne({ where: { id: savedLesson.instructorId } });
+      if (instructor && !instructor.deletedAt) {
+        await this.notificationsService.createForUser(
+          instructor.userId,
+          'booking_status',
+          'Learner rescheduled booking',
+          this.learnerRescheduleMessage(window, dto.emergency === true),
+          {
+            lessonId: savedLesson.id,
+            instructorId: savedLesson.instructorId,
+            learnerUserId: savedLesson.learnerUserId,
+            availabilitySlotId: savedLesson.availabilitySlotId,
+            scheduledAt: savedLesson.scheduledAt,
+            durationMinutes: savedLesson.durationMinutes,
+            policyWindow: window,
+            emergency: dto.emergency === true,
+            note: dto.note ?? null,
+          },
+          user.userId,
+        );
+      }
+
+      await this.recordLessonAuditEvent(
+        'LESSON_RESCHEDULED_BY_LEARNER',
+        user.userId,
+        savedLesson,
+        {
+          eventVersion: 1,
+          actorRole: normaliseRole(user.role) ?? user.role ?? null,
+          previousStatus,
+          nextStatus: savedLesson.status,
+          previousScheduledAt,
+          previousDurationMinutes,
+          previousAvailabilitySlotId,
+          policyWindow: window,
+          emergency: dto.emergency === true,
+          note: dto.note ?? null,
+        },
+        auditRepo,
+      );
+
+      return savedLesson;
+    });
   }
 
   async listMyLessons(user: AuthenticatedRequestUser) {
@@ -733,6 +981,7 @@ export class InstructorsService {
       const slotRepo = manager.getRepository(InstructorAvailabilityEntity);
       const lessonRepo = manager.getRepository(LessonEntity);
       const instructorRepo = manager.getRepository(InstructorEntity);
+      const auditRepo = manager.getRepository(AuditLog);
 
       const slot = await slotRepo
         .createQueryBuilder('s')
@@ -777,6 +1026,20 @@ export class InstructorsService {
       slot.status = 'booked';
       slot.bookedLessonId = savedLesson.id;
       await slotRepo.save(slot);
+      await this.recordLessonAuditEvent(
+        'LESSON_CREATED',
+        user.userId,
+        savedLesson,
+        {
+          eventVersion: 1,
+          actorRole: normaliseRole(user.role) ?? user.role ?? null,
+          source: 'availability_slot',
+          requestedInstructorId: dto.instructorId ?? slot.instructorId,
+          startsAt: slot.startsAt.toISOString(),
+          endsAt: slot.endsAt.toISOString(),
+        },
+        auditRepo,
+      );
       await this.notificationsService.createForUser(
         instructor.userId,
         'booking_request',
@@ -792,6 +1055,32 @@ export class InstructorsService {
         user.userId,
       );
       return savedLesson;
+    });
+  }
+
+  private async recordLessonAuditEvent(
+    action: string,
+    actorUserId: string | null,
+    lesson: Pick<
+      LessonEntity,
+      'id' | 'instructorId' | 'learnerUserId' | 'scheduledAt' | 'durationMinutes' | 'status' | 'availabilitySlotId'
+    >,
+    metadata: Record<string, unknown>,
+    auditRepo: Repository<AuditLog>,
+  ) {
+    await auditRepo.save({
+      userId: actorUserId,
+      action,
+      metadata: {
+        lessonId: lesson.id,
+        instructorId: lesson.instructorId,
+        learnerUserId: lesson.learnerUserId,
+        scheduledAt: lesson.scheduledAt ? lesson.scheduledAt.toISOString() : null,
+        durationMinutes: lesson.durationMinutes ?? null,
+        status: lesson.status,
+        availabilitySlotId: lesson.availabilitySlotId ?? null,
+        ...metadata,
+      },
     });
   }
 
@@ -964,6 +1253,64 @@ export class InstructorsService {
     const clash = await qb.getOne();
     if (clash) {
       throw new BadRequestException('Booking conflicts with another lesson');
+    }
+  }
+
+  private canLearnerManageLesson(status: LessonEntity['status']) {
+    return status === 'requested' || status === 'accepted' || status === 'planned';
+  }
+
+  private resolveLearnerPolicyWindow(
+    scheduledAt: Date | null,
+  ): 'unscheduled' | 'over_48h' | 'between_24h_48h' | 'under_24h' {
+    if (!scheduledAt) {
+      return 'unscheduled';
+    }
+    const hoursUntilStart = (scheduledAt.getTime() - Date.now()) / 3_600_000;
+    if (hoursUntilStart >= 48) {
+      return 'over_48h';
+    }
+    if (hoursUntilStart >= 24) {
+      return 'between_24h_48h';
+    }
+    return 'under_24h';
+  }
+
+  private learnerCancellationMessage(
+    window: 'unscheduled' | 'over_48h' | 'between_24h_48h' | 'under_24h',
+    isEmergency: boolean,
+  ) {
+    switch (window) {
+      case 'over_48h':
+      case 'unscheduled':
+        return 'Learner cancelled this booking more than 48 hours before start.';
+      case 'between_24h_48h':
+        return 'Learner cancelled within 24-48 hours. Partial charge or credit policy may apply.';
+      case 'under_24h':
+        return isEmergency
+          ? 'Learner cancelled within 24 hours with emergency flag. Manual review may apply.'
+          : 'Learner cancelled within 24 hours.';
+      default:
+        return 'Learner cancelled this booking.';
+    }
+  }
+
+  private learnerRescheduleMessage(
+    window: 'unscheduled' | 'over_48h' | 'between_24h_48h' | 'under_24h',
+    isEmergency: boolean,
+  ) {
+    switch (window) {
+      case 'over_48h':
+      case 'unscheduled':
+        return 'Learner rescheduled this booking.';
+      case 'between_24h_48h':
+        return 'Learner rescheduled within 24-48 hours.';
+      case 'under_24h':
+        return isEmergency
+          ? 'Learner rescheduled within 24 hours with emergency flag. Manual review may apply.'
+          : 'Learner rescheduled within 24 hours.';
+      default:
+        return 'Learner rescheduled this booking.';
     }
   }
 

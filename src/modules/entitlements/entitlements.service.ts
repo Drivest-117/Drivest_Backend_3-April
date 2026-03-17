@@ -10,7 +10,7 @@ import { AccessOverridesService } from '../access-overrides/access-overrides.ser
 export class EntitlementsService {
   private readonly entitlementsEnforced = this.envBool(
     'APP_ENTITLEMENTS_ENFORCED',
-    false,
+    true,
   );
 
   constructor(

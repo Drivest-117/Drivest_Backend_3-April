@@ -11,7 +11,7 @@ import { Product, ProductType } from '../../entities/product.entity';
 import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { User } from '../../entities/user.entity';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 @Injectable()
 export class WebhooksService {
@@ -23,9 +23,16 @@ export class WebhooksService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) {}
 
-  verifySignature(body: string, signature: string, secret: string) {
-    const hash = createHmac('sha256', secret).update(body).digest('hex');
-    if (hash !== signature) {
+  verifySignature(body: Buffer | string, signature: string, secret: string) {
+    const payload = Buffer.isBuffer(body) ? body : Buffer.from(body);
+    const provided = signature.trim();
+    const expectedHex = createHmac('sha256', secret).update(payload).digest('hex');
+    const expectedBase64 = createHmac('sha256', secret).update(payload).digest('base64');
+
+    const valid =
+      this.safeCompare(provided, expectedHex) || this.safeCompare(provided, expectedBase64);
+
+    if (!valid) {
       throw new UnauthorizedException('Invalid signature');
     }
   }
@@ -121,5 +128,14 @@ export class WebhooksService {
 
   private looksLikeEmail(value: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+
+  private safeCompare(a: string, b: string): boolean {
+    const left = Buffer.from(a);
+    const right = Buffer.from(b);
+    if (left.length !== right.length) {
+      return false;
+    }
+    return timingSafeEqual(left, right);
   }
 }

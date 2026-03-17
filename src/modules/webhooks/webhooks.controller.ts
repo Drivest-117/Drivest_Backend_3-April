@@ -4,12 +4,14 @@ import {
   Controller,
   Headers,
   Post,
+  Req,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { RevenueCatEventDto } from './dto/revenuecat-event.dto';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 
 @ApiTags('webhooks')
 @Controller('webhooks')
@@ -22,6 +24,7 @@ export class WebhooksController {
   @Post('revenuecat')
   async revenuecat(
     @Body() body: any,
+    @Req() req: Request & { rawBody?: Buffer },
     @Headers('x-revenuecat-signature') signature?: string,
   ) {
     const secret = this.configService.get<string>('REVENUECAT_WEBHOOK_SECRET');
@@ -31,7 +34,8 @@ export class WebhooksController {
     if (!signature) {
       throw new BadRequestException('Signature missing');
     }
-    this.webhookService.verifySignature(JSON.stringify(body), signature, secret);
+    const payload = req.rawBody ?? Buffer.from(JSON.stringify(body));
+    this.webhookService.verifySignature(payload, signature, secret);
     const event: RevenueCatEventDto = {
       eventId: body.event_id || body.eventId,
       productId: body.product_id || body.productId,

@@ -9,6 +9,7 @@ import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { User } from '../../entities/user.entity';
+import { AuditLog } from '../../entities/audit-log.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       LessonEntity,
       InstructorAvailabilityEntity,
       User,
+      AuditLog,
     ]),
   ],
   controllers: [InstructorsController, LessonsController, InstructorsAdminController],
