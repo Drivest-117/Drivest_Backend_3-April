@@ -17,6 +17,7 @@ import { ParkingModule } from './modules/parking/parking.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ContentPacksModule } from './modules/content-packs/content-packs.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
+import { LegalAcceptanceModule } from './modules/legal-acceptance/legal-acceptance.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DisputesModule } from './modules/disputes/disputes.module';
     AnalyticsModule,
     ContentPacksModule,
     DisputesModule,
+    LegalAcceptanceModule,
   ],
 })
 export class AppModule {}

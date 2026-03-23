@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { User } from '../../entities/user.entity';
 import { InstructorEntity } from '../instructors/entities/instructor.entity';
+import { LessonFinanceSnapshotEntity } from '../instructors/entities/lesson-finance-snapshot.entity';
 import { LessonEntity } from '../instructors/entities/lesson.entity';
 import { DisputesController } from './disputes.controller';
 import { DisputesService } from './disputes.service';
@@ -14,6 +15,7 @@ import { DisputeCaseEntity } from './entities/dispute-case.entity';
       DisputeCaseEntity,
       LessonEntity,
       InstructorEntity,
+      LessonFinanceSnapshotEntity,
       User,
       AuditLog,
     ]),

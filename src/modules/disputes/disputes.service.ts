@@ -10,6 +10,7 @@ import { AuditLog } from '../../entities/audit-log.entity';
 import { User } from '../../entities/user.entity';
 import { InstructorEntity } from '../instructors/entities/instructor.entity';
 import { LessonEntity } from '../instructors/entities/lesson.entity';
+import { LessonFinanceSnapshotEntity } from '../instructors/entities/lesson-finance-snapshot.entity';
 import { normaliseRole } from '../instructors/instructors.types';
 import { AddDisputeEvidenceDto } from './dto/add-dispute-evidence.dto';
 import { CreateDisputeCaseDto } from './dto/create-dispute-case.dto';
@@ -20,6 +21,7 @@ import {
   DisputePartyRole,
   DisputeStatus,
 } from './entities/dispute-case.entity';
+import { computeLessonFinance } from '../instructors/lesson-finance-calculator';
 
 interface AuthenticatedRequestUser {
   userId: string;
@@ -42,6 +44,8 @@ export class DisputesService {
     private readonly lessonsRepo: Repository<LessonEntity>,
     @InjectRepository(InstructorEntity)
     private readonly instructorsRepo: Repository<InstructorEntity>,
+    @InjectRepository(LessonFinanceSnapshotEntity)
+    private readonly lessonFinanceRepo: Repository<LessonFinanceSnapshotEntity>,
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
     @InjectRepository(AuditLog)
@@ -123,6 +127,10 @@ export class DisputesService {
         resolutionTargetBy: saved.resolutionTargetBy?.toISOString() ?? null,
       },
     });
+
+    if (saved.lessonId) {
+      await this.applyFinanceHoldForDispute(saved.lessonId, actor.userId);
+    }
 
     return saved;
   }
@@ -355,6 +363,101 @@ export class DisputesService {
         links,
       },
     ];
+  }
+
+  private async applyFinanceHoldForDispute(lessonId: string, actorUserId: string) {
+    try {
+      let snapshot = await this.lessonFinanceRepo.findOne({ where: { lessonId } });
+
+      if (!snapshot) {
+        const lesson = await this.lessonsRepo.findOne({ where: { id: lessonId, deletedAt: IsNull() } });
+        if (!lesson) {
+          await this.auditRepo.save({
+            userId: actorUserId,
+            action: 'DISPUTE_FINANCE_HOLD_SKIPPED',
+            metadata: {
+              lessonId,
+              reason: 'lesson_not_found',
+            },
+          });
+          return;
+        }
+
+        const instructor = await this.instructorsRepo.findOne({
+          where: { id: lesson.instructorId, deletedAt: IsNull() },
+        });
+        const computed = computeLessonFinance({
+          bookingSource: 'marketplace',
+          lessonStatus: lesson.status,
+          hourlyRatePence: instructor?.hourlyRatePence ?? null,
+          durationMinutes: lesson.durationMinutes,
+          hasOpenDispute: true,
+        });
+
+        snapshot = this.lessonFinanceRepo.create({
+          lessonId,
+          bookingSource: 'marketplace',
+          currencyCode: 'GBP',
+          grossAmountPence: computed.grossAmountPence,
+          commissionPercentBasisPoints: computed.commissionPercentBasisPoints,
+          commissionAmountPence: computed.commissionAmountPence,
+          instructorNetAmountPence: computed.instructorNetAmountPence,
+          commissionStatus: computed.commissionStatus,
+          payoutStatus: computed.payoutStatus,
+          financeIntegrityStatus: 'synced',
+          financeNotes: computed.financeNotes,
+          snapshotVersion: 1,
+        });
+        snapshot = await this.lessonFinanceRepo.save(snapshot);
+        await this.auditRepo.save({
+          userId: actorUserId,
+          action: 'LESSON_FINANCE_SNAPSHOT_CREATED',
+          metadata: {
+            eventVersion: 1,
+            lessonId,
+            reason: 'dispute_open_backfill',
+            bookingSource: snapshot.bookingSource,
+            commissionStatus: snapshot.commissionStatus,
+            payoutStatus: snapshot.payoutStatus,
+          },
+        });
+      }
+
+      if (snapshot.payoutStatus !== 'not_applicable' && snapshot.payoutStatus !== 'voided') {
+        snapshot.payoutStatus = 'on_hold';
+      }
+      if (
+        snapshot.bookingSource === 'marketplace' &&
+        snapshot.commissionStatus !== 'voided' &&
+        snapshot.commissionStatus !== 'not_applicable'
+      ) {
+        snapshot.commissionStatus = 'disputed';
+      }
+      snapshot.financeNotes = 'Payout status is on hold while a dispute is open.';
+      snapshot.financeIntegrityStatus = snapshot.financeIntegrityStatus ?? 'synced';
+      await this.lessonFinanceRepo.save(snapshot);
+
+      await this.auditRepo.save({
+        userId: actorUserId,
+        action: 'LESSON_FINANCE_HOLD_APPLIED_FOR_DISPUTE',
+        metadata: {
+          eventVersion: 1,
+          lessonId,
+          payoutStatus: snapshot.payoutStatus,
+          commissionStatus: snapshot.commissionStatus,
+        },
+      });
+    } catch (error) {
+      await this.auditRepo.save({
+        userId: actorUserId,
+        action: 'DISPUTE_FINANCE_HOLD_SKIPPED',
+        metadata: {
+          lessonId,
+          reason: 'finance_hold_failed',
+          errorMessage: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
   }
 
   private requireActorRole(role: string | undefined): DisputePartyRole {

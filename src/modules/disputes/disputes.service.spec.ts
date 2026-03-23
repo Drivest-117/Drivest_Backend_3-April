@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { User } from '../../entities/user.entity';
 import { InstructorEntity } from '../instructors/entities/instructor.entity';
+import { LessonFinanceSnapshotEntity } from '../instructors/entities/lesson-finance-snapshot.entity';
 import { LessonEntity } from '../instructors/entities/lesson.entity';
 import { DisputesService } from './disputes.service';
 import { DisputeCaseEntity } from './entities/dispute-case.entity';
@@ -29,6 +30,7 @@ describe('DisputesService', () => {
   let disputesRepo: MockRepo<DisputeCaseEntity>;
   let lessonsRepo: MockRepo<LessonEntity>;
   let instructorsRepo: MockRepo<InstructorEntity>;
+  let lessonFinanceRepo: MockRepo<LessonFinanceSnapshotEntity>;
   let usersRepo: MockRepo<User>;
   let auditRepo: MockRepo<AuditLog>;
 
@@ -36,6 +38,7 @@ describe('DisputesService', () => {
     disputesRepo = createMockRepo<DisputeCaseEntity>();
     lessonsRepo = createMockRepo<LessonEntity>();
     instructorsRepo = createMockRepo<InstructorEntity>();
+    lessonFinanceRepo = createMockRepo<LessonFinanceSnapshotEntity>();
     usersRepo = createMockRepo<User>();
     auditRepo = createMockRepo<AuditLog>();
 
@@ -45,12 +48,15 @@ describe('DisputesService', () => {
         { provide: getRepositoryToken(DisputeCaseEntity), useValue: disputesRepo },
         { provide: getRepositoryToken(LessonEntity), useValue: lessonsRepo },
         { provide: getRepositoryToken(InstructorEntity), useValue: instructorsRepo },
+        { provide: getRepositoryToken(LessonFinanceSnapshotEntity), useValue: lessonFinanceRepo },
         { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: getRepositoryToken(AuditLog), useValue: auditRepo },
       ],
     }).compile();
 
     service = moduleRef.get(DisputesService);
+    lessonFinanceRepo.findOne.mockResolvedValue(null);
+    lessonFinanceRepo.save.mockImplementation(async (input) => input);
   });
 
   it('opens a case for a learner linked to a lesson and sets SLA fields', async () => {

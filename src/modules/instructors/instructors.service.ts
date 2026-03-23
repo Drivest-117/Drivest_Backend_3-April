@@ -7,13 +7,17 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, Repository } from 'typeorm';
 import axios from 'axios';
 import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
 import { LessonPaymentEntity } from './entities/lesson-payment.entity';
+import {
+  LessonFinanceBookingSource,
+  LessonFinanceSnapshotEntity,
+} from './entities/lesson-finance-snapshot.entity';
 import { User } from '../../entities/user.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { CreateInstructorProfileDto } from './dto/create-instructor-profile.dto';
@@ -29,6 +33,10 @@ import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
 import { ConfirmLessonStripePaymentDto } from './dto/confirm-lesson-stripe-payment.dto';
 import { ActivateLessonApplePaymentDto } from './dto/activate-lesson-apple-payment.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { DisputeCaseEntity } from '../disputes/entities/dispute-case.entity';
+import { AdminFinanceReportQueryDto } from './dto/admin-finance-report-query.dto';
+import { AdminFinanceRepairDto } from './dto/admin-finance-repair.dto';
+import { computeLessonFinance } from './lesson-finance-calculator';
 
 @Injectable()
 export class InstructorsService {
@@ -43,8 +51,12 @@ export class InstructorsService {
     private readonly lessonsRepo: Repository<LessonEntity>,
     @InjectRepository(LessonPaymentEntity)
     private readonly lessonPaymentsRepo: Repository<LessonPaymentEntity>,
+    @InjectRepository(LessonFinanceSnapshotEntity)
+    private readonly lessonFinanceRepo: Repository<LessonFinanceSnapshotEntity>,
     @InjectRepository(InstructorAvailabilityEntity)
     private readonly availabilityRepo: Repository<InstructorAvailabilityEntity>,
+    @InjectRepository(DisputeCaseEntity)
+    private readonly disputesRepo: Repository<DisputeCaseEntity>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
     private readonly notificationsService: NotificationsService,
@@ -568,34 +580,51 @@ export class InstructorsService {
       learner?.phone ?? null,
     );
 
-    const lesson = this.lessonsRepo.create({
-      instructorId: dto.instructorId,
-      learnerUserId: user.userId,
-      scheduledAt,
-      durationMinutes,
-      status: 'requested',
-      learnerNote: dto.learnerNote ?? null,
-      availabilitySlotId: null,
-      pickupAddress: this.normaliseOptionalText(dto.pickup?.address),
-      pickupPostcode: this.normaliseOptionalText(dto.pickup?.postcode),
-      pickupLat: dto.pickup?.lat ?? null,
-      pickupLng: dto.pickup?.lng ?? null,
-      pickupPlaceId: this.normaliseOptionalText(dto.pickup?.placeId),
-      pickupNote: this.normaliseOptionalText(dto.pickup?.note),
-      pickupContactNumber,
-    });
-    const savedLesson = await this.lessonsRepo.save(lesson);
-    await this.recordLessonAuditEvent(
-      'LESSON_CREATED',
-      user.userId,
-      savedLesson,
-      {
-        eventVersion: 1,
-        actorRole: normaliseRole(user.role) ?? user.role ?? null,
-        source: 'direct_request',
-        requestedInstructorId: dto.instructorId,
+    const { lesson: savedLesson, finance } = await this.lessonsRepo.manager.transaction(
+      async (manager) => {
+        const lessonRepo = manager.getRepository(LessonEntity);
+        const auditRepo = manager.getRepository(AuditLog);
+
+        const lesson = lessonRepo.create({
+          instructorId: dto.instructorId,
+          learnerUserId: user.userId,
+          scheduledAt,
+          durationMinutes,
+          status: 'requested',
+          learnerNote: dto.learnerNote ?? null,
+          availabilitySlotId: null,
+          pickupAddress: this.normaliseOptionalText(dto.pickup?.address),
+          pickupPostcode: this.normaliseOptionalText(dto.pickup?.postcode),
+          pickupLat: dto.pickup?.lat ?? null,
+          pickupLng: dto.pickup?.lng ?? null,
+          pickupPlaceId: this.normaliseOptionalText(dto.pickup?.placeId),
+          pickupNote: this.normaliseOptionalText(dto.pickup?.note),
+          pickupContactNumber,
+        });
+        const saved = await lessonRepo.save(lesson);
+        const financeSnapshot = await this.refreshLessonFinanceSnapshotWithFallback(
+          saved.id,
+          {
+            manager,
+            reason: 'lesson_created_direct',
+            actorUserId: user.userId,
+            bookingSource: 'marketplace',
+          },
+        );
+        await this.recordLessonAuditEvent(
+          'LESSON_CREATED',
+          user.userId,
+          saved,
+          {
+            eventVersion: 1,
+            actorRole: normaliseRole(user.role) ?? user.role ?? null,
+            source: 'direct_request',
+            requestedInstructorId: dto.instructorId,
+          },
+          auditRepo,
+        );
+        return { lesson: saved, finance: financeSnapshot };
       },
-      this.auditRepo,
     );
     await this.notificationsService.createForUser(
       instructor.userId,
@@ -611,7 +640,7 @@ export class InstructorsService {
       },
       user.userId,
     );
-    return savedLesson;
+    return this.mapLessonWithFinance(savedLesson, finance);
   }
 
   async updateLessonStatus(
@@ -663,21 +692,38 @@ export class InstructorsService {
       );
     }
 
-    lesson.status = nextStatus;
-    const saved = await this.lessonsRepo.save(lesson);
-    await this.syncAvailabilitySlotForLessonStatus(saved);
-    await this.recordLessonAuditEvent(
-      'LESSON_STATUS_UPDATED',
-      user.userId,
-      saved,
-      {
-        eventVersion: 1,
-        actorRole: normaliseRole(user.role) ?? user.role ?? null,
-        previousStatus,
-        nextStatus,
-      },
-      this.auditRepo,
-    );
+    const { lesson: saved, finance } = await this.lessonsRepo.manager.transaction(async (manager) => {
+      const lessonRepo = manager.getRepository(LessonEntity);
+      const auditRepo = manager.getRepository(AuditLog);
+      const lockedLesson = await this.loadLessonForUpdate(lessonRepo, lessonId);
+      if (!lockedLesson) {
+        throw new NotFoundException('Lesson not found');
+      }
+      lockedLesson.status = nextStatus;
+      const savedLesson = await lessonRepo.save(lockedLesson);
+      await this.syncAvailabilitySlotForLessonStatus(savedLesson, manager);
+      const financeSnapshot = await this.refreshLessonFinanceSnapshotWithFallback(
+        savedLesson.id,
+        {
+          manager,
+          reason: 'lesson_status_updated',
+          actorUserId: user.userId,
+        },
+      );
+      await this.recordLessonAuditEvent(
+        'LESSON_STATUS_UPDATED',
+        user.userId,
+        savedLesson,
+        {
+          eventVersion: 1,
+          actorRole: normaliseRole(user.role) ?? user.role ?? null,
+          previousStatus,
+          nextStatus,
+        },
+        auditRepo,
+      );
+      return { lesson: savedLesson, finance: financeSnapshot };
+    });
     const learnerMessage =
       nextStatus === 'cancelled'
         ? 'Instructor cancelled this booking. Learner is eligible for full refund and rebooking support.'
@@ -709,7 +755,7 @@ export class InstructorsService {
         user.userId,
       );
     }
-    return saved;
+    return this.mapLessonWithFinance(saved, finance);
   }
 
   async cancelLessonAsLearner(
@@ -737,24 +783,42 @@ export class InstructorsService {
       );
     }
 
-    lesson.status = 'cancelled';
-    const saved = await this.lessonsRepo.save(lesson);
-    await this.syncAvailabilitySlotForLessonStatus(saved);
-    await this.recordLessonAuditEvent(
-      'LESSON_CANCELLED_BY_LEARNER',
-      user.userId,
-      saved,
-      {
-        eventVersion: 1,
-        actorRole: normaliseRole(user.role) ?? user.role ?? null,
-        previousStatus,
-        nextStatus: 'cancelled',
-        policyWindow: window,
-        emergency: dto.emergency === true,
-        note: dto.note ?? null,
-      },
-      this.auditRepo,
-    );
+    const { lesson: saved, finance } = await this.lessonsRepo.manager.transaction(async (manager) => {
+      const lessonRepo = manager.getRepository(LessonEntity);
+      const auditRepo = manager.getRepository(AuditLog);
+      const lockedLesson = await this.loadLessonForUpdate(lessonRepo, lessonId);
+
+      if (!lockedLesson) {
+        throw new NotFoundException('Lesson not found');
+      }
+      lockedLesson.status = 'cancelled';
+      const savedLesson = await lessonRepo.save(lockedLesson);
+      await this.syncAvailabilitySlotForLessonStatus(savedLesson, manager);
+      const financeSnapshot = await this.refreshLessonFinanceSnapshotWithFallback(
+        savedLesson.id,
+        {
+          manager,
+          reason: 'lesson_cancelled_by_learner',
+          actorUserId: user.userId,
+        },
+      );
+      await this.recordLessonAuditEvent(
+        'LESSON_CANCELLED_BY_LEARNER',
+        user.userId,
+        savedLesson,
+        {
+          eventVersion: 1,
+          actorRole: normaliseRole(user.role) ?? user.role ?? null,
+          previousStatus,
+          nextStatus: 'cancelled',
+          policyWindow: window,
+          emergency: dto.emergency === true,
+          note: dto.note ?? null,
+        },
+        auditRepo,
+      );
+      return { lesson: savedLesson, finance: financeSnapshot };
+    });
 
     const instructor = await this.instructorsRepo.findOne({ where: { id: saved.instructorId } });
     if (instructor && !instructor.deletedAt) {
@@ -775,7 +839,7 @@ export class InstructorsService {
       );
     }
 
-    return saved;
+    return this.mapLessonWithFinance(saved, finance);
   }
 
   async rescheduleLessonAsLearner(
@@ -889,6 +953,15 @@ export class InstructorsService {
         );
       }
 
+      const financeSnapshot = await this.refreshLessonFinanceSnapshotWithFallback(
+        savedLesson.id,
+        {
+          manager,
+          reason: 'lesson_rescheduled_by_learner',
+          actorUserId: user.userId,
+        },
+      );
+
       await this.recordLessonAuditEvent(
         'LESSON_RESCHEDULED_BY_LEARNER',
         user.userId,
@@ -908,7 +981,7 @@ export class InstructorsService {
         auditRepo,
       );
 
-      return savedLesson;
+      return this.mapLessonWithFinance(savedLesson, financeSnapshot);
     });
   }
 
@@ -926,6 +999,7 @@ export class InstructorsService {
       const rows = await this.lessonsRepo
         .createQueryBuilder('l')
         .leftJoin('users', 'learner', 'learner.id = l.learner_user_id')
+        .leftJoin('lesson_finance_snapshots', 'fs', 'fs.lesson_id = l.id')
         .where('l.instructor_id = :instructorId', { instructorId: instructor.id })
         .andWhere('l.deleted_at IS NULL')
       .select('l.id', 'id')
@@ -945,6 +1019,19 @@ export class InstructorsService {
         .addSelect('learner.name', 'learner_name')
         .addSelect('learner.email', 'learner_email')
         .addSelect('learner.phone', 'learner_phone')
+        .addSelect('fs.id', 'finance_id')
+        .addSelect('fs.booking_source', 'finance_booking_source')
+        .addSelect('fs.currency_code', 'finance_currency_code')
+        .addSelect('fs.gross_amount_pence', 'finance_gross_amount_pence')
+        .addSelect('fs.commission_percent_basis_points', 'finance_commission_percent_basis_points')
+        .addSelect('fs.commission_amount_pence', 'finance_commission_amount_pence')
+        .addSelect('fs.instructor_net_amount_pence', 'finance_instructor_net_amount_pence')
+        .addSelect('fs.commission_status', 'finance_commission_status')
+        .addSelect('fs.payout_status', 'finance_payout_status')
+        .addSelect('fs.finance_integrity_status', 'finance_integrity_status')
+        .addSelect('fs.finance_notes', 'finance_notes')
+        .addSelect('fs.snapshot_version', 'finance_snapshot_version')
+        .addSelect('fs.updated_at', 'finance_updated_at')
         .orderBy('l.scheduled_at', 'ASC', 'NULLS LAST')
         .addOrderBy('l.created_at', 'DESC')
         .getRawMany<{
@@ -965,6 +1052,19 @@ export class InstructorsService {
           learner_name: string | null;
           learner_email: string | null;
           learner_phone: string | null;
+          finance_id: string | null;
+          finance_booking_source: LessonFinanceBookingSource | null;
+          finance_currency_code: string | null;
+          finance_gross_amount_pence: number | null;
+          finance_commission_percent_basis_points: number | null;
+          finance_commission_amount_pence: number | null;
+          finance_instructor_net_amount_pence: number | null;
+          finance_commission_status: string | null;
+          finance_payout_status: string | null;
+          finance_integrity_status: string | null;
+          finance_notes: string | null;
+          finance_snapshot_version: number | null;
+          finance_updated_at: Date | null;
         }>();
 
       return rows.map((row) => ({
@@ -986,6 +1086,7 @@ export class InstructorsService {
         learnerEmail: row.learner_email ?? null,
         learnerPhone: row.learner_phone ?? null,
         instructorName: instructor.fullName,
+        finance: this.mapFinanceFromLessonRow(row),
       }));
     }
 
@@ -994,6 +1095,7 @@ export class InstructorsService {
         .createQueryBuilder('l')
         .leftJoin('instructors', 'i', 'i.id = l.instructor_id')
         .leftJoin('users', 'learner', 'learner.id = l.learner_user_id')
+        .leftJoin('lesson_finance_snapshots', 'fs', 'fs.lesson_id = l.id')
         .where('l.learner_user_id = :learnerUserId', { learnerUserId: user.userId })
         .andWhere('l.deleted_at IS NULL')
         .select('l.id', 'id')
@@ -1014,6 +1116,19 @@ export class InstructorsService {
         .addSelect('learner.name', 'learner_name')
         .addSelect('learner.email', 'learner_email')
         .addSelect('learner.phone', 'learner_phone')
+        .addSelect('fs.id', 'finance_id')
+        .addSelect('fs.booking_source', 'finance_booking_source')
+        .addSelect('fs.currency_code', 'finance_currency_code')
+        .addSelect('fs.gross_amount_pence', 'finance_gross_amount_pence')
+        .addSelect('fs.commission_percent_basis_points', 'finance_commission_percent_basis_points')
+        .addSelect('fs.commission_amount_pence', 'finance_commission_amount_pence')
+        .addSelect('fs.instructor_net_amount_pence', 'finance_instructor_net_amount_pence')
+        .addSelect('fs.commission_status', 'finance_commission_status')
+        .addSelect('fs.payout_status', 'finance_payout_status')
+        .addSelect('fs.finance_integrity_status', 'finance_integrity_status')
+        .addSelect('fs.finance_notes', 'finance_notes')
+        .addSelect('fs.snapshot_version', 'finance_snapshot_version')
+        .addSelect('fs.updated_at', 'finance_updated_at')
         .orderBy('l.scheduled_at', 'ASC', 'NULLS LAST')
         .addOrderBy('l.created_at', 'DESC')
         .getRawMany<{
@@ -1035,6 +1150,19 @@ export class InstructorsService {
           learner_name: string | null;
           learner_email: string | null;
           learner_phone: string | null;
+          finance_id: string | null;
+          finance_booking_source: LessonFinanceBookingSource | null;
+          finance_currency_code: string | null;
+          finance_gross_amount_pence: number | null;
+          finance_commission_percent_basis_points: number | null;
+          finance_commission_amount_pence: number | null;
+          finance_instructor_net_amount_pence: number | null;
+          finance_commission_status: string | null;
+          finance_payout_status: string | null;
+          finance_integrity_status: string | null;
+          finance_notes: string | null;
+          finance_snapshot_version: number | null;
+          finance_updated_at: Date | null;
         }>();
 
       return rows.map((row) => ({
@@ -1056,6 +1184,7 @@ export class InstructorsService {
         learnerName: row.learner_name ?? null,
         learnerEmail: row.learner_email ?? null,
         learnerPhone: row.learner_phone ?? null,
+        finance: this.mapFinanceFromLessonRow(row),
       }));
     }
 
@@ -1298,9 +1427,11 @@ export class InstructorsService {
     }
 
     const payment = await this.lessonPaymentsRepo.findOne({ where: { lessonId } });
+    const finance = await this.lessonFinanceRepo.findOne({ where: { lessonId } });
     return {
       lessonId,
       payment: payment ? this.mapLessonPayment(payment) : null,
+      finance: this.mapLessonFinanceSnapshot(finance, lessonId),
     };
   }
 
@@ -1377,6 +1508,325 @@ export class InstructorsService {
     return savedReview;
   }
 
+  async getAdminFinanceSummary(query: AdminFinanceReportQueryDto) {
+    const { from, to } = this.resolveAdminDateRange(query.from, query.to);
+
+    const summaryRow = await this.lessonsRepo.query(
+      `
+        SELECT
+          COUNT(l.id)::int AS total_lessons_count,
+          COUNT(*) FILTER (WHERE fs.booking_source = 'marketplace')::int AS marketplace_lessons_count,
+          COALESCE(SUM(fs.gross_amount_pence), 0)::bigint AS gross_booking_value_total_pence,
+          COALESCE(SUM(fs.commission_amount_pence), 0)::bigint AS total_estimated_commission_pence,
+          COALESCE(SUM(fs.instructor_net_amount_pence), 0)::bigint AS total_instructor_net_pence,
+          COUNT(*) FILTER (WHERE fs.id IS NULL)::int AS missing_finance_snapshot_count,
+          COUNT(*) FILTER (
+            WHERE fs.finance_integrity_status IN ('sync_failed', 'stale')
+          )::int AS stale_or_sync_failed_count
+        FROM lessons l
+        LEFT JOIN lesson_finance_snapshots fs ON fs.lesson_id = l.id
+        WHERE l.deleted_at IS NULL
+          AND COALESCE(l.scheduled_at, l.created_at) >= $1
+          AND COALESCE(l.scheduled_at, l.created_at) < $2
+      `,
+      [from, to],
+    );
+
+    const commissionStatusRows = await this.lessonsRepo.query(
+      `
+        SELECT
+          COALESCE(fs.commission_status, 'missing') AS status,
+          COUNT(l.id)::int AS count
+        FROM lessons l
+        LEFT JOIN lesson_finance_snapshots fs ON fs.lesson_id = l.id
+        WHERE l.deleted_at IS NULL
+          AND COALESCE(l.scheduled_at, l.created_at) >= $1
+          AND COALESCE(l.scheduled_at, l.created_at) < $2
+        GROUP BY COALESCE(fs.commission_status, 'missing')
+      `,
+      [from, to],
+    );
+
+    const payoutStatusRows = await this.lessonsRepo.query(
+      `
+        SELECT
+          COALESCE(fs.payout_status, 'missing') AS status,
+          COUNT(l.id)::int AS count
+        FROM lessons l
+        LEFT JOIN lesson_finance_snapshots fs ON fs.lesson_id = l.id
+        WHERE l.deleted_at IS NULL
+          AND COALESCE(l.scheduled_at, l.created_at) >= $1
+          AND COALESCE(l.scheduled_at, l.created_at) < $2
+        GROUP BY COALESCE(fs.payout_status, 'missing')
+      `,
+      [from, to],
+    );
+
+    const row = summaryRow?.[0] ?? {};
+    return {
+      from,
+      to,
+      totals: {
+        totalLessonsCount: Number(row.total_lessons_count ?? 0),
+        marketplaceLessonsCount: Number(row.marketplace_lessons_count ?? 0),
+        grossBookingValueTotalPence: Number(row.gross_booking_value_total_pence ?? 0),
+        totalEstimatedCommissionPence: Number(row.total_estimated_commission_pence ?? 0),
+        totalInstructorNetPence: Number(row.total_instructor_net_pence ?? 0),
+      },
+      diagnostics: {
+        missingFinanceSnapshotCount: Number(row.missing_finance_snapshot_count ?? 0),
+        staleOrSyncFailedCount: Number(row.stale_or_sync_failed_count ?? 0),
+      },
+      countByCommissionStatus: this.toStatusCountMap(commissionStatusRows),
+      countByPayoutStatus: this.toStatusCountMap(payoutStatusRows),
+    };
+  }
+
+  async getAdminFinanceByInstructor(query: AdminFinanceReportQueryDto) {
+    const { from, to } = this.resolveAdminDateRange(query.from, query.to);
+
+    const rows = await this.lessonsRepo.query(
+      `
+        SELECT
+          i.id AS instructor_id,
+          i.full_name AS full_name,
+          COUNT(l.id)::int AS lesson_count,
+          COUNT(*) FILTER (WHERE fs.booking_source = 'marketplace')::int AS marketplace_lesson_count,
+          COALESCE(SUM(fs.gross_amount_pence), 0)::bigint AS gross_value_pence,
+          COALESCE(SUM(fs.commission_amount_pence), 0)::bigint AS commission_total_pence,
+          COALESCE(SUM(fs.instructor_net_amount_pence), 0)::bigint AS net_total_pence,
+          COUNT(*) FILTER (WHERE fs.id IS NULL)::int AS missing_finance_snapshot_count,
+          COUNT(*) FILTER (
+            WHERE fs.finance_integrity_status IN ('sync_failed', 'stale')
+          )::int AS stale_or_sync_failed_count,
+          COUNT(*) FILTER (WHERE fs.payout_status = 'pending')::int AS payout_pending_count,
+          COUNT(*) FILTER (WHERE fs.payout_status = 'on_hold')::int AS payout_on_hold_count,
+          COUNT(*) FILTER (WHERE fs.payout_status = 'ready_for_manual_payout')::int AS payout_ready_for_manual_payout_count,
+          COUNT(*) FILTER (WHERE fs.payout_status = 'marked_paid')::int AS payout_marked_paid_count,
+          COUNT(*) FILTER (WHERE fs.payout_status = 'voided')::int AS payout_voided_count,
+          COUNT(*) FILTER (WHERE fs.payout_status = 'not_applicable')::int AS payout_not_applicable_count
+        FROM lessons l
+        JOIN instructors i ON i.id = l.instructor_id
+        LEFT JOIN lesson_finance_snapshots fs ON fs.lesson_id = l.id
+        WHERE l.deleted_at IS NULL
+          AND i.deleted_at IS NULL
+          AND COALESCE(l.scheduled_at, l.created_at) >= $1
+          AND COALESCE(l.scheduled_at, l.created_at) < $2
+        GROUP BY i.id, i.full_name
+        ORDER BY i.full_name ASC
+      `,
+      [from, to],
+    );
+
+    const filteredRows = query.instructorId
+      ? rows.filter((row: Record<string, unknown>) => row.instructor_id === query.instructorId)
+      : rows;
+
+    return {
+      from,
+      to,
+      instructors: filteredRows.map((row: Record<string, unknown>) => ({
+        instructorId: row.instructor_id,
+        fullName: row.full_name,
+        lessonCount: Number(row.lesson_count ?? 0),
+        marketplaceLessonCount: Number(row.marketplace_lesson_count ?? 0),
+        grossValuePence: Number(row.gross_value_pence ?? 0),
+        commissionTotalPence: Number(row.commission_total_pence ?? 0),
+        netTotalPence: Number(row.net_total_pence ?? 0),
+        diagnostics: {
+          missingFinanceSnapshotCount: Number(row.missing_finance_snapshot_count ?? 0),
+          staleOrSyncFailedCount: Number(row.stale_or_sync_failed_count ?? 0),
+        },
+        payoutStatusBreakdown: {
+          pending: Number(row.payout_pending_count ?? 0),
+          on_hold: Number(row.payout_on_hold_count ?? 0),
+          ready_for_manual_payout: Number(row.payout_ready_for_manual_payout_count ?? 0),
+          marked_paid: Number(row.payout_marked_paid_count ?? 0),
+          voided: Number(row.payout_voided_count ?? 0),
+          not_applicable: Number(row.payout_not_applicable_count ?? 0),
+        },
+      })),
+    };
+  }
+
+  async getAdminFinanceLessons(query: AdminFinanceReportQueryDto) {
+    const { from, to } = this.resolveAdminDateRange(query.from, query.to);
+    const limit = query.limit ?? 200;
+
+    const params: unknown[] = [from, to];
+    const whereClauses = [
+      'l.deleted_at IS NULL',
+      'COALESCE(l.scheduled_at, l.created_at) >= $1',
+      'COALESCE(l.scheduled_at, l.created_at) < $2',
+    ];
+
+    if (query.instructorId) {
+      params.push(query.instructorId);
+      whereClauses.push(`l.instructor_id = $${params.length}`);
+    }
+    if (query.lessonStatus) {
+      params.push(query.lessonStatus);
+      whereClauses.push(`l.status = $${params.length}`);
+    }
+    if (query.commissionStatus) {
+      params.push(query.commissionStatus);
+      whereClauses.push(`fs.commission_status = $${params.length}`);
+    }
+    if (query.payoutStatus) {
+      params.push(query.payoutStatus);
+      whereClauses.push(`fs.payout_status = $${params.length}`);
+    }
+
+    params.push(limit);
+
+    const rows = await this.lessonsRepo.query(
+      `
+        SELECT
+          l.id AS lesson_id,
+          l.status AS lesson_status,
+          l.scheduled_at AS scheduled_at,
+          l.duration_minutes AS duration_minutes,
+          l.created_at AS lesson_created_at,
+          l.updated_at AS lesson_updated_at,
+          i.id AS instructor_id,
+          i.full_name AS instructor_name,
+          u.id AS learner_user_id,
+          u.name AS learner_name,
+          fs.id AS finance_id,
+          fs.currency_code AS finance_currency_code,
+          fs.booking_source AS finance_booking_source,
+          fs.gross_amount_pence AS finance_gross_amount_pence,
+          fs.commission_percent_basis_points AS finance_commission_percent_basis_points,
+          fs.commission_amount_pence AS finance_commission_amount_pence,
+          fs.instructor_net_amount_pence AS finance_instructor_net_amount_pence,
+          fs.commission_status AS finance_commission_status,
+          fs.payout_status AS finance_payout_status,
+          fs.finance_integrity_status AS finance_integrity_status,
+          fs.finance_notes AS finance_notes,
+          fs.snapshot_version AS finance_snapshot_version,
+          fs.updated_at AS finance_updated_at
+        FROM lessons l
+        JOIN instructors i ON i.id = l.instructor_id
+        JOIN users u ON u.id = l.learner_user_id
+        LEFT JOIN lesson_finance_snapshots fs ON fs.lesson_id = l.id
+        WHERE ${whereClauses.join(' AND ')}
+        ORDER BY COALESCE(l.scheduled_at, l.created_at) DESC
+        LIMIT $${params.length}
+      `,
+      params,
+    );
+
+    return {
+      from,
+      to,
+      lessons: rows.map((row: Record<string, unknown>) => ({
+        lessonId: row.lesson_id,
+        status: row.lesson_status,
+        scheduledAt: row.scheduled_at,
+        durationMinutes: row.duration_minutes !== null ? Number(row.duration_minutes) : null,
+        createdAt: row.lesson_created_at,
+        updatedAt: row.lesson_updated_at,
+        instructor: {
+          id: row.instructor_id,
+          fullName: row.instructor_name,
+        },
+        learner: {
+          userId: row.learner_user_id,
+          name: row.learner_name,
+        },
+        finance: row.finance_id
+          ? {
+              id: row.finance_id,
+              currencyCode: row.finance_currency_code,
+              bookingSource: row.finance_booking_source,
+              grossAmountPence:
+                row.finance_gross_amount_pence !== null
+                  ? Number(row.finance_gross_amount_pence)
+                  : null,
+              commissionPercentBasisPoints:
+                row.finance_commission_percent_basis_points !== null
+                  ? Number(row.finance_commission_percent_basis_points)
+                  : null,
+              commissionAmountPence:
+                row.finance_commission_amount_pence !== null
+                  ? Number(row.finance_commission_amount_pence)
+                  : null,
+              instructorNetAmountPence:
+                row.finance_instructor_net_amount_pence !== null
+                  ? Number(row.finance_instructor_net_amount_pence)
+                  : null,
+              commissionStatus: row.finance_commission_status,
+              payoutStatus: row.finance_payout_status,
+              financeIntegrityStatus: row.finance_integrity_status,
+              financeNotes: row.finance_notes,
+              snapshotVersion:
+                row.finance_snapshot_version !== null ? Number(row.finance_snapshot_version) : null,
+              updatedAt: row.finance_updated_at,
+            }
+          : {
+              financeIntegrityStatus: 'missing',
+            },
+      })),
+    };
+  }
+
+  async repairLessonFinanceSnapshots(dto: AdminFinanceRepairDto) {
+    const { from, to } = this.resolveAdminDateRange(dto.from, dto.to);
+    const dryRun = dto.dryRun === true;
+    const limit = dto.limit ?? 500;
+
+    const targets = await this.lessonsRepo.query(
+      `
+        SELECT l.id AS lesson_id
+        FROM lessons l
+        LEFT JOIN lesson_finance_snapshots fs ON fs.lesson_id = l.id
+        WHERE l.deleted_at IS NULL
+          AND COALESCE(l.scheduled_at, l.created_at) >= $1
+          AND COALESCE(l.scheduled_at, l.created_at) < $2
+          AND (
+            fs.id IS NULL
+            OR fs.finance_integrity_status IN ('sync_failed', 'stale')
+          )
+        ORDER BY COALESCE(l.scheduled_at, l.created_at) DESC
+        LIMIT $3
+      `,
+      [from, to, limit],
+    );
+
+    const targetLessonIds = targets
+      .map((row: Record<string, unknown>) => String(row.lesson_id ?? ''))
+      .filter(Boolean);
+
+    let repaired = 0;
+    let failed = 0;
+    let skipped = 0;
+    for (const lessonId of targetLessonIds) {
+      if (dryRun) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        await this.refreshLessonFinanceSnapshotWithFallback(lessonId, {
+          reason: 'admin_repair',
+          actorUserId: null,
+        });
+        repaired += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    return {
+      from,
+      to,
+      dryRun,
+      targetCount: targetLessonIds.length,
+      repaired,
+      skipped,
+      failed,
+    };
+  }
+
   private async createLessonFromAvailabilitySlot(
     user: AuthenticatedRequestUser,
     dto: CreateLessonDto,
@@ -1446,6 +1896,15 @@ export class InstructorsService {
       slot.status = 'booked';
       slot.bookedLessonId = savedLesson.id;
       await slotRepo.save(slot);
+      const financeSnapshot = await this.refreshLessonFinanceSnapshotWithFallback(
+        savedLesson.id,
+        {
+          manager,
+          reason: 'lesson_created_from_slot',
+          actorUserId: user.userId,
+          bookingSource: 'marketplace',
+        },
+      );
       await this.recordLessonAuditEvent(
         'LESSON_CREATED',
         user.userId,
@@ -1474,7 +1933,7 @@ export class InstructorsService {
         },
         user.userId,
       );
-      return savedLesson;
+      return this.mapLessonWithFinance(savedLesson, financeSnapshot);
     });
   }
 
@@ -1504,23 +1963,173 @@ export class InstructorsService {
     });
   }
 
-  private async syncAvailabilitySlotForLessonStatus(lesson: LessonEntity) {
+  private async refreshLessonFinanceSnapshotWithFallback(
+    lessonId: string,
+    options: {
+      manager?: EntityManager;
+      reason: string;
+      actorUserId: string | null;
+      bookingSource?: LessonFinanceBookingSource;
+    },
+  ) {
+    try {
+      return await this.refreshLessonFinanceSnapshot(lessonId, options);
+    } catch (error) {
+      const manager = options.manager;
+      const lessonFinanceRepo = manager
+        ? manager.getRepository(LessonFinanceSnapshotEntity)
+        : this.lessonFinanceRepo;
+      const auditRepo = manager ? manager.getRepository(AuditLog) : this.auditRepo;
+      const existing = await lessonFinanceRepo.findOne({ where: { lessonId } });
+      const snapshot =
+        existing ??
+        lessonFinanceRepo.create({
+          lessonId,
+          currencyCode: 'GBP',
+          bookingSource: options.bookingSource ?? 'marketplace',
+          commissionPercentBasisPoints: 800,
+          commissionStatus: 'estimated',
+          payoutStatus: 'pending',
+          snapshotVersion: 1,
+        });
+      snapshot.financeIntegrityStatus = 'sync_failed';
+      snapshot.financeNotes = this.limitFinanceErrorNote(error);
+      const saved = await lessonFinanceRepo.save(snapshot);
+
+      await auditRepo.save({
+        userId: options.actorUserId,
+        action: 'LESSON_FINANCE_SYNC_FAILED',
+        metadata: {
+          eventVersion: 1,
+          lessonId,
+          reason: options.reason,
+          errorMessage: this.errorMessage(error),
+          financeIntegrityStatus: 'sync_failed',
+        },
+      });
+      return saved;
+    }
+  }
+
+  private async refreshLessonFinanceSnapshot(
+    lessonId: string,
+    options: {
+      manager?: EntityManager;
+      reason: string;
+      actorUserId: string | null;
+      bookingSource?: LessonFinanceBookingSource;
+    },
+  ) {
+    const manager = options.manager;
+    const lessonRepo = manager ? manager.getRepository(LessonEntity) : this.lessonsRepo;
+    const instructorRepo = manager ? manager.getRepository(InstructorEntity) : this.instructorsRepo;
+    const lessonFinanceRepo = manager
+      ? manager.getRepository(LessonFinanceSnapshotEntity)
+      : this.lessonFinanceRepo;
+    const disputesRepo = manager ? manager.getRepository(DisputeCaseEntity) : this.disputesRepo;
+    const auditRepo = manager ? manager.getRepository(AuditLog) : this.auditRepo;
+
+    const lesson = await lessonRepo.findOne({ where: { id: lessonId } });
+    if (!lesson || lesson.deletedAt) {
+      throw new NotFoundException('Lesson not found for finance snapshot');
+    }
+    const instructor = await instructorRepo.findOne({ where: { id: lesson.instructorId } });
+    const existing = await lessonFinanceRepo.findOne({ where: { lessonId: lesson.id } });
+
+    const bookingSource = options.bookingSource ?? existing?.bookingSource ?? 'marketplace';
+    const openDisputeCount = await disputesRepo
+      .createQueryBuilder('d')
+      .where('d.lesson_id = :lessonId', { lessonId: lesson.id })
+      .andWhere('d.deleted_at IS NULL')
+      .andWhere(`d.status NOT IN ('resolved', 'closed')`)
+      .getCount();
+
+    const computed = computeLessonFinance({
+      bookingSource,
+      lessonStatus: lesson.status,
+      hourlyRatePence: instructor?.hourlyRatePence ?? null,
+      durationMinutes: lesson.durationMinutes,
+      hasOpenDispute: openDisputeCount > 0,
+    });
+
+    const snapshot =
+      existing ??
+      lessonFinanceRepo.create({
+        lessonId: lesson.id,
+        currencyCode: 'GBP',
+        bookingSource,
+        snapshotVersion: 1,
+      });
+
+    snapshot.currencyCode = 'GBP';
+    snapshot.bookingSource = bookingSource;
+    snapshot.grossAmountPence = computed.grossAmountPence;
+    snapshot.commissionPercentBasisPoints = computed.commissionPercentBasisPoints;
+    snapshot.commissionAmountPence = computed.commissionAmountPence;
+    snapshot.instructorNetAmountPence = computed.instructorNetAmountPence;
+    snapshot.commissionStatus = computed.commissionStatus;
+    snapshot.payoutStatus = computed.payoutStatus;
+    snapshot.financeIntegrityStatus = 'synced';
+    snapshot.financeNotes = computed.financeNotes;
+    snapshot.snapshotVersion = existing?.snapshotVersion ?? 1;
+
+    const saved = await lessonFinanceRepo.save(snapshot);
+    await auditRepo.save({
+      userId: options.actorUserId,
+      action: existing ? 'LESSON_FINANCE_SNAPSHOT_UPDATED' : 'LESSON_FINANCE_SNAPSHOT_CREATED',
+      metadata: {
+        eventVersion: 1,
+        lessonId: lesson.id,
+        reason: options.reason,
+        bookingSource: saved.bookingSource,
+        commissionStatus: saved.commissionStatus,
+        payoutStatus: saved.payoutStatus,
+        financeIntegrityStatus: saved.financeIntegrityStatus,
+        hasOpenDispute: openDisputeCount > 0,
+      },
+    });
+
+    return saved;
+  }
+
+  private async syncAvailabilitySlotForLessonStatus(
+    lesson: LessonEntity,
+    manager?: EntityManager,
+  ) {
     if (!lesson.availabilitySlotId) return;
-    const slot = await this.availabilityRepo.findOne({ where: { id: lesson.availabilitySlotId } });
+    const slotRepo = manager
+      ? manager.getRepository(InstructorAvailabilityEntity)
+      : this.availabilityRepo;
+    const slot = await slotRepo.findOne({ where: { id: lesson.availabilitySlotId } });
     if (!slot || slot.deletedAt) return;
 
     if (lesson.status === 'declined' || lesson.status === 'cancelled') {
       slot.status = 'open';
       slot.bookedLessonId = null;
-      await this.availabilityRepo.save(slot);
+      await slotRepo.save(slot);
       return;
     }
 
     if (lesson.status === 'accepted' || lesson.status === 'completed') {
       slot.status = 'booked';
       slot.bookedLessonId = lesson.id;
-      await this.availabilityRepo.save(slot);
+      await slotRepo.save(slot);
     }
+  }
+
+  private async loadLessonForUpdate(
+    lessonRepo: Repository<LessonEntity>,
+    lessonId: string,
+  ) {
+    const candidate = (lessonRepo as any).createQueryBuilder?.('l');
+    if (candidate?.setLock) {
+      return candidate
+        .setLock('pessimistic_write')
+        .where('l.id = :lessonId', { lessonId })
+        .andWhere('l.deleted_at IS NULL')
+        .getOne();
+    }
+    return lessonRepo.findOne({ where: { id: lessonId } });
   }
 
   private async getInstructorForUser(userId: string) {
@@ -2045,6 +2654,136 @@ export class InstructorsService {
       return new BadRequestException(`Stripe error: ${stripeMessage}`);
     }
     return new InternalServerErrorException('Stripe request failed');
+  }
+
+  private mapLessonWithFinance(
+    lesson: LessonEntity,
+    finance: LessonFinanceSnapshotEntity | null,
+  ) {
+    return {
+      ...lesson,
+      finance: this.mapLessonFinanceSnapshot(finance, lesson.id),
+    };
+  }
+
+  private mapLessonFinanceSnapshot(
+    finance: LessonFinanceSnapshotEntity | null | undefined,
+    lessonId: string,
+  ) {
+    if (!finance) {
+      return {
+        lessonId,
+        financeIntegrityStatus: 'missing',
+      };
+    }
+    return {
+      id: finance.id,
+      lessonId: finance.lessonId,
+      currencyCode: finance.currencyCode,
+      bookingSource: finance.bookingSource,
+      grossAmountPence: finance.grossAmountPence,
+      commissionPercentBasisPoints: finance.commissionPercentBasisPoints,
+      commissionAmountPence: finance.commissionAmountPence,
+      instructorNetAmountPence: finance.instructorNetAmountPence,
+      commissionStatus: finance.commissionStatus,
+      payoutStatus: finance.payoutStatus,
+      financeIntegrityStatus: finance.financeIntegrityStatus,
+      financeNotes: finance.financeNotes,
+      snapshotVersion: finance.snapshotVersion,
+      updatedAt: finance.updatedAt,
+    };
+  }
+
+  private mapFinanceFromLessonRow(row: {
+    id?: string | null;
+    finance_id?: string | null;
+    finance_booking_source?: LessonFinanceBookingSource | null;
+    finance_currency_code?: string | null;
+    finance_gross_amount_pence?: number | null;
+    finance_commission_percent_basis_points?: number | null;
+    finance_commission_amount_pence?: number | null;
+    finance_instructor_net_amount_pence?: number | null;
+    finance_commission_status?: string | null;
+    finance_payout_status?: string | null;
+    finance_integrity_status?: string | null;
+    finance_notes?: string | null;
+    finance_snapshot_version?: number | null;
+    finance_updated_at?: Date | null;
+  }) {
+    if (!row.finance_id) {
+      return {
+        lessonId: row.id,
+        financeIntegrityStatus: 'missing',
+      };
+    }
+    return {
+      id: row.finance_id,
+      lessonId: row.id,
+      bookingSource: row.finance_booking_source,
+      currencyCode: row.finance_currency_code,
+      grossAmountPence:
+        row.finance_gross_amount_pence !== null ? Number(row.finance_gross_amount_pence) : null,
+      commissionPercentBasisPoints:
+        row.finance_commission_percent_basis_points !== null
+          ? Number(row.finance_commission_percent_basis_points)
+          : null,
+      commissionAmountPence:
+        row.finance_commission_amount_pence !== null
+          ? Number(row.finance_commission_amount_pence)
+          : null,
+      instructorNetAmountPence:
+        row.finance_instructor_net_amount_pence !== null
+          ? Number(row.finance_instructor_net_amount_pence)
+          : null,
+      commissionStatus: row.finance_commission_status,
+      payoutStatus: row.finance_payout_status,
+      financeIntegrityStatus: row.finance_integrity_status ?? 'synced',
+      financeNotes: row.finance_notes ?? null,
+      snapshotVersion:
+        row.finance_snapshot_version !== null ? Number(row.finance_snapshot_version) : null,
+      updatedAt: row.finance_updated_at ?? null,
+    };
+  }
+
+  private toStatusCountMap(rows: Array<Record<string, unknown>>) {
+    return rows.reduce<Record<string, number>>((acc, row) => {
+      const status = String(row.status ?? 'unknown');
+      acc[status] = Number(row.count ?? 0);
+      return acc;
+    }, {});
+  }
+
+  private resolveAdminDateRange(from?: string, to?: string) {
+    if (!from && !to) {
+      const end = new Date();
+      const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+
+    const fromDate = from ? new Date(from) : new Date(0);
+    const toDate = to ? new Date(to) : new Date();
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+      throw new BadRequestException('Invalid finance report date range');
+    }
+    if (toDate <= fromDate) {
+      throw new BadRequestException('Finance report date range is invalid');
+    }
+    return { from: fromDate.toISOString(), to: toDate.toISOString() };
+  }
+
+  private limitFinanceErrorNote(error: unknown) {
+    const message = this.errorMessage(error);
+    if (message.length <= 480) {
+      return message;
+    }
+    return `${message.slice(0, 477)}...`;
+  }
+
+  private errorMessage(error: unknown) {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return String(error);
   }
 
   private mapLessonPayment(payment: LessonPaymentEntity) {

@@ -6,9 +6,12 @@ import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
+import { LessonPaymentEntity } from './entities/lesson-payment.entity';
+import { LessonFinanceSnapshotEntity } from './entities/lesson-finance-snapshot.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../../entities/user.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
+import { DisputeCaseEntity } from '../disputes/entities/dispute-case.entity';
 
 type MockRepo<T extends object> = {
   findOne: jest.Mock;
@@ -17,6 +20,8 @@ type MockRepo<T extends object> = {
   save: jest.Mock;
   softDelete: jest.Mock;
   createQueryBuilder: jest.Mock;
+  query?: jest.Mock;
+  manager?: any;
 };
 
 function createMockRepo<T extends object>(): MockRepo<T> {
@@ -27,6 +32,7 @@ function createMockRepo<T extends object>(): MockRepo<T> {
     save: jest.fn(async (input: T) => input),
     softDelete: jest.fn(),
     createQueryBuilder: jest.fn(),
+    query: jest.fn(),
   };
 }
 
@@ -35,7 +41,10 @@ describe('InstructorsService', () => {
   let instructorsRepo: MockRepo<InstructorEntity>;
   let reviewsRepo: MockRepo<InstructorReviewEntity>;
   let lessonsRepo: MockRepo<LessonEntity>;
+  let lessonPaymentsRepo: MockRepo<LessonPaymentEntity>;
+  let lessonFinanceRepo: MockRepo<LessonFinanceSnapshotEntity>;
   let availabilityRepo: MockRepo<InstructorAvailabilityEntity>;
+  let disputesRepo: MockRepo<DisputeCaseEntity>;
   let usersRepo: MockRepo<User>;
   let auditRepo: MockRepo<AuditLog>;
   let notificationsService: { createForUser: jest.Mock };
@@ -44,10 +53,29 @@ describe('InstructorsService', () => {
     instructorsRepo = createMockRepo<InstructorEntity>();
     reviewsRepo = createMockRepo<InstructorReviewEntity>();
     lessonsRepo = createMockRepo<LessonEntity>();
+    lessonPaymentsRepo = createMockRepo<LessonPaymentEntity>();
+    lessonFinanceRepo = createMockRepo<LessonFinanceSnapshotEntity>();
     availabilityRepo = createMockRepo<InstructorAvailabilityEntity>();
+    disputesRepo = createMockRepo<DisputeCaseEntity>();
     usersRepo = createMockRepo<User>();
     auditRepo = createMockRepo<AuditLog>();
     notificationsService = { createForUser: jest.fn() };
+
+    lessonsRepo.manager = {
+      transaction: async (cb: any) =>
+        cb({
+          getRepository: (entity: any) => {
+            if (entity === LessonEntity) return lessonsRepo;
+            if (entity === AuditLog) return auditRepo;
+            if (entity === InstructorAvailabilityEntity) return availabilityRepo;
+            if (entity === InstructorEntity) return instructorsRepo;
+            if (entity === User) return usersRepo;
+            if (entity === LessonFinanceSnapshotEntity) return lessonFinanceRepo;
+            if (entity === DisputeCaseEntity) return disputesRepo;
+            return createMockRepo();
+          },
+        }),
+    } as any;
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -56,13 +84,22 @@ describe('InstructorsService', () => {
         { provide: getRepositoryToken(InstructorEntity), useValue: instructorsRepo },
         { provide: getRepositoryToken(InstructorReviewEntity), useValue: reviewsRepo },
         { provide: getRepositoryToken(LessonEntity), useValue: lessonsRepo },
+        { provide: getRepositoryToken(LessonPaymentEntity), useValue: lessonPaymentsRepo },
+        { provide: getRepositoryToken(LessonFinanceSnapshotEntity), useValue: lessonFinanceRepo },
         { provide: getRepositoryToken(InstructorAvailabilityEntity), useValue: availabilityRepo },
+        { provide: getRepositoryToken(DisputeCaseEntity), useValue: disputesRepo },
         { provide: getRepositoryToken(AuditLog), useValue: auditRepo },
         { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 
     service = moduleRef.get(InstructorsService);
+    lessonFinanceRepo.findOne.mockResolvedValue(null);
+    disputesRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(0),
+    });
   });
 
   it('rejects review creation without completed lesson', async () => {
