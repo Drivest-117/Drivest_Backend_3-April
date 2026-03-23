@@ -29,6 +29,46 @@ export class AddLessonFinanceSnapshots1770800000000 implements MigrationInterfac
       )
     `);
 
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "currency_code" text NOT NULL DEFAULT \'GBP\'',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "booking_source" text NOT NULL DEFAULT \'marketplace\'',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "gross_amount_pence" int NULL',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "commission_percent_basis_points" int NOT NULL DEFAULT 800',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "commission_amount_pence" int NULL',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "instructor_net_amount_pence" int NULL',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "commission_status" text NOT NULL DEFAULT \'estimated\'',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "payout_status" text NOT NULL DEFAULT \'pending\'',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "finance_integrity_status" text NOT NULL DEFAULT \'synced\'',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "finance_notes" text NULL',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "snapshot_version" int NOT NULL DEFAULT 1',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "external_payment_reference" text NULL',
+    );
+    await queryRunner.query(
+      'ALTER TABLE "lesson_finance_snapshots" ADD COLUMN IF NOT EXISTS "external_payout_reference" text NULL',
+    );
+
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "IDX_lesson_finance_snapshots_commission_status"
       ON "lesson_finance_snapshots"("commission_status")
