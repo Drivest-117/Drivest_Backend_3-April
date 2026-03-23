@@ -175,14 +175,20 @@ export class CentresService {
     const centre = await this.resolveCentre(idOrSlug)
     if (!centre) return []
 
-    const routes = await this.routesRepo.find({
-      where: { centreId: centre.id, isActive: true },
-    });
-    
+    const routes = await this.routesRepo
+      .createQueryBuilder('route')
+      .where('route.centreId = :centreId', { centreId: centre.id })
+      .andWhere('route.isActive = true')
+      .andWhere('LOWER(TRIM(route.name)) != :blockedRouteName', {
+        blockedRouteName: 'colchester dev route',
+      })
+      .orderBy('route.createdAt', 'ASC')
+      .getMany()
+
     // Remove gpx field from each route before returning
-    return routes.map(route => {
-      const { gpx, ...routeWithoutGpx } = route;
-      return routeWithoutGpx;
-    });
+    return routes.map((route) => {
+      const { gpx, ...routeWithoutGpx } = route
+      return routeWithoutGpx
+    })
   }
 }

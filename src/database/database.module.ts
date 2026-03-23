@@ -16,6 +16,7 @@ import { InstructorEntity } from '../modules/instructors/entities/instructor.ent
 import { InstructorReviewEntity } from '../modules/instructors/entities/instructor-review.entity';
 import { LessonEntity } from '../modules/instructors/entities/lesson.entity';
 import { InstructorAvailabilityEntity } from '../modules/instructors/entities/instructor-availability.entity';
+import { LessonPaymentEntity } from '../modules/instructors/entities/lesson-payment.entity';
 import { UserNotification } from '../entities/user-notification.entity';
 import { UserModuleProgress } from '../entities/user-module-progress.entity';
 import { UserModulePassStatus } from '../entities/user-module-pass-status.entity';
@@ -46,6 +47,7 @@ import { DisputeCaseEntity } from '../modules/disputes/entities/dispute-case.ent
           InstructorEntity,
           InstructorReviewEntity,
           LessonEntity,
+          LessonPaymentEntity,
           InstructorAvailabilityEntity,
           UserNotification,
           UserModuleProgress,

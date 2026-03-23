@@ -2,14 +2,18 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
+import axios from 'axios';
 import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
+import { LessonPaymentEntity } from './entities/lesson-payment.entity';
 import { User } from '../../entities/user.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { CreateInstructorProfileDto } from './dto/create-instructor-profile.dto';
@@ -22,6 +26,8 @@ import { CancelLessonDto } from './dto/cancel-lesson.dto';
 import { RescheduleLessonDto } from './dto/reschedule-lesson.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
+import { ConfirmLessonStripePaymentDto } from './dto/confirm-lesson-stripe-payment.dto';
+import { ActivateLessonApplePaymentDto } from './dto/activate-lesson-apple-payment.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
@@ -35,6 +41,8 @@ export class InstructorsService {
     private readonly reviewsRepo: Repository<InstructorReviewEntity>,
     @InjectRepository(LessonEntity)
     private readonly lessonsRepo: Repository<LessonEntity>,
+    @InjectRepository(LessonPaymentEntity)
+    private readonly lessonPaymentsRepo: Repository<LessonPaymentEntity>,
     @InjectRepository(InstructorAvailabilityEntity)
     private readonly availabilityRepo: Repository<InstructorAvailabilityEntity>,
     @InjectRepository(AuditLog)
@@ -49,6 +57,11 @@ export class InstructorsService {
     if (existing) {
       throw new BadRequestException('Instructor profile already exists');
     }
+    this.validateBankDetailsInput(
+      dto.bankAccountHolderName,
+      dto.bankSortCode,
+      dto.bankAccountNumber,
+    );
 
     const profile = this.instructorsRepo.create({
       userId: user.userId,
@@ -63,6 +76,10 @@ export class InstructorsService {
       bio: dto.bio ?? null,
       languages: dto.languages ?? null,
       coveragePostcodes: this.normaliseCoverageAreas(dto.coveragePostcodes),
+      bankAccountHolderName: this.normaliseOptionalText(dto.bankAccountHolderName),
+      bankSortCode: this.normaliseBankSortCode(dto.bankSortCode),
+      bankAccountNumber: this.normaliseBankAccountNumber(dto.bankAccountNumber),
+      bankName: this.normaliseOptionalText(dto.bankName),
       homeLocation: this.toPoint(dto.homeLat, dto.homeLng),
       isApproved: false,
       approvedAt: null,
@@ -79,6 +96,11 @@ export class InstructorsService {
     if (!profile) {
       throw new NotFoundException('Instructor profile not found');
     }
+    this.validateBankDetailsInput(
+      dto.bankAccountHolderName,
+      dto.bankSortCode,
+      dto.bankAccountNumber,
+    );
 
     const adiChanged = typeof dto.adiNumber === 'string' && dto.adiNumber !== profile.adiNumber;
 
@@ -97,6 +119,20 @@ export class InstructorsService {
         dto.coveragePostcodes !== undefined
           ? this.normaliseCoverageAreas(dto.coveragePostcodes)
           : profile.coveragePostcodes,
+      bankAccountHolderName:
+        dto.bankAccountHolderName !== undefined
+          ? this.normaliseOptionalText(dto.bankAccountHolderName)
+          : profile.bankAccountHolderName,
+      bankSortCode:
+        dto.bankSortCode !== undefined
+          ? this.normaliseBankSortCode(dto.bankSortCode)
+          : profile.bankSortCode,
+      bankAccountNumber:
+        dto.bankAccountNumber !== undefined
+          ? this.normaliseBankAccountNumber(dto.bankAccountNumber)
+          : profile.bankAccountNumber,
+      bankName:
+        dto.bankName !== undefined ? this.normaliseOptionalText(dto.bankName) : profile.bankName,
     });
 
     if (dto.homeLat !== undefined || dto.homeLng !== undefined) {
@@ -134,6 +170,10 @@ export class InstructorsService {
       bio: profile.bio,
       languages: profile.languages ?? [],
       coveragePostcodes: profile.coveragePostcodes ?? [],
+      bankAccountHolderName: profile.bankAccountHolderName,
+      bankSortCode: profile.bankSortCode,
+      bankAccountNumber: profile.bankAccountNumber,
+      bankName: profile.bankName,
       isApproved: profile.isApproved,
       approvedAt: profile.approvedAt,
       suspendedAt: profile.suspendedAt,
@@ -232,6 +272,24 @@ export class InstructorsService {
       ratingCount: Number(row.rating_count ?? 0),
       coveragePostcodes: row.coverage_postcodes ?? [],
     }));
+  }
+
+  async listPublicLocationSuggestions(query: string, limit = 8) {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 2) {
+      return [];
+    }
+
+    const normalizedLimit = Math.min(Math.max(Number(limit) || 8, 1), 20);
+    const [localSuggestions, mapboxSuggestions] = await Promise.all([
+      this.listCoverageSuggestionsFromProfiles(trimmedQuery, normalizedLimit),
+      this.listMapboxLocationSuggestions(trimmedQuery, normalizedLimit),
+    ]);
+
+    return this.mergeLocationSuggestions(
+      [...mapboxSuggestions, ...localSuggestions],
+      normalizedLimit,
+    );
   }
 
   async getPublicProfile(instructorId: string) {
@@ -382,11 +440,45 @@ export class InstructorsService {
     return { success: true };
   }
 
+  async listAdminInstructors(scope?: string) {
+    const normalizedScope = (scope ?? 'all').trim().toLowerCase();
+    const qb = this.instructorsRepo
+      .createQueryBuilder('i')
+      .where('i.deleted_at IS NULL');
+
+    switch (normalizedScope) {
+      case 'pending':
+        qb.andWhere('i.is_approved = false').andWhere('i.suspended_at IS NULL');
+        break;
+      case 'approved':
+        qb.andWhere('i.is_approved = true').andWhere('i.suspended_at IS NULL');
+        break;
+      case 'suspended':
+        qb.andWhere('i.suspended_at IS NOT NULL');
+        break;
+      case 'all':
+      default:
+        break;
+    }
+
+    const profiles = await qb.orderBy('i.created_at', 'DESC').getMany();
+    return profiles.map((profile) => this.mapAdminInstructorProfile(profile));
+  }
+
+  async getAdminInstructorProfile(instructorId: string) {
+    const profile = await this.instructorsRepo.findOne({ where: { id: instructorId } });
+    if (!profile || profile.deletedAt) {
+      throw new NotFoundException('Instructor not found');
+    }
+    return this.mapAdminInstructorProfile(profile);
+  }
+
   async getPendingProfiles() {
-    return this.instructorsRepo.find({
+    const profiles = await this.instructorsRepo.find({
       where: { isApproved: false, suspendedAt: IsNull() },
       order: { createdAt: 'ASC' },
     });
+    return profiles.map((profile) => this.mapAdminInstructorProfile(profile));
   }
 
   async approveInstructor(instructorId: string) {
@@ -467,6 +559,15 @@ export class InstructorsService {
       await this.ensureNoLessonConflicts(instructor.id, scheduledAt, durationMinutes);
     }
 
+    const learner = await this.usersRepo.findOne({
+      where: { id: user.userId },
+      select: ['id', 'phone'],
+    });
+    const pickupContactNumber = this.resolvePickupContactNumber(
+      dto.pickup?.contactNumber,
+      learner?.phone ?? null,
+    );
+
     const lesson = this.lessonsRepo.create({
       instructorId: dto.instructorId,
       learnerUserId: user.userId,
@@ -475,6 +576,13 @@ export class InstructorsService {
       status: 'requested',
       learnerNote: dto.learnerNote ?? null,
       availabilitySlotId: null,
+      pickupAddress: this.normaliseOptionalText(dto.pickup?.address),
+      pickupPostcode: this.normaliseOptionalText(dto.pickup?.postcode),
+      pickupLat: dto.pickup?.lat ?? null,
+      pickupLng: dto.pickup?.lng ?? null,
+      pickupPlaceId: this.normaliseOptionalText(dto.pickup?.placeId),
+      pickupNote: this.normaliseOptionalText(dto.pickup?.note),
+      pickupContactNumber,
     });
     const savedLesson = await this.lessonsRepo.save(lesson);
     await this.recordLessonAuditEvent(
@@ -820,14 +928,23 @@ export class InstructorsService {
         .leftJoin('users', 'learner', 'learner.id = l.learner_user_id')
         .where('l.instructor_id = :instructorId', { instructorId: instructor.id })
         .andWhere('l.deleted_at IS NULL')
-        .select('l.id', 'id')
+      .select('l.id', 'id')
         .addSelect('l.instructor_id', 'instructor_id')
         .addSelect('l.learner_user_id', 'learner_user_id')
         .addSelect('l.scheduled_at', 'scheduled_at')
         .addSelect('l.duration_minutes', 'duration_minutes')
         .addSelect('l.status', 'status')
         .addSelect('l.availability_slot_id', 'availability_slot_id')
+        .addSelect('l.pickup_address', 'pickup_address')
+        .addSelect('l.pickup_postcode', 'pickup_postcode')
+        .addSelect('l.pickup_lat', 'pickup_lat')
+        .addSelect('l.pickup_lng', 'pickup_lng')
+        .addSelect('l.pickup_place_id', 'pickup_place_id')
+        .addSelect('l.pickup_note', 'pickup_note')
+        .addSelect('l.pickup_contact_number', 'pickup_contact_number')
         .addSelect('learner.name', 'learner_name')
+        .addSelect('learner.email', 'learner_email')
+        .addSelect('learner.phone', 'learner_phone')
         .orderBy('l.scheduled_at', 'ASC', 'NULLS LAST')
         .addOrderBy('l.created_at', 'DESC')
         .getRawMany<{
@@ -838,7 +955,16 @@ export class InstructorsService {
           duration_minutes: number | null;
           status: LessonEntity['status'];
           availability_slot_id: string | null;
+          pickup_address: string | null;
+          pickup_postcode: string | null;
+          pickup_lat: number | null;
+          pickup_lng: number | null;
+          pickup_place_id: string | null;
+          pickup_note: string | null;
+          pickup_contact_number: string | null;
           learner_name: string | null;
+          learner_email: string | null;
+          learner_phone: string | null;
         }>();
 
       return rows.map((row) => ({
@@ -849,7 +975,16 @@ export class InstructorsService {
         durationMinutes: row.duration_minutes !== null ? Number(row.duration_minutes) : null,
         status: row.status,
         availabilitySlotId: row.availability_slot_id,
+        pickupAddress: row.pickup_address,
+        pickupPostcode: row.pickup_postcode,
+        pickupLat: row.pickup_lat !== null ? Number(row.pickup_lat) : null,
+        pickupLng: row.pickup_lng !== null ? Number(row.pickup_lng) : null,
+        pickupPlaceId: row.pickup_place_id,
+        pickupNote: row.pickup_note,
+        pickupContactNumber: row.pickup_contact_number,
         learnerName: row.learner_name ?? 'Learner',
+        learnerEmail: row.learner_email ?? null,
+        learnerPhone: row.learner_phone ?? null,
         instructorName: instructor.fullName,
       }));
     }
@@ -868,8 +1003,17 @@ export class InstructorsService {
         .addSelect('l.duration_minutes', 'duration_minutes')
         .addSelect('l.status', 'status')
         .addSelect('l.availability_slot_id', 'availability_slot_id')
+        .addSelect('l.pickup_address', 'pickup_address')
+        .addSelect('l.pickup_postcode', 'pickup_postcode')
+        .addSelect('l.pickup_lat', 'pickup_lat')
+        .addSelect('l.pickup_lng', 'pickup_lng')
+        .addSelect('l.pickup_place_id', 'pickup_place_id')
+        .addSelect('l.pickup_note', 'pickup_note')
+        .addSelect('l.pickup_contact_number', 'pickup_contact_number')
         .addSelect('i.full_name', 'instructor_name')
         .addSelect('learner.name', 'learner_name')
+        .addSelect('learner.email', 'learner_email')
+        .addSelect('learner.phone', 'learner_phone')
         .orderBy('l.scheduled_at', 'ASC', 'NULLS LAST')
         .addOrderBy('l.created_at', 'DESC')
         .getRawMany<{
@@ -880,8 +1024,17 @@ export class InstructorsService {
           duration_minutes: number | null;
           status: LessonEntity['status'];
           availability_slot_id: string | null;
+          pickup_address: string | null;
+          pickup_postcode: string | null;
+          pickup_lat: number | null;
+          pickup_lng: number | null;
+          pickup_place_id: string | null;
+          pickup_note: string | null;
+          pickup_contact_number: string | null;
           instructor_name: string | null;
           learner_name: string | null;
+          learner_email: string | null;
+          learner_phone: string | null;
         }>();
 
       return rows.map((row) => ({
@@ -892,12 +1045,263 @@ export class InstructorsService {
         durationMinutes: row.duration_minutes !== null ? Number(row.duration_minutes) : null,
         status: row.status,
         availabilitySlotId: row.availability_slot_id,
+        pickupAddress: row.pickup_address,
+        pickupPostcode: row.pickup_postcode,
+        pickupLat: row.pickup_lat !== null ? Number(row.pickup_lat) : null,
+        pickupLng: row.pickup_lng !== null ? Number(row.pickup_lng) : null,
+        pickupPlaceId: row.pickup_place_id,
+        pickupNote: row.pickup_note,
+        pickupContactNumber: row.pickup_contact_number,
         instructorName: row.instructor_name ?? 'Instructor',
         learnerName: row.learner_name ?? null,
+        learnerEmail: row.learner_email ?? null,
+        learnerPhone: row.learner_phone ?? null,
       }));
     }
 
     throw new ForbiddenException('Unsupported role');
+  }
+
+  async createLessonStripeCheckout(user: AuthenticatedRequestUser, lessonId: string) {
+    this.requireRole(user, 'learner');
+    const { lesson, instructor } = await this.loadLearnerLessonContext(user.userId, lessonId);
+    if (!['requested', 'accepted', 'planned'].includes(lesson.status)) {
+      throw new BadRequestException(
+        `Lesson payment can only be started for requested, accepted, or planned lessons`,
+      );
+    }
+    const amountPence = this.resolveLessonAmountPence(lesson, instructor);
+    const stripeSecret = this.requireStripeSecretKey();
+
+    const existingPayment = await this.lessonPaymentsRepo.findOne({ where: { lessonId } });
+    if (existingPayment?.status === 'captured') {
+      return {
+        lessonId,
+        paymentStatus: 'captured',
+        checkoutSessionId: existingPayment.checkoutSessionId,
+        checkoutUrl: existingPayment.checkoutUrl,
+        payment: this.mapLessonPayment(existingPayment),
+      };
+    }
+    if (
+      existingPayment?.provider === 'stripe' &&
+      existingPayment.status === 'checkout_created' &&
+      existingPayment.checkoutSessionId &&
+      existingPayment.checkoutUrl
+    ) {
+      return {
+        lessonId,
+        paymentStatus: 'pending',
+        checkoutSessionId: existingPayment.checkoutSessionId,
+        checkoutUrl: existingPayment.checkoutUrl,
+        payment: this.mapLessonPayment(existingPayment),
+      };
+    }
+
+    const successUrl =
+      process.env.STRIPE_LESSON_CHECKOUT_SUCCESS_URL ??
+      process.env.STRIPE_CHECKOUT_SUCCESS_URL ??
+      'drivest://lesson-payment/success?session_id={CHECKOUT_SESSION_ID}';
+    const cancelUrl =
+      process.env.STRIPE_LESSON_CHECKOUT_CANCEL_URL ??
+      process.env.STRIPE_CHECKOUT_CANCEL_URL ??
+      'drivest://lesson-payment/cancel';
+
+    const params = new URLSearchParams();
+    params.set('mode', 'payment');
+    params.set('success_url', successUrl);
+    params.set('cancel_url', cancelUrl);
+    params.set('payment_method_types[0]', 'card');
+    params.set('line_items[0][quantity]', '1');
+    params.set('line_items[0][price_data][currency]', 'gbp');
+    params.set('line_items[0][price_data][unit_amount]', String(amountPence));
+    params.set(
+      'line_items[0][price_data][product_data][name]',
+      `Driving lesson with ${instructor.fullName}`,
+    );
+    params.set('metadata[lesson_id]', lesson.id);
+    params.set('metadata[instructor_id]', instructor.id);
+    params.set('metadata[learner_user_id]', lesson.learnerUserId);
+    params.set('client_reference_id', lesson.id);
+
+    const stripeCheckout = await this.postStripeForm('/checkout/sessions', params, stripeSecret);
+    const isCaptured = String(stripeCheckout?.payment_status ?? '').toLowerCase() === 'paid';
+    const checkoutSessionId = this.readString(stripeCheckout?.id);
+    if (!checkoutSessionId) {
+      throw new BadRequestException('Stripe checkout session was created without a session id');
+    }
+
+    const payment = existingPayment ?? this.lessonPaymentsRepo.create({ lessonId });
+    payment.provider = 'stripe';
+    payment.status = isCaptured ? 'captured' : 'checkout_created';
+    payment.currencyCode = 'GBP';
+    payment.amountPence = amountPence;
+    payment.checkoutSessionId = checkoutSessionId;
+    payment.checkoutUrl = this.normaliseOptionalText(this.readString(stripeCheckout?.url));
+    payment.paymentIntentId = this.normaliseOptionalText(
+      this.readString(stripeCheckout?.payment_intent),
+    );
+    payment.failureReason = null;
+    payment.productId = null;
+    payment.transactionId = null;
+    payment.capturedAt = isCaptured ? new Date() : null;
+    payment.rawProviderPayload = stripeCheckout ?? null;
+    const savedPayment = await this.lessonPaymentsRepo.save(payment);
+
+    await this.auditRepo.save({
+      userId: user.userId,
+      action: 'LESSON_PAYMENT_STRIPE_CHECKOUT_CREATED',
+      metadata: {
+        lessonId: lesson.id,
+        amountPence,
+        checkoutSessionId: savedPayment.checkoutSessionId,
+        status: savedPayment.status,
+      },
+    });
+
+    return {
+      lessonId,
+      paymentStatus: savedPayment.status === 'captured' ? 'captured' : 'pending',
+      checkoutSessionId: savedPayment.checkoutSessionId,
+      checkoutUrl: savedPayment.checkoutUrl,
+      payment: this.mapLessonPayment(savedPayment),
+    };
+  }
+
+  async confirmLessonStripePayment(
+    user: AuthenticatedRequestUser,
+    lessonId: string,
+    dto: ConfirmLessonStripePaymentDto,
+  ) {
+    this.requireRole(user, 'learner');
+    const { lesson, instructor } = await this.loadLearnerLessonContext(user.userId, lessonId);
+    const stripeSecret = this.requireStripeSecretKey();
+
+    const payment = await this.lessonPaymentsRepo.findOne({ where: { lessonId } });
+    if (
+      payment?.checkoutSessionId &&
+      payment.checkoutSessionId !== dto.checkoutSessionId &&
+      payment.provider === 'stripe'
+    ) {
+      throw new BadRequestException('Checkout session does not match the stored payment session');
+    }
+
+    const stripeCheckout = await this.getStripe(
+      `/checkout/sessions/${encodeURIComponent(dto.checkoutSessionId)}`,
+      stripeSecret,
+    );
+    const paymentStatusRaw = String(stripeCheckout?.payment_status ?? '').toLowerCase();
+    const isCaptured = paymentStatusRaw === 'paid';
+    const amountPence = this.resolveLessonAmountPence(lesson, instructor);
+
+    const upsert = payment ?? this.lessonPaymentsRepo.create({ lessonId });
+    upsert.provider = 'stripe';
+    upsert.status = isCaptured ? 'captured' : 'pending';
+    upsert.currencyCode = 'GBP';
+    upsert.amountPence = amountPence;
+    upsert.checkoutSessionId = dto.checkoutSessionId;
+    upsert.checkoutUrl = this.normaliseOptionalText(this.readString(stripeCheckout?.url));
+    upsert.paymentIntentId = this.normaliseOptionalText(
+      this.readString(stripeCheckout?.payment_intent),
+    );
+    upsert.rawProviderPayload = stripeCheckout ?? null;
+    upsert.failureReason = isCaptured ? null : 'Stripe payment not yet paid';
+    upsert.capturedAt = isCaptured ? new Date() : null;
+    const savedPayment = await this.lessonPaymentsRepo.save(upsert);
+
+    await this.auditRepo.save({
+      userId: user.userId,
+      action: 'LESSON_PAYMENT_STRIPE_CONFIRMED',
+      metadata: {
+        lessonId,
+        checkoutSessionId: dto.checkoutSessionId,
+        status: savedPayment.status,
+      },
+    });
+
+    return {
+      lessonId,
+      payment: this.mapLessonPayment(savedPayment),
+    };
+  }
+
+  async activateLessonApplePayment(
+    user: AuthenticatedRequestUser,
+    lessonId: string,
+    dto: ActivateLessonApplePaymentDto,
+  ) {
+    this.requireRole(user, 'learner');
+    const { lesson, instructor } = await this.loadLearnerLessonContext(user.userId, lessonId);
+    const amountPence = this.resolveLessonAmountPence(lesson, instructor);
+
+    const existing = await this.lessonPaymentsRepo.findOne({ where: { lessonId } });
+    if (existing?.provider === 'stripe' && existing.status === 'captured') {
+      throw new BadRequestException('Stripe payment already captured for this lesson');
+    }
+
+    const payment = existing ?? this.lessonPaymentsRepo.create({ lessonId });
+    payment.provider = 'apple_iap';
+    payment.status = 'captured';
+    payment.currencyCode = 'GBP';
+    payment.amountPence = amountPence;
+    payment.checkoutSessionId = null;
+    payment.checkoutUrl = null;
+    payment.paymentIntentId = null;
+    payment.productId = dto.productId;
+    payment.transactionId = dto.transactionId;
+    payment.capturedAt = dto.purchasedAt ? new Date(dto.purchasedAt) : new Date();
+    payment.failureReason = null;
+    payment.rawProviderPayload = {
+      originalTransactionId: dto.originalTransactionId ?? null,
+      purchasedAt: dto.purchasedAt ?? null,
+      environment: dto.environment ?? null,
+      isRestore: dto.isRestore ?? false,
+    };
+    const saved = await this.lessonPaymentsRepo.save(payment);
+
+    await this.auditRepo.save({
+      userId: user.userId,
+      action: 'LESSON_PAYMENT_APPLE_ACTIVATED',
+      metadata: {
+        lessonId,
+        productId: dto.productId,
+        transactionId: dto.transactionId,
+      },
+    });
+
+    return {
+      lessonId,
+      payment: this.mapLessonPayment(saved),
+    };
+  }
+
+  async getLessonPayment(user: AuthenticatedRequestUser, lessonId: string) {
+    const role = normaliseRole(user.role);
+    if (!role) {
+      throw new ForbiddenException('Role is required');
+    }
+
+    const lesson = await this.lessonsRepo.findOne({ where: { id: lessonId } });
+    if (!lesson || lesson.deletedAt) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (role === 'learner') {
+      if (lesson.learnerUserId !== user.userId) {
+        throw new ForbiddenException('Only lesson participants can view payment');
+      }
+    } else if (role === 'instructor') {
+      const instructor = await this.findInstructorForUser(user.userId);
+      if (!instructor || instructor.id !== lesson.instructorId) {
+        throw new ForbiddenException('Only lesson participants can view payment');
+      }
+    }
+
+    const payment = await this.lessonPaymentsRepo.findOne({ where: { lessonId } });
+    return {
+      lessonId,
+      payment: payment ? this.mapLessonPayment(payment) : null,
+    };
   }
 
   async createReview(
@@ -1012,6 +1416,15 @@ export class InstructorsService {
         this.diffMinutes(slot.startsAt, slot.endsAt),
       );
 
+      const learner = await manager.getRepository(User).findOne({
+        where: { id: user.userId },
+        select: ['id', 'phone'],
+      });
+      const pickupContactNumber = this.resolvePickupContactNumber(
+        dto.pickup?.contactNumber,
+        learner?.phone ?? null,
+      );
+
       const lesson = lessonRepo.create({
         instructorId: slot.instructorId,
         learnerUserId: user.userId,
@@ -1020,6 +1433,13 @@ export class InstructorsService {
         status: 'requested',
         learnerNote: dto.learnerNote ?? null,
         availabilitySlotId: slot.id,
+        pickupAddress: this.normaliseOptionalText(dto.pickup?.address),
+        pickupPostcode: this.normaliseOptionalText(dto.pickup?.postcode),
+        pickupLat: dto.pickup?.lat ?? null,
+        pickupLng: dto.pickup?.lng ?? null,
+        pickupPlaceId: this.normaliseOptionalText(dto.pickup?.placeId),
+        pickupNote: this.normaliseOptionalText(dto.pickup?.note),
+        pickupContactNumber,
       });
 
       const savedLesson = await lessonRepo.save(lesson);
@@ -1145,6 +1565,10 @@ export class InstructorsService {
       bio: null,
       languages: null,
       coveragePostcodes: null,
+      bankAccountHolderName: null,
+      bankSortCode: null,
+      bankAccountNumber: null,
+      bankName: null,
       homeLocation: null,
       isApproved: false,
       approvedAt: null,
@@ -1189,6 +1613,123 @@ export class InstructorsService {
     }
 
     return Array.from(new Set(cleaned));
+  }
+
+  private async listCoverageSuggestionsFromProfiles(query: string, limit: number) {
+    const containsQuery = `%${query}%`;
+    const prefixQuery = `${query}%`;
+    const rows = await this.instructorsRepo.query(
+      `
+        SELECT DISTINCT UPPER(TRIM(pc)) AS value
+        FROM instructors i
+        CROSS JOIN LATERAL unnest(i.coverage_postcodes) AS pc
+        WHERE i.deleted_at IS NULL
+          AND i.suspended_at IS NULL
+          AND pc IS NOT NULL
+          AND TRIM(pc) <> ''
+          AND pc ILIKE $1
+        ORDER BY
+          CASE WHEN pc ILIKE $2 THEN 0 ELSE 1 END,
+          LENGTH(TRIM(pc)) ASC
+        LIMIT $3
+      `,
+      [containsQuery, prefixQuery, Math.min(limit * 3, 50)],
+    );
+
+    return rows.map((row: { value?: string | null }) => {
+      const value = (row.value ?? '').trim().toUpperCase();
+      return {
+        value,
+        kind: this.inferLocationSuggestionKind(value),
+        source: 'instructor_coverage',
+      };
+    });
+  }
+
+  private async listMapboxLocationSuggestions(query: string, limit: number) {
+    const mapboxToken = this.normaliseOptionalText(
+      process.env.MAPBOX_ACCESS_TOKEN ??
+        process.env.MAPBOX_API_TOKEN ??
+        process.env.MAPBOX_PUBLIC_TOKEN,
+    );
+    if (!mapboxToken) {
+      return [];
+    }
+
+    const encodedQuery = encodeURIComponent(query);
+    const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json`;
+    const params = new URLSearchParams({
+      autocomplete: 'true',
+      fuzzyMatch: 'true',
+      types: 'postcode,place,locality,district,region',
+      country: 'gb',
+      limit: String(limit),
+      language: 'en',
+      access_token: mapboxToken,
+    });
+
+    try {
+      const response = await axios.get<{ features?: Array<Record<string, unknown>> }>(
+        `${endpoint}?${params.toString()}`,
+        { timeout: 4500 },
+      );
+      const features = Array.isArray(response.data?.features) ? response.data.features : [];
+
+      return features
+        .map((feature) => {
+          const placeTypes = Array.isArray(feature.place_type)
+            ? feature.place_type.map((item) => String(item).toLowerCase())
+            : [];
+          const textValue = this.readString(feature.text);
+          const placeNameValue = this.readString(feature.place_name);
+          const derivedValue = placeTypes.includes('postcode')
+            ? (textValue ?? placeNameValue ?? '').toUpperCase()
+            : (textValue ?? placeNameValue ?? '');
+
+          const value = derivedValue.trim();
+          if (!value) {
+            return null;
+          }
+          return {
+            value,
+            kind: placeTypes.includes('postcode') ? 'postcode' : 'city',
+            source: 'mapbox',
+          };
+        })
+        .filter(
+          (
+            suggestion,
+          ): suggestion is { value: string; kind: 'postcode' | 'city'; source: 'mapbox' } =>
+            suggestion !== null,
+        );
+    } catch {
+      return [];
+    }
+  }
+
+  private mergeLocationSuggestions(
+    suggestions: Array<{ value: string; kind: string; source: string }>,
+    limit: number,
+  ) {
+    const deduped = new Map<string, { value: string; kind: string; source: string }>();
+    for (const suggestion of suggestions) {
+      const value = suggestion.value.trim();
+      if (!value) {
+        continue;
+      }
+      const key = value.toUpperCase();
+      if (!deduped.has(key)) {
+        deduped.set(key, { ...suggestion, value });
+      }
+      if (deduped.size >= limit) {
+        break;
+      }
+    }
+    return Array.from(deduped.values()).slice(0, limit);
+  }
+
+  private inferLocationSuggestionKind(value: string): 'postcode' | 'city' {
+    return /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/.test(value) ? 'postcode' : 'city';
   }
 
   private validateSlotWindow(startsAt: Date, endsAt: Date) {
@@ -1342,6 +1883,212 @@ export class InstructorsService {
 
   private diffMinutes(startsAt: Date, endsAt: Date): number {
     return Math.max(15, Math.round((endsAt.getTime() - startsAt.getTime()) / 60000));
+  }
+
+  private normaliseOptionalText(value?: string | null): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private normalisePhoneNumber(value?: string | null): string | null {
+    const raw = this.normaliseOptionalText(value);
+    if (!raw) {
+      return null;
+    }
+    const withoutInvalidChars = raw.replace(/[^0-9+]/g, '');
+    const normalized = withoutInvalidChars.startsWith('+')
+      ? `+${withoutInvalidChars.slice(1).replace(/\+/g, '')}`
+      : withoutInvalidChars.replace(/\+/g, '');
+    const digits = normalized.replace(/[^0-9]/g, '');
+    if (digits.length < 7 || digits.length > 15) {
+      return null;
+    }
+    return normalized;
+  }
+
+  private resolvePickupContactNumber(
+    pickupContactNumber: string | undefined,
+    learnerPhoneNumber: string | null,
+  ): string | null {
+    const explicit = this.normalisePhoneNumber(pickupContactNumber);
+    if (explicit) {
+      return explicit;
+    }
+    return this.normalisePhoneNumber(learnerPhoneNumber);
+  }
+
+  private readString(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  }
+
+  private normaliseBankSortCode(value?: string | null): string | null {
+    const cleaned = this.normaliseOptionalText(value);
+    if (!cleaned) {
+      return null;
+    }
+    return cleaned.replace(/[^0-9]/g, '');
+  }
+
+  private normaliseBankAccountNumber(value?: string | null): string | null {
+    const cleaned = this.normaliseOptionalText(value);
+    if (!cleaned) {
+      return null;
+    }
+    return cleaned.replace(/[^0-9]/g, '');
+  }
+
+  private validateBankDetailsInput(
+    holderName?: string | null,
+    sortCode?: string | null,
+    accountNumber?: string | null,
+  ) {
+    const normalizedHolder = this.normaliseOptionalText(holderName);
+    const normalizedSortCode = this.normaliseBankSortCode(sortCode);
+    const normalizedAccountNumber = this.normaliseBankAccountNumber(accountNumber);
+    const anyProvided = Boolean(normalizedHolder || normalizedSortCode || normalizedAccountNumber);
+    if (!anyProvided) {
+      return;
+    }
+    if (!normalizedHolder) {
+      throw new BadRequestException('Bank account holder name is required');
+    }
+    if (!normalizedSortCode || !/^\d{6}$/.test(normalizedSortCode)) {
+      throw new BadRequestException('Bank sort code must contain exactly 6 digits');
+    }
+    if (!normalizedAccountNumber || !/^\d{8}$/.test(normalizedAccountNumber)) {
+      throw new BadRequestException('Bank account number must contain exactly 8 digits');
+    }
+  }
+
+  private async loadLearnerLessonContext(learnerUserId: string, lessonId: string) {
+    const lesson = await this.lessonsRepo.findOne({ where: { id: lessonId } });
+    if (!lesson || lesson.deletedAt) {
+      throw new NotFoundException('Lesson not found');
+    }
+    if (lesson.learnerUserId !== learnerUserId) {
+      throw new ForbiddenException('Only the learner can manage lesson payment');
+    }
+    const instructor = await this.instructorsRepo.findOne({ where: { id: lesson.instructorId } });
+    if (!instructor || instructor.deletedAt) {
+      throw new NotFoundException('Instructor not found');
+    }
+    return { lesson, instructor };
+  }
+
+  private resolveLessonAmountPence(lesson: LessonEntity, instructor: InstructorEntity): number {
+    const hourlyRate = instructor.hourlyRatePence;
+    if (!hourlyRate || hourlyRate <= 0) {
+      throw new BadRequestException('Instructor hourly rate is missing for payment');
+    }
+    if (!lesson.durationMinutes || lesson.durationMinutes <= 0) {
+      throw new BadRequestException('Lesson duration is missing for payment');
+    }
+    const amountPence = Math.round((hourlyRate * lesson.durationMinutes) / 60);
+    if (!Number.isFinite(amountPence) || amountPence <= 0) {
+      throw new BadRequestException('Unable to calculate lesson payment amount');
+    }
+    return amountPence;
+  }
+
+  private requireStripeSecretKey(): string {
+    const key = this.normaliseOptionalText(process.env.STRIPE_SECRET_KEY);
+    if (!key) {
+      throw new ServiceUnavailableException('Stripe payment is not configured');
+    }
+    return key;
+  }
+
+  private async postStripeForm(path: string, params: URLSearchParams, secret: string) {
+    try {
+      const response = await axios.post(`https://api.stripe.com/v1${path}`, params.toString(), {
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      return response.data as Record<string, unknown>;
+    } catch (error) {
+      throw this.toStripeError(error);
+    }
+  }
+
+  private async getStripe(path: string, secret: string) {
+    try {
+      const response = await axios.get(`https://api.stripe.com/v1${path}`, {
+        headers: {
+          Authorization: `Bearer ${secret}`,
+        },
+      });
+      return response.data as Record<string, unknown>;
+    } catch (error) {
+      throw this.toStripeError(error);
+    }
+  }
+
+  private toStripeError(error: unknown): Error {
+    if (axios.isAxiosError(error)) {
+      const statusCode = error.response?.status ?? 500;
+      const stripeMessage =
+        typeof error.response?.data?.error?.message === 'string'
+          ? error.response?.data?.error?.message
+          : error.message;
+      if (statusCode >= 500) {
+        return new InternalServerErrorException(`Stripe error: ${stripeMessage}`);
+      }
+      return new BadRequestException(`Stripe error: ${stripeMessage}`);
+    }
+    return new InternalServerErrorException('Stripe request failed');
+  }
+
+  private mapLessonPayment(payment: LessonPaymentEntity) {
+    return {
+      id: payment.id,
+      status: payment.status,
+      provider: payment.provider,
+      productId: payment.productId,
+      transactionId: payment.transactionId,
+    };
+  }
+
+  private mapAdminInstructorProfile(profile: InstructorEntity) {
+    const approvalStatus = profile.suspendedAt
+      ? 'suspended'
+      : profile.isApproved
+      ? 'approved'
+      : 'pending';
+
+    return {
+      id: profile.id,
+      userId: profile.userId,
+      fullName: profile.fullName,
+      email: profile.email,
+      phone: profile.phone,
+      adiNumber: profile.adiNumber,
+      profilePhotoUrl: profile.profilePhotoUrl,
+      yearsExperience: profile.yearsExperience,
+      transmissionType: profile.transmissionType,
+      hourlyRatePence: profile.hourlyRatePence,
+      bio: profile.bio,
+      languages: profile.languages ?? [],
+      coveragePostcodes: profile.coveragePostcodes ?? [],
+      bankAccountHolderName: profile.bankAccountHolderName,
+      bankSortCode: profile.bankSortCode,
+      bankAccountNumber: profile.bankAccountNumber,
+      bankName: profile.bankName,
+      isApproved: profile.isApproved,
+      approvedAt: profile.approvedAt,
+      suspendedAt: profile.suspendedAt,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+      approvalStatus,
+    };
   }
 
   private requireRole(user: AuthenticatedRequestUser, expectedRole: 'learner' | 'instructor') {

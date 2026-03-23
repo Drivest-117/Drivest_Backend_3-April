@@ -50,6 +50,27 @@ export class LessonEntity {
   @Column({ name: 'learner_note', type: 'text', nullable: true })
   learnerNote: string | null;
 
+  @Column({ name: 'pickup_address', type: 'text', nullable: true })
+  pickupAddress: string | null;
+
+  @Column({ name: 'pickup_postcode', type: 'text', nullable: true })
+  pickupPostcode: string | null;
+
+  @Column({ name: 'pickup_lat', type: 'double precision', nullable: true })
+  pickupLat: number | null;
+
+  @Column({ name: 'pickup_lng', type: 'double precision', nullable: true })
+  pickupLng: number | null;
+
+  @Column({ name: 'pickup_place_id', type: 'text', nullable: true })
+  pickupPlaceId: string | null;
+
+  @Column({ name: 'pickup_note', type: 'text', nullable: true })
+  pickupNote: string | null;
+
+  @Column({ name: 'pickup_contact_number', type: 'text', nullable: true })
+  pickupContactNumber: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 

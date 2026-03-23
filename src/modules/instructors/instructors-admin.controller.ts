@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { InstructorsService } from './instructors.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -10,9 +10,19 @@ import { Roles } from '../auth/roles.decorator';
 export class InstructorsAdminController {
   constructor(private readonly instructorsService: InstructorsService) {}
 
+  @Get('instructors')
+  async listInstructors(@Query('scope') scope?: string) {
+    return this.instructorsService.listAdminInstructors(scope);
+  }
+
   @Get('instructors/pending')
   async pendingInstructors() {
     return this.instructorsService.getPendingProfiles();
+  }
+
+  @Get('instructors/:id')
+  async instructorDetails(@Param('id') instructorId: string) {
+    return this.instructorsService.getAdminInstructorProfile(instructorId);
   }
 
   @Post('instructors/:id/approve')

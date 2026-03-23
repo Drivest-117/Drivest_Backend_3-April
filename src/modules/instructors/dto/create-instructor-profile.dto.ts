@@ -62,6 +62,26 @@ export class CreateInstructorProfileDto {
   coveragePostcodes?: string[];
 
   @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  bankAccountHolderName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(16)
+  bankSortCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  bankAccountNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  bankName?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(-90)
   @Max(90)

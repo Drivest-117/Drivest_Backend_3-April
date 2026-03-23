@@ -8,6 +8,7 @@ import { InstructorEntity } from './entities/instructor.entity';
 import { InstructorReviewEntity } from './entities/instructor-review.entity';
 import { LessonEntity } from './entities/lesson.entity';
 import { InstructorAvailabilityEntity } from './entities/instructor-availability.entity';
+import { LessonPaymentEntity } from './entities/lesson-payment.entity';
 import { User } from '../../entities/user.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -19,6 +20,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       InstructorEntity,
       InstructorReviewEntity,
       LessonEntity,
+      LessonPaymentEntity,
       InstructorAvailabilityEntity,
       User,
       AuditLog,

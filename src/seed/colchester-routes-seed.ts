@@ -23,7 +23,7 @@ export const seedCentre = {
 };
 
 
-export const colchesterRoutesSeedData: ColchesterRouteData[] = [
+const rawColchesterRoutesSeedData: ColchesterRouteData[] = [
     {
   name: "Colchester Dev Route",
   difficulty: "MEDIUM" as RouteDifficulty,
@@ -10555,6 +10555,11 @@ export function computeBbox(coordinates: number[][]): { minLng: number; minLat: 
   return { minLng, minLat, maxLng, maxLat };
 }
 
+export const colchesterRoutesSeedData: ColchesterRouteData[] =
+  rawColchesterRoutesSeedData.filter(
+    (route) => route.name.trim().toLowerCase() !== 'colchester dev route',
+  );
+
 // Enrich routes with computed distance and duration
 export function enrichColchesterRoutes(): ColchesterRouteData[] {
   return colchesterRoutesSeedData.map(route => {
@@ -10567,4 +10572,3 @@ export function enrichColchesterRoutes(): ColchesterRouteData[] {
     };
   });
 }
-

@@ -42,7 +42,7 @@ export class NotificationsService implements OnModuleInit {
           start: windowStart.toISOString(),
           end: windowEnd.toISOString(),
         })
-        .andWhere("u.notificationsChoice = 'enable'")
+        .andWhere("(u.notificationsChoice IS NULL OR u.notificationsChoice = 'enable')")
         .andWhere('u.pushToken IS NOT NULL')
         .select(['c.id', 'c.userId', 'u.pushToken'])
         .getRawMany();
@@ -359,7 +359,7 @@ export class NotificationsService implements OnModuleInit {
       where: { id: userId, deletedAt: IsNull() },
       select: ['id', 'notificationsChoice', 'pushToken'],
     });
-    if (!user || user.notificationsChoice !== 'enable' || !user.pushToken) {
+    if (!user || user.notificationsChoice === 'skip' || !user.pushToken) {
       return;
     }
     await this.sendPush(user.pushToken, title, body, payload);
@@ -378,7 +378,7 @@ export class NotificationsService implements OnModuleInit {
       .createQueryBuilder('u')
       .where('u.id IN (:...userIds)', { userIds: uniqueUserIds })
       .andWhere('u.deletedAt IS NULL')
-      .andWhere("u.notificationsChoice = 'enable'")
+      .andWhere("(u.notificationsChoice IS NULL OR u.notificationsChoice = 'enable')")
       .andWhere('u.pushToken IS NOT NULL')
       .select(['u.id', 'u.pushToken'])
       .getRawMany<{ u_id: string; u_pushToken: string }>();

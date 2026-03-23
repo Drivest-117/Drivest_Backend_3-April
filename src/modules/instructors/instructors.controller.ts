@@ -17,6 +17,7 @@ import { ListInstructorsQueryDto } from './dto/list-instructors-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
 import { ListAvailabilityQueryDto } from './dto/list-availability-query.dto';
+import { ListLocationSuggestionsQueryDto } from './dto/list-location-suggestions-query.dto';
 
 @Controller('v1/instructors')
 export class InstructorsController {
@@ -43,6 +44,11 @@ export class InstructorsController {
   @Get('public')
   async listPublic(@Query() query: ListInstructorsQueryDto) {
     return this.instructorsService.listPublic(query);
+  }
+
+  @Get('public/location-suggestions')
+  async listPublicLocationSuggestions(@Query() query: ListLocationSuggestionsQueryDto) {
+    return this.instructorsService.listPublicLocationSuggestions(query.q, query.limit ?? 8);
   }
 
   @Get('public/:id')

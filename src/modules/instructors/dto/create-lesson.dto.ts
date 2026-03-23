@@ -1,4 +1,48 @@
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+class LessonPickupDto {
+  @IsString()
+  address: string;
+
+  @IsOptional()
+  @IsString()
+  postcode?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng?: number;
+
+  @IsOptional()
+  @IsString()
+  placeId?: string;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @IsOptional()
+  @IsString()
+  contactNumber?: string;
+}
 
 export class CreateLessonDto {
   @IsUUID()
@@ -21,4 +65,9 @@ export class CreateLessonDto {
   @IsOptional()
   @IsString()
   learnerNote?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LessonPickupDto)
+  pickup?: LessonPickupDto;
 }

@@ -61,6 +61,18 @@ export class InstructorEntity {
   @Column({ name: 'coverage_postcodes', type: 'text', array: true, nullable: true })
   coveragePostcodes: string[] | null;
 
+  @Column({ name: 'bank_account_holder_name', type: 'text', nullable: true })
+  bankAccountHolderName: string | null;
+
+  @Column({ name: 'bank_sort_code', type: 'text', nullable: true })
+  bankSortCode: string | null;
+
+  @Column({ name: 'bank_account_number', type: 'text', nullable: true })
+  bankAccountNumber: string | null;
+
+  @Column({ name: 'bank_name', type: 'text', nullable: true })
+  bankName: string | null;
+
   @Column({
     name: 'home_location',
     type: 'geography',
