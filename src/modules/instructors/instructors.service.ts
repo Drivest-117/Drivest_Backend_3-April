@@ -2229,7 +2229,8 @@ export class InstructorsService {
     const prefixQuery = `${query}%`;
     const rows = await this.instructorsRepo.query(
       `
-        SELECT DISTINCT UPPER(TRIM(pc)) AS value
+        SELECT
+          UPPER(TRIM(pc)) AS value
         FROM instructors i
         CROSS JOIN LATERAL unnest(i.coverage_postcodes) AS pc
         WHERE i.deleted_at IS NULL
@@ -2237,9 +2238,10 @@ export class InstructorsService {
           AND pc IS NOT NULL
           AND TRIM(pc) <> ''
           AND pc ILIKE $1
+        GROUP BY UPPER(TRIM(pc))
         ORDER BY
-          CASE WHEN pc ILIKE $2 THEN 0 ELSE 1 END,
-          LENGTH(TRIM(pc)) ASC
+          CASE WHEN UPPER(TRIM(pc)) ILIKE UPPER($2) THEN 0 ELSE 1 END,
+          LENGTH(UPPER(TRIM(pc))) ASC
         LIMIT $3
       `,
       [containsQuery, prefixQuery, Math.min(limit * 3, 50)],
