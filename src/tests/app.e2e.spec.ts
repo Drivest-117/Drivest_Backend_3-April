@@ -36,9 +36,12 @@ process.env.JWT_EXPIRES_IN = '1d';
 process.env.REVENUECAT_WEBHOOK_SECRET = 'revsecret';
 process.env.PASSWORD_RESET_EXPOSE_CODE = 'true';
 process.env.APP_ENTITLEMENTS_ENFORCED = 'true';
+process.env.ACCESS_OVERRIDE_ADMIN_EMAILS = 'ferror@drivest.uk';
+process.env.ACCESS_OVERRIDE_PRIVILEGED_EMAILS = 'afaanmati@gmail.com';
 jest.setTimeout(20000);
 
 describe('Route Master API (e2e)', () => {
+  const strongPassword = 'Password1';
   let app: INestApplication;
   let module: TestingModule;
   let userRepo: Repository<User>;
@@ -108,13 +111,13 @@ describe('Route Master API (e2e)', () => {
   it('registers and logs in', async () => {
     const register = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email: 'test@example.com', password: 'password', name: 'Test User' })
+      .send({ email: 'test@example.com', password: strongPassword, name: 'Test User' })
       .expect(201);
     expect(register.body.data.accessToken).toBeDefined();
 
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'test@example.com', password: 'password' })
+      .send({ email: 'test@example.com', password: strongPassword })
       .expect(200);
     expect(login.body.data.accessToken).toBeDefined();
   });
@@ -122,7 +125,7 @@ describe('Route Master API (e2e)', () => {
   it('blocks download without entitlement', async () => {
     const register = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email: 'ent@example.com', password: 'password', name: 'Ent User' });
+      .send({ email: 'ent@example.com', password: strongPassword, name: 'Ent User' });
     const token = register.body.data.accessToken;
 
     const centre = await centreRepo.save({
@@ -156,7 +159,7 @@ describe('Route Master API (e2e)', () => {
   it('grants admin access to ferror@drivest.uk during auth', async () => {
     const register = await request(app.getHttpServer())
       .post('/v1/auth/sign-up')
-      .send({ email: 'ferror@drivest.uk', password: 'password', name: 'Ferris Admin' })
+      .send({ email: 'ferror@drivest.uk', password: strongPassword, name: 'Ferris Admin' })
       .expect(201);
 
     expect(register.body.data.accessToken).toBeDefined();
@@ -171,13 +174,16 @@ describe('Route Master API (e2e)', () => {
   });
 
   it('resolves admin access for ferror@drivest.uk from a stale token', async () => {
-    const user = await userRepo.save({
-      email: 'ferror@drivest.uk',
-      phone: null,
-      name: 'Ferris Admin',
-      passwordHash: 'hash',
-      role: 'USER',
-    });
+    const existing =
+      (await userRepo.findOne({ where: { email: 'ferror@drivest.uk' } })) ??
+      (await userRepo.save({
+        email: 'ferror@drivest.uk',
+        phone: null,
+        name: 'Ferris Admin',
+        passwordHash: 'hash',
+        role: 'USER',
+      }));
+    const user = await userRepo.save({ ...existing, role: 'USER' });
     const staleToken = jwtService.sign({
       sub: user.id,
       email: user.email,
@@ -196,7 +202,7 @@ describe('Route Master API (e2e)', () => {
   it('grants privileged learner route access to afaanmati@gmail.com', async () => {
     const register = await request(app.getHttpServer())
       .post('/v1/auth/sign-up')
-      .send({ email: 'afaanmati@gmail.com', password: 'password', name: 'Afaan Mati' })
+      .send({ email: 'afaanmati@gmail.com', password: strongPassword, name: 'Afaan Mati' })
       .expect(201);
     const token = register.body.data.accessToken;
 
@@ -237,7 +243,7 @@ describe('Route Master API (e2e)', () => {
   it('enforces cashback once per lifetime', async () => {
     const register = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email: 'cash@example.com', password: 'password', name: 'Cash User' });
+      .send({ email: 'cash@example.com', password: strongPassword, name: 'Cash User' });
     const token = register.body.data.accessToken;
 
     await request(app.getHttpServer())
@@ -300,7 +306,7 @@ describe('Route Master API (e2e)', () => {
   it('resets password through the v1 auth flow', async () => {
     await request(app.getHttpServer())
       .post('/v1/auth/sign-up')
-      .send({ email: 'reset@example.com', password: 'password', name: 'Reset User' })
+      .send({ email: 'reset@example.com', password: strongPassword, name: 'Reset User' })
       .expect(201);
 
     const forgot = await request(app.getHttpServer())
@@ -316,21 +322,67 @@ describe('Route Master API (e2e)', () => {
       .send({
         email: 'reset@example.com',
         code,
-        newPassword: 'new-password',
+        newPassword: 'NewPassword123',
       })
       .expect(200);
 
     const login = await request(app.getHttpServer())
       .post('/v1/auth/sign-in')
-      .send({ email: 'reset@example.com', password: 'new-password' })
+      .send({ email: 'reset@example.com', password: 'NewPassword123' })
       .expect(200);
     expect(login.body.data.accessToken).toBeDefined();
+  });
+
+  it('never exposes reset dev codes outside local and test environments', async () => {
+    await request(app.getHttpServer())
+      .post('/v1/auth/sign-up')
+      .send({ email: 'reset-prod@example.com', password: strongPassword, name: 'Reset Prod User' })
+      .expect(201);
+
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousAppEnv = process.env.APP_ENV;
+    const previousEnvironment = process.env.ENVIRONMENT;
+    const previousExposeCode = process.env.PASSWORD_RESET_EXPOSE_CODE;
+
+    process.env.NODE_ENV = 'production';
+    process.env.APP_ENV = 'production';
+    process.env.ENVIRONMENT = 'production';
+    process.env.PASSWORD_RESET_EXPOSE_CODE = 'true';
+
+    try {
+      const forgot = await request(app.getHttpServer())
+        .post('/v1/auth/forgot-password')
+        .send({ email: 'reset-prod@example.com' })
+        .expect(200);
+
+      expect(forgot.body.data?.message).toBe(
+        'If an account exists for this email, a reset code has been sent.',
+      );
+      expect(forgot.body.data?.devCode).toBeUndefined();
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+      if (previousAppEnv === undefined) {
+        delete process.env.APP_ENV;
+      } else {
+        process.env.APP_ENV = previousAppEnv;
+      }
+      if (previousEnvironment === undefined) {
+        delete process.env.ENVIRONMENT;
+      } else {
+        process.env.ENVIRONMENT = previousEnvironment;
+      }
+      if (previousExposeCode === undefined) {
+        delete process.env.PASSWORD_RESET_EXPOSE_CODE;
+      } else {
+        process.env.PASSWORD_RESET_EXPOSE_CODE = previousExposeCode;
+      }
+    }
   });
 
   it('accepts both modern and legacy push token payloads', async () => {
     const register = await request(app.getHttpServer())
       .post('/v1/auth/sign-up')
-      .send({ email: 'push@example.com', password: 'password', name: 'Push User' })
+      .send({ email: 'push@example.com', password: strongPassword, name: 'Push User' })
       .expect(201);
     const token = register.body.data.accessToken;
 

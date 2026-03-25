@@ -7,6 +7,8 @@ import { UpdateConsentsDto } from './dto/update-consents.dto';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { v4 as uuid } from 'uuid';
 import { AccessOverridesService } from '../access-overrides/access-overrides.service';
+import { AppLegalService } from '../legal-acceptance/app-legal.service';
+import type { Request } from 'express';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +16,7 @@ export class UsersService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
     private readonly accessOverrides: AccessOverridesService,
+    private readonly appLegalService: AppLegalService,
   ) {}
 
   async findById(id: string): Promise<User> {
@@ -28,19 +31,16 @@ export class UsersService {
     return this.findById(userId);
   }
 
-  async updateConsents(userId: string, dto: UpdateConsentsDto) {
-    await this.usersRepo.update(userId, {
-      baseAcceptedAt: dto.baseAcceptedAt ? new Date(dto.baseAcceptedAt) : undefined,
-      ageConfirmedAt: dto.ageConfirmedAt ? new Date(dto.ageConfirmedAt) : undefined,
-      analyticsChoice: dto.analyticsChoice,
-      analyticsAt: dto.analyticsAt ? new Date(dto.analyticsAt) : undefined,
-      notificationsChoice: dto.notificationsChoice,
-      notificationsAt: dto.notificationsAt ? new Date(dto.notificationsAt) : undefined,
-      locationChoice: dto.locationChoice,
-      locationAt: dto.locationAt ? new Date(dto.locationAt) : undefined,
-      safetyAcceptedAt: dto.safetyAcceptedAt ? new Date(dto.safetyAcceptedAt) : undefined,
+  async updateConsents(userId: string, dto: UpdateConsentsDto, req: Request) {
+    await this.appLegalService.syncAuthenticatedConsentSnapshot(req, userId, dto);
+    await this.auditRepo.save({
+      userId,
+      action: 'USER_CONSENT_UPDATE',
+      metadata: {
+        ...dto,
+        serverTimestampApplied: true,
+      },
     });
-    await this.auditRepo.save({ userId, action: 'USER_CONSENT_UPDATE', metadata: dto });
     return this.findById(userId);
   }
 

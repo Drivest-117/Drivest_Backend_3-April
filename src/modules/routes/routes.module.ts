@@ -8,7 +8,6 @@ import { RouteStat } from "../../entities/route-stat.entity";
 import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { TestCentre } from "../../entities/test-centre.entity";
 import { OsmSpeedService } from "./osm-speed.service";
-import { RoadHazardService } from './road-hazard.service';
 import { NavigationController } from './navigation.controller';
 import { HazardsController } from './hazards.controller';
 import { CentreHazardsController } from './centre-hazards.controller';
@@ -28,9 +27,7 @@ import { OverpassAdvisoryCacheService } from './overpass-advisory-cache.service'
   providers: [
     RoutesService,
     OsmSpeedService,
-    RoadHazardService,
     OverpassAdvisoryCacheService,
   ],
-  exports: [RoadHazardService],
 })
 export class RoutesModule {}

@@ -36,4 +36,8 @@ export class UpdateConsentsDto {
   @IsOptional()
   @IsISO8601()
   safetyAcceptedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  sourceSurface?: string;
 }

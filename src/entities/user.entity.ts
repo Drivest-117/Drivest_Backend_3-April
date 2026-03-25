@@ -75,6 +75,9 @@ export class User {
   @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   safetyAcceptedAt?: Date | null;
 
+  @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
+  navigationAccessUntil?: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

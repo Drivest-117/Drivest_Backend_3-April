@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import * as crypto from 'crypto';
@@ -10,10 +10,12 @@ import { CreateBroadcastNotificationDto } from './dto/create-broadcast-notificat
 import { ListMyNotificationsDto } from './dto/list-my-notifications.dto';
 
 @Injectable()
-export class NotificationsService implements OnModuleInit {
+export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NotificationsService.name);
   private running = false;
   private apnsJwtCache: { token: string; expiresAtMs: number } | null = null;
+  private tickInterval: NodeJS.Timeout | null = null;
+  private readonly reminderLockKey = 782451;
 
   constructor(
     @InjectRepository(CashbackClaim) private cashbackRepo: Repository<CashbackClaim>,
@@ -22,11 +24,20 @@ export class NotificationsService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    setInterval(() => this.tick().catch(() => undefined), 60_000);
+    this.tickInterval = setInterval(() => this.tick().catch(() => undefined), 60_000);
+  }
+
+  onModuleDestroy() {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
   }
 
   private async tick() {
     if (this.running) return;
+    const release = await this.acquireReminderLock();
+    if (!release) return;
     this.running = true;
     try {
       const now = new Date();
@@ -62,7 +73,27 @@ export class NotificationsService implements OnModuleInit {
       }
     } finally {
       this.running = false;
+      await release();
     }
+  }
+
+  private async acquireReminderLock(): Promise<null | (() => Promise<void>)> {
+    const options = this.notificationsRepo.manager.connection.options;
+    if ((options as { type?: string }).type !== 'postgres') {
+      return async () => undefined;
+    }
+    const result = await this.notificationsRepo.query(
+      'SELECT pg_try_advisory_lock($1) AS locked',
+      [this.reminderLockKey],
+    );
+    if (!result?.[0]?.locked) {
+      return null;
+    }
+    return async () => {
+      await this.notificationsRepo.query('SELECT pg_advisory_unlock($1)', [
+        this.reminderLockKey,
+      ]);
+    };
   }
 
   private async sendPush(

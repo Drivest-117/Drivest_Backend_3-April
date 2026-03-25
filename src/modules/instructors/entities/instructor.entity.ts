@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ApiHideProperty } from '@nestjs/swagger';
 import { User } from '../../../entities/user.entity';
 import { InstructorReviewEntity } from './instructor-review.entity';
 import { LessonEntity } from './lesson.entity';
@@ -80,6 +81,7 @@ export class InstructorEntity {
     srid: 4326,
     nullable: true,
   })
+  @ApiHideProperty()
   homeLocation: { type: 'Point'; coordinates: [number, number] } | null;
 
   @Column({ name: 'is_approved', type: 'boolean', default: false })

@@ -11,6 +11,8 @@ import { Product } from './product.entity';
 
 export enum PurchaseProvider {
   REVCAT = 'REVCAT',
+  APPLE = 'APPLE',
+  INTERNAL = 'INTERNAL',
 }
 
 export enum PurchaseStatus {

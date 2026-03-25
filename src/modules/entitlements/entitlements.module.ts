@@ -6,13 +6,17 @@ import { TestCentre } from '../../entities/test-centre.entity';
 import { EntitlementsService } from './entitlements.service';
 import { EntitlementsController } from './entitlements.controller';
 import { AccessOverridesModule } from '../access-overrides/access-overrides.module';
+import { Product } from '../../entities/product.entity';
+import { Purchase } from '../../entities/purchase.entity';
+import { AuditLog } from '../../entities/audit-log.entity';
+import { SimpleThrottleGuard } from '../../common/simple-throttle.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Entitlement, User, TestCentre]),
+    TypeOrmModule.forFeature([Entitlement, User, TestCentre, Product, Purchase, AuditLog]),
     AccessOverridesModule,
   ],
-  providers: [EntitlementsService],
+  providers: [EntitlementsService, SimpleThrottleGuard],
   controllers: [EntitlementsController],
   exports: [EntitlementsService],
 })

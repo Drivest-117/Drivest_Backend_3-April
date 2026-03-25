@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'route-master-backend',
+      name: 'drivest-backend',
       cwd: __dirname,
       script: 'dist/main.js',
       instances: 1,

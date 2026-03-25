@@ -127,6 +127,16 @@ function parseBoolean(value, defaultValue = false) {
   return lowered === '1' || lowered === 'true' || lowered === 'yes';
 }
 
+function buildSslConfig() {
+  const enabled = parseBoolean(process.env.DB_SSL, false);
+  if (!enabled) {
+    return undefined;
+  }
+  return {
+    rejectUnauthorized: parseBoolean(process.env.DB_SSL_REJECT_UNAUTHORIZED, false),
+  };
+}
+
 async function applyRows(rows, options) {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -134,8 +144,9 @@ async function applyRows(rows, options) {
   }
 
   const clientConfig = { connectionString };
-  if (connectionString.includes('supabase.co')) {
-    clientConfig.ssl = { rejectUnauthorized: false };
+  const ssl = buildSslConfig();
+  if (ssl) {
+    clientConfig.ssl = ssl;
   }
   const client = new Client(clientConfig);
   await client.connect();

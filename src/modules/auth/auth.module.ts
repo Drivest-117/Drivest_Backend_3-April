@@ -12,6 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { Entitlement } from '../../entities/entitlement.entity';
 import { AccessOverridesModule } from '../access-overrides/access-overrides.module';
+import { SimpleThrottleGuard } from '../../common/simple-throttle.guard';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { AccessOverridesModule } from '../access-overrides/access-overrides.modu
       }),
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, RolesGuard],
+  providers: [AuthService, LocalStrategy, JwtStrategy, RolesGuard, SimpleThrottleGuard],
   controllers: [AuthController],
   exports: [AuthService],
 })

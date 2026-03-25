@@ -37,7 +37,7 @@ export class UsersController {
   @ApiBearerAuth()
   @Patch(['me/consents', 'v1/me/consents'])
   async updateConsents(@Req() req: any, @Body() dto: UpdateConsentsDto) {
-    return this.usersService.updateConsents(req.user.userId, dto);
+    return this.usersService.updateConsents(req.user.userId, dto, req);
   }
 
   @UseGuards(JwtAuthGuard)

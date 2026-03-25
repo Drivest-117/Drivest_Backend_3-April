@@ -195,8 +195,26 @@ export class AuthService {
 
   private shouldExposePasswordResetCode(): boolean {
     const raw = (process.env.PASSWORD_RESET_EXPOSE_CODE ?? '').trim().toLowerCase();
-    if (raw === 'true') return true;
-    if (raw === 'false') return false;
+    if (raw !== 'true') return false;
+
+    const runtimeEnv = (
+      process.env.APP_ENV ??
+      process.env.ENVIRONMENT ??
+      process.env.NODE_ENV ??
+      ''
+    )
+      .trim()
+      .toLowerCase();
+    const safeExposureEnvs = new Set(['development', 'dev', 'local', 'test']);
+    const isSafeEnv = safeExposureEnvs.has(runtimeEnv);
+
+    if (!isSafeEnv) {
+      this.logger.warn(
+        `Ignoring PASSWORD_RESET_EXPOSE_CODE outside local/test runtime (env=${runtimeEnv || 'unknown'})`,
+      );
+    }
+
+    if (isSafeEnv) return true;
     return false;
   }
 

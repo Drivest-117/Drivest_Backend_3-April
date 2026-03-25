@@ -4,7 +4,7 @@ set -euo pipefail
 EC2_HOST="${EC2_HOST:-}"
 EC2_USER="${EC2_USER:-ubuntu}"
 EC2_PORT="${EC2_PORT:-22}"
-EC2_APP_DIR="${EC2_APP_DIR:-/var/www/route-master-backend}"
+EC2_APP_DIR="${EC2_APP_DIR:-/var/www/drivest-backend}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-${HOME}/.ssh/id_rsa}"
 
 if [[ -z "${EC2_HOST}" ]]; then
@@ -38,7 +38,7 @@ set -euo pipefail
 cd "${EC2_APP_DIR}"
 npm ci
 npm run build
-npm run migration:run
+npm run db:bootstrap
 pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 EOF

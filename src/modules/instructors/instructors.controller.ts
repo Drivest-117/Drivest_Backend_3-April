@@ -18,6 +18,7 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateAvailabilitySlotDto } from './dto/create-availability-slot.dto';
 import { ListAvailabilityQueryDto } from './dto/list-availability-query.dto';
 import { ListLocationSuggestionsQueryDto } from './dto/list-location-suggestions-query.dto';
+import { SubmitLearnerLinkRequestDto } from './dto/submit-learner-link-request.dto';
 
 @Controller('v1/instructors')
 export class InstructorsController {
@@ -96,5 +97,59 @@ export class InstructorsController {
     @Param('id') slotId: string,
   ) {
     return this.instructorsService.cancelAvailabilitySlot(req.user, slotId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('linking/share-code')
+  async getInstructorShareCode(@Req() req: { user: { userId: string; role?: string } }) {
+    return this.instructorsService.getInstructorShareCode(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('linking/share-code/regenerate')
+  async regenerateInstructorShareCode(
+    @Req() req: { user: { userId: string; role?: string } },
+  ) {
+    return this.instructorsService.regenerateInstructorShareCode(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('linking/requests')
+  async submitLearnerLinkRequest(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Body() dto: SubmitLearnerLinkRequestDto,
+  ) {
+    return this.instructorsService.submitLearnerLinkRequest(req.user, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('linking/requests/pending')
+  async listPendingLinkRequests(@Req() req: { user: { userId: string; role?: string } }) {
+    return this.instructorsService.listInstructorPendingLinkRequests(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('linking/requests/:id/approve')
+  async approveLinkRequest(
+    @Req() req: { user: { userId: string; role?: string } },
+    @Param('id') linkId: string,
+  ) {
+    return this.instructorsService.approveInstructorLinkRequest(req.user, linkId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('linking/instructor/learners')
+  async listInstructorLinkedLearners(
+    @Req() req: { user: { userId: string; role?: string } },
+  ) {
+    return this.instructorsService.listInstructorLinkedLearners(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('linking/learner/instructors')
+  async listLearnerInstructorLinks(
+    @Req() req: { user: { userId: string; role?: string } },
+  ) {
+    return this.instructorsService.listLearnerInstructorLinks(req.user);
   }
 }

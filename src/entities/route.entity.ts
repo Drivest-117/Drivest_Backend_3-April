@@ -7,6 +7,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { ApiHideProperty } from '@nestjs/swagger';
 import { TestCentre } from './test-centre.entity';
 import { PracticeSession } from './practice-session.entity';
 import { RouteStat } from './route-stat.entity';
@@ -58,6 +59,7 @@ export class Route {
     type: process.env.NODE_ENV === 'test' ? 'simple-json' : 'jsonb',
     nullable: true,
   } as any)
+  @ApiHideProperty()
   coordinates: any[] | null;
 
   @Column({

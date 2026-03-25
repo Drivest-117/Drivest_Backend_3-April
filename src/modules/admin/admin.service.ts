@@ -4,7 +4,7 @@ import { ILike, Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { TestCentre } from '../../entities/test-centre.entity';
 import { Route, RouteDifficulty } from '../../entities/route.entity';
-import { RoadHazardService } from '../routes/road-hazard.service';
+import { OverpassAdvisoryCacheService } from '../routes/overpass-advisory-cache.service';
 
 interface RouteCoordinate {
   lat: number;
@@ -17,7 +17,7 @@ export class AdminService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(TestCentre) private centreRepo: Repository<TestCentre>,
     @InjectRepository(Route) private routeRepo: Repository<Route>,
-    private readonly roadHazardService: RoadHazardService,
+    private readonly advisoryCacheService: OverpassAdvisoryCacheService,
   ) {}
 
   async getStats() {
@@ -77,7 +77,7 @@ export class AdminService {
     const saved = await this.routeRepo.save(route);
 
     try {
-      const roadHazards = await this.roadHazardService.buildRouteHazards(
+      const roadHazards = await this.advisoryCacheService.buildRouteHazards(
         saved.coordinates,
         { rawGeojson: saved.geojson },
       );

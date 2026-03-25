@@ -24,45 +24,56 @@ import { UserModulePassStatus } from '../entities/user-module-pass-status.entity
 import { UserAnalyticsRollup } from '../entities/user-analytics-rollup.entity';
 import { ContentPackManifest } from '../entities/content-pack-manifest.entity';
 import { DisputeCaseEntity } from '../modules/disputes/entities/dispute-case.entity';
+import { ConsentHistoryEntity } from '../modules/legal-acceptance/entities/consent-history.entity';
+import { LegalDocumentVersionEntity } from '../modules/legal-acceptance/entities/legal-document-version.entity';
 import { MarketplaceLegalAcceptanceEntity } from '../modules/legal-acceptance/entities/marketplace-legal-acceptance.entity';
+import { UserConsentEntity } from '../modules/legal-acceptance/entities/user-consent.entity';
+import { UserLegalAcceptanceEntity } from '../modules/legal-acceptance/entities/user-legal-acceptance.entity';
+import { buildTypeOrmOptions } from './typeorm-options';
+import { InstructorShareCodeEntity } from '../modules/instructors/entities/instructor-share-code.entity';
+import { InstructorLearnerLinkEntity } from '../modules/instructors/entities/instructor-learner-link.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
-        entities: [
-          User,
-          TestCentre,
-          Route,
-          Product,
-          Purchase,
-          Entitlement,
-          PracticeSession,
-          RouteStat,
-          CashbackClaim,
-          Track,
-          AuditLog,
-          InstructorEntity,
-          InstructorReviewEntity,
-          LessonEntity,
-          LessonPaymentEntity,
-          LessonFinanceSnapshotEntity,
-          InstructorAvailabilityEntity,
-          UserNotification,
-          UserModuleProgress,
-          UserModulePassStatus,
-          UserAnalyticsRollup,
-          ContentPackManifest,
-          DisputeCaseEntity,
-          MarketplaceLegalAcceptanceEntity,
-        ],
-        synchronize: false,
-        logging: false,
-      }),
+      useFactory: (configService: ConfigService) =>
+        buildTypeOrmOptions({
+          url: configService.get<string>('DATABASE_URL'),
+          entities: [
+            User,
+            TestCentre,
+            Route,
+            Product,
+            Purchase,
+            Entitlement,
+            PracticeSession,
+            RouteStat,
+            CashbackClaim,
+            Track,
+            AuditLog,
+            InstructorEntity,
+            InstructorReviewEntity,
+            LessonEntity,
+            LessonPaymentEntity,
+            LessonFinanceSnapshotEntity,
+            InstructorAvailabilityEntity,
+            UserNotification,
+            UserModuleProgress,
+            UserModulePassStatus,
+            UserAnalyticsRollup,
+            ContentPackManifest,
+            DisputeCaseEntity,
+            LegalDocumentVersionEntity,
+            UserLegalAcceptanceEntity,
+            UserConsentEntity,
+            ConsentHistoryEntity,
+            MarketplaceLegalAcceptanceEntity,
+            InstructorShareCodeEntity,
+            InstructorLearnerLinkEntity,
+          ],
+        }),
     }),
   ],
 })
