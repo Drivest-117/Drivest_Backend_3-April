@@ -17,8 +17,8 @@ import { ActivateApplePurchaseDto } from './dto/activate-apple-purchase.dto';
 
 type AppPurchaseKind =
   | 'practice_monthly'
-  | 'navigation_monthly'
-  | 'navigation_bundle';
+  | 'navigation_yearly'
+  | 'annual_bundle';
 
 @Injectable()
 export class EntitlementsService {
@@ -28,40 +28,46 @@ export class EntitlementsService {
   );
   private readonly monthlyPlanPricePence = this.envInt(
     'APP_PLAN_PRACTICE_MONTHLY_PENCE',
-    1200,
+    1299,
   );
   private readonly monthlyPlanCurrency = process.env.APP_PLAN_PRACTICE_MONTHLY_CURRENCY || 'GBP';
   private readonly monthlyPlanInterval = process.env.APP_PLAN_PRACTICE_MONTHLY_INTERVAL || 'month';
   private readonly monthlyPlanProductId =
     process.env.APP_PLAN_PRACTICE_MONTHLY_PRODUCT_ID ||
-    'drivest.practice.monthly.selected_centre.gbp12';
-  private readonly navigationMonthlyPricePence = this.envInt(
-    'APP_PLAN_NAVIGATION_MONTHLY_PENCE',
-    1000,
+    'drivest.practice.monthly.selected_centre.gbp12.99';
+  private readonly navigationYearlyPricePence = this.envInt(
+    'APP_PLAN_NAVIGATION_YEARLY_PENCE',
+    this.envInt('APP_PLAN_NAVIGATION_MONTHLY_PENCE', 1999),
   );
-  private readonly navigationMonthlyCurrency =
-    process.env.APP_PLAN_NAVIGATION_MONTHLY_CURRENCY || 'GBP';
-  private readonly navigationMonthlyInterval =
-    process.env.APP_PLAN_NAVIGATION_MONTHLY_INTERVAL || 'month';
-  private readonly navigationMonthlyProductId =
+  private readonly navigationYearlyCurrency =
+    process.env.APP_PLAN_NAVIGATION_YEARLY_CURRENCY ||
+    process.env.APP_PLAN_NAVIGATION_MONTHLY_CURRENCY ||
+    'GBP';
+  private readonly navigationYearlyInterval =
+    process.env.APP_PLAN_NAVIGATION_YEARLY_INTERVAL || 'year';
+  private readonly navigationYearlyProductId =
+    process.env.APP_PLAN_NAVIGATION_YEARLY_PRODUCT_ID ||
     process.env.APP_PLAN_NAVIGATION_MONTHLY_PRODUCT_ID ||
-    'drivest.navigation.monthly.only.gbp10';
-  private readonly navigationBundlePricePence = this.envInt(
-    'APP_PLAN_NAVIGATION_BUNDLE_PENCE',
-    3000,
+    'drivest.navigation.only.gbp19_99.yearly';
+  private readonly annualBundlePricePence = this.envInt(
+    'APP_PLAN_ANNUAL_BUNDLE_PENCE',
+    this.envInt('APP_PLAN_NAVIGATION_BUNDLE_PENCE', 2999),
   );
-  private readonly navigationBundleCurrency =
-    process.env.APP_PLAN_NAVIGATION_BUNDLE_CURRENCY || 'GBP';
-  private readonly navigationBundleProductId =
+  private readonly annualBundleCurrency =
+    process.env.APP_PLAN_ANNUAL_BUNDLE_CURRENCY ||
+    process.env.APP_PLAN_NAVIGATION_BUNDLE_CURRENCY ||
+    'GBP';
+  private readonly annualBundleProductId =
+    process.env.APP_PLAN_ANNUAL_BUNDLE_PRODUCT_ID ||
     process.env.APP_PLAN_NAVIGATION_BUNDLE_PRODUCT_ID ||
-    'drivest.navigation.bundle.3m_plus_centre_1m.gbp30';
-  private readonly navigationBundleNavigationMonths = this.envInt(
-    'APP_PLAN_NAVIGATION_BUNDLE_NAV_MONTHS',
-    3,
+    'drivest.annual.bundle.gbp29_99.yearly';
+  private readonly annualBundleNavigationMonths = this.envInt(
+    'APP_PLAN_ANNUAL_BUNDLE_NAV_MONTHS',
+    this.envInt('APP_PLAN_NAVIGATION_BUNDLE_NAV_MONTHS', 12),
   );
-  private readonly navigationBundleCentreMonths = this.envInt(
-    'APP_PLAN_NAVIGATION_BUNDLE_CENTRE_MONTHS',
-    1,
+  private readonly annualBundleCentreMonths = this.envInt(
+    'APP_PLAN_ANNUAL_BUNDLE_CENTRE_MONTHS',
+    this.envInt('APP_PLAN_NAVIGATION_BUNDLE_CENTRE_MONTHS', 1),
   );
   private readonly allowDirectSubscribeEndpoints = this.envBool(
     'APP_DIRECT_SUBSCRIBE_ENABLED',
@@ -126,24 +132,24 @@ export class EntitlementsService {
       navigationAccessUntil: user.navigationAccessUntil ?? null,
       accessibleCentreIds,
       entitlementsEnforced: this.entitlementsEnforced,
-      monthlyPlan: {
+      practiceMonthlyPlan: {
         amountPence: this.monthlyPlanPricePence,
         currencyCode: this.monthlyPlanCurrency,
         interval: this.monthlyPlanInterval,
         productId: this.monthlyPlanProductId,
       },
-      navigationMonthlyPlan: {
-        amountPence: this.navigationMonthlyPricePence,
-        currencyCode: this.navigationMonthlyCurrency,
-        interval: this.navigationMonthlyInterval,
-        productId: this.navigationMonthlyProductId,
+      navigationYearlyPlan: {
+        amountPence: this.navigationYearlyPricePence,
+        currencyCode: this.navigationYearlyCurrency,
+        interval: this.navigationYearlyInterval,
+        productId: this.navigationYearlyProductId,
       },
-      navigationBundlePlan: {
-        amountPence: this.navigationBundlePricePence,
-        currencyCode: this.navigationBundleCurrency,
-        navigationDurationMonths: this.navigationBundleNavigationMonths,
-        centreDurationMonths: this.navigationBundleCentreMonths,
-        productId: this.navigationBundleProductId,
+      annualBundlePlan: {
+        amountPence: this.annualBundlePricePence,
+        currencyCode: this.annualBundleCurrency,
+        navigationDurationMonths: this.annualBundleNavigationMonths,
+        centreDurationMonths: this.annualBundleCentreMonths,
+        productId: this.annualBundleProductId,
       },
     };
   }
@@ -176,12 +182,12 @@ export class EntitlementsService {
 
   async subscribeNavigationMonthly(userId: string) {
     this.ensureDirectSubscribeEnabled();
-    const product = await this.ensureNavigationMonthlyProduct();
+    const product = await this.ensureNavigationYearlyProduct();
     const purchase = await this.createPurchase(userId, product, PurchaseProvider.INTERNAL);
-    await this.extendNavigationAccess(userId, 1);
+    await this.extendNavigationAccess(userId, 12);
     await this.auditRepo.save({
       userId,
-      action: 'APP_NAVIGATION_MONTHLY_SUBSCRIBED',
+      action: 'APP_NAVIGATION_YEARLY_SUBSCRIBED',
       metadata: { purchaseId: purchase.id, productId: product.iosProductId },
     });
     return this.appAccessState(userId);
@@ -190,23 +196,23 @@ export class EntitlementsService {
   async subscribeNavigationBundle(userId: string, centreIdOrSlug: string) {
     this.ensureDirectSubscribeEnabled();
     const centre = await this.requireCentre(centreIdOrSlug);
-    const product = await this.ensureNavigationBundleProduct();
+    const product = await this.ensureAnnualBundleProduct();
     const purchase = await this.createPurchase(userId, product, PurchaseProvider.INTERNAL);
-    await this.extendNavigationAccess(userId, this.navigationBundleNavigationMonths);
+    await this.extendNavigationAccess(userId, this.annualBundleNavigationMonths);
     await this.entRepo.save(
       this.entRepo.create({
         userId,
         scope: EntitlementScope.CENTRE,
         centreId: centre.id,
         startsAt: new Date(),
-        endsAt: this.addMonthsFromAnchor(new Date(), this.navigationBundleCentreMonths),
+        endsAt: this.addMonthsFromAnchor(new Date(), this.annualBundleCentreMonths),
         isActive: true,
         sourcePurchaseId: purchase.id,
       }),
     );
     await this.auditRepo.save({
       userId,
-      action: 'APP_NAVIGATION_BUNDLE_SUBSCRIBED',
+      action: 'APP_ANNUAL_BUNDLE_SUBSCRIBED',
       metadata: { centreId: centre.id, purchaseId: purchase.id, productId: product.iosProductId },
     });
     return this.appAccessState(userId);
@@ -215,8 +221,8 @@ export class EntitlementsService {
   async cancelMonthlySubscription(userId: string) {
     const products = await Promise.all([
       this.ensurePracticeMonthlyProduct(),
-      this.ensureNavigationMonthlyProduct(),
-      this.ensureNavigationBundleProduct(),
+      this.ensureNavigationYearlyProduct(),
+      this.ensureAnnualBundleProduct(),
     ]);
     const productIds = products.map((product) => product.id);
     const purchases = await this.purchaseRepo.find({
@@ -269,17 +275,17 @@ export class EntitlementsService {
     if (kind === 'practice_monthly' && !dto.centreId) {
       throw new BadRequestException('centreId is required for selected-centre practice activation');
     }
-    if (kind === 'navigation_bundle' && !dto.centreId) {
-      throw new BadRequestException('centreId is required for navigation bundle activation');
+    if (kind === 'annual_bundle' && !dto.centreId) {
+      throw new BadRequestException('centreId is required for annual bundle activation');
     }
 
     let product: Product;
     if (kind === 'practice_monthly') {
       product = await this.ensurePracticeMonthlyProduct();
-    } else if (kind === 'navigation_monthly') {
-      product = await this.ensureNavigationMonthlyProduct();
+    } else if (kind === 'navigation_yearly') {
+      product = await this.ensureNavigationYearlyProduct();
     } else {
-      product = await this.ensureNavigationBundleProduct();
+      product = await this.ensureAnnualBundleProduct();
     }
 
     const purchasedAt = dto.purchasedAt ? new Date(dto.purchasedAt) : new Date();
@@ -314,17 +320,17 @@ export class EntitlementsService {
           sourcePurchaseId: savedPurchase.id,
         }),
       );
-    } else if (kind === 'navigation_monthly') {
+    } else if (kind === 'navigation_yearly') {
       await this.extendNavigationAccess(
         userId,
-        1,
+        12,
         dto.expiresAt ? new Date(dto.expiresAt) : undefined,
       );
     } else {
       const centre = await this.requireCentre(dto.centreId!);
       await this.extendNavigationAccess(
         userId,
-        this.navigationBundleNavigationMonths,
+        this.annualBundleNavigationMonths,
         dto.expiresAt ? new Date(dto.expiresAt) : undefined,
       );
       await this.entRepo.save(
@@ -333,7 +339,7 @@ export class EntitlementsService {
           scope: EntitlementScope.CENTRE,
           centreId: centre.id,
           startsAt: purchasedAt,
-          endsAt: this.addMonthsFromAnchor(purchasedAt, this.navigationBundleCentreMonths),
+          endsAt: this.addMonthsFromAnchor(purchasedAt, this.annualBundleCentreMonths),
           isActive: true,
           sourcePurchaseId: savedPurchase.id,
         }),
@@ -501,8 +507,8 @@ export class EntitlementsService {
   private resolveAppPurchaseKind(productIdRaw: string): AppPurchaseKind {
     const productId = String(productIdRaw ?? '').trim();
     if (productId === this.monthlyPlanProductId) return 'practice_monthly';
-    if (productId === this.navigationMonthlyProductId) return 'navigation_monthly';
-    if (productId === this.navigationBundleProductId) return 'navigation_bundle';
+    if (productId === this.navigationYearlyProductId) return 'navigation_yearly';
+    if (productId === this.annualBundleProductId) return 'annual_bundle';
     throw new BadRequestException('Unsupported app productId');
   }
 
@@ -567,32 +573,32 @@ export class EntitlementsService {
     });
   }
 
-  private async ensureNavigationMonthlyProduct(): Promise<Product> {
+  private async ensureNavigationYearlyProduct(): Promise<Product> {
     return this.ensureProduct({
-      iosProductId: this.navigationMonthlyProductId,
-      androidProductId: this.navigationMonthlyProductId,
+      iosProductId: this.navigationYearlyProductId,
+      androidProductId: this.navigationYearlyProductId,
       type: ProductType.SUBSCRIPTION,
-      pricePence: this.navigationMonthlyPricePence,
-      period: ProductPeriod.MONTH,
+      pricePence: this.navigationYearlyPricePence,
+      period: ProductPeriod.YEAR,
       metadata: {
-        label: 'Navigation monthly',
-        currencyCode: this.navigationMonthlyCurrency,
+        label: 'Navigation yearly',
+        currencyCode: this.navigationYearlyCurrency,
       },
     });
   }
 
-  private async ensureNavigationBundleProduct(): Promise<Product> {
+  private async ensureAnnualBundleProduct(): Promise<Product> {
     return this.ensureProduct({
-      iosProductId: this.navigationBundleProductId,
-      androidProductId: this.navigationBundleProductId,
-      type: ProductType.CENTRE_PACK,
-      pricePence: this.navigationBundlePricePence,
-      period: ProductPeriod.QUARTER,
+      iosProductId: this.annualBundleProductId,
+      androidProductId: this.annualBundleProductId,
+      type: ProductType.SUBSCRIPTION,
+      pricePence: this.annualBundlePricePence,
+      period: ProductPeriod.YEAR,
       metadata: {
-        label: 'Navigation bundle',
-        currencyCode: this.navigationBundleCurrency,
-        navigationDurationMonths: this.navigationBundleNavigationMonths,
-        centreDurationMonths: this.navigationBundleCentreMonths,
+        label: 'Annual bundle',
+        currencyCode: this.annualBundleCurrency,
+        navigationDurationMonths: this.annualBundleNavigationMonths,
+        centreDurationMonths: this.annualBundleCentreMonths,
       },
     });
   }

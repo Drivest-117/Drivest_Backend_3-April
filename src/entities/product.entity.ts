@@ -9,6 +9,7 @@ export enum ProductPeriod {
   WEEK = 'WEEK',
   MONTH = 'MONTH',
   QUARTER = 'QUARTER',
+  YEAR = 'YEAR',
   NONE = 'NONE',
 }
 

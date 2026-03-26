@@ -41,12 +41,12 @@ async function run() {
   await upsertProduct(repo, {
     iosProductId:
       process.env.APP_PLAN_PRACTICE_MONTHLY_PRODUCT_ID ||
-      'drivest.practice.monthly.selected_centre.gbp12',
+      'drivest.practice.monthly.selected_centre.gbp12.99',
     androidProductId:
       process.env.APP_PLAN_PRACTICE_MONTHLY_PRODUCT_ID ||
-      'drivest.practice.monthly.selected_centre.gbp12',
+      'drivest.practice.monthly.selected_centre.gbp12.99',
     type: ProductType.SUBSCRIPTION,
-    pricePence: envInt('APP_PLAN_PRACTICE_MONTHLY_PENCE', 1200),
+    pricePence: envInt('APP_PLAN_PRACTICE_MONTHLY_PENCE', 1299),
     period: ProductPeriod.MONTH,
     metadata: {
       label: 'Practice selected centre monthly',
@@ -56,35 +56,51 @@ async function run() {
 
   await upsertProduct(repo, {
     iosProductId:
+      process.env.APP_PLAN_NAVIGATION_YEARLY_PRODUCT_ID ||
       process.env.APP_PLAN_NAVIGATION_MONTHLY_PRODUCT_ID ||
-      'drivest.navigation.monthly.only.gbp10',
+      'drivest.navigation.only.gbp19_99.yearly',
     androidProductId:
+      process.env.APP_PLAN_NAVIGATION_YEARLY_PRODUCT_ID ||
       process.env.APP_PLAN_NAVIGATION_MONTHLY_PRODUCT_ID ||
-      'drivest.navigation.monthly.only.gbp10',
+      'drivest.navigation.only.gbp19_99.yearly',
     type: ProductType.SUBSCRIPTION,
-    pricePence: envInt('APP_PLAN_NAVIGATION_MONTHLY_PENCE', 1000),
-    period: ProductPeriod.MONTH,
+    pricePence: envInt('APP_PLAN_NAVIGATION_YEARLY_PENCE', envInt('APP_PLAN_NAVIGATION_MONTHLY_PENCE', 1999)),
+    period: ProductPeriod.YEAR,
     metadata: {
-      label: 'Navigation monthly',
-      currencyCode: process.env.APP_PLAN_NAVIGATION_MONTHLY_CURRENCY || 'GBP',
+      label: 'Navigation yearly',
+      currencyCode:
+        process.env.APP_PLAN_NAVIGATION_YEARLY_CURRENCY ||
+        process.env.APP_PLAN_NAVIGATION_MONTHLY_CURRENCY ||
+        'GBP',
     },
   });
 
   await upsertProduct(repo, {
     iosProductId:
+      process.env.APP_PLAN_ANNUAL_BUNDLE_PRODUCT_ID ||
       process.env.APP_PLAN_NAVIGATION_BUNDLE_PRODUCT_ID ||
-      'drivest.navigation.bundle.3m_plus_centre_1m.gbp30',
+      'drivest.annual.bundle.gbp29_99.yearly',
     androidProductId:
+      process.env.APP_PLAN_ANNUAL_BUNDLE_PRODUCT_ID ||
       process.env.APP_PLAN_NAVIGATION_BUNDLE_PRODUCT_ID ||
-      'drivest.navigation.bundle.3m_plus_centre_1m.gbp30',
-    type: ProductType.CENTRE_PACK,
-    pricePence: envInt('APP_PLAN_NAVIGATION_BUNDLE_PENCE', 3000),
-    period: ProductPeriod.QUARTER,
+      'drivest.annual.bundle.gbp29_99.yearly',
+    type: ProductType.SUBSCRIPTION,
+    pricePence: envInt('APP_PLAN_ANNUAL_BUNDLE_PENCE', envInt('APP_PLAN_NAVIGATION_BUNDLE_PENCE', 2999)),
+    period: ProductPeriod.YEAR,
     metadata: {
-      label: 'Navigation bundle',
-      currencyCode: process.env.APP_PLAN_NAVIGATION_BUNDLE_CURRENCY || 'GBP',
-      navigationDurationMonths: envInt('APP_PLAN_NAVIGATION_BUNDLE_NAV_MONTHS', 3),
-      centreDurationMonths: envInt('APP_PLAN_NAVIGATION_BUNDLE_CENTRE_MONTHS', 1),
+      label: 'Annual bundle',
+      currencyCode:
+        process.env.APP_PLAN_ANNUAL_BUNDLE_CURRENCY ||
+        process.env.APP_PLAN_NAVIGATION_BUNDLE_CURRENCY ||
+        'GBP',
+      navigationDurationMonths: envInt(
+        'APP_PLAN_ANNUAL_BUNDLE_NAV_MONTHS',
+        envInt('APP_PLAN_NAVIGATION_BUNDLE_NAV_MONTHS', 12)
+      ),
+      centreDurationMonths: envInt(
+        'APP_PLAN_ANNUAL_BUNDLE_CENTRE_MONTHS',
+        envInt('APP_PLAN_NAVIGATION_BUNDLE_CENTRE_MONTHS', 1)
+      ),
     },
   });
 

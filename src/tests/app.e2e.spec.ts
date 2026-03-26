@@ -400,4 +400,48 @@ describe('Route Master API (e2e)', () => {
       .expect(200);
     expect(legacy.body.data.pushToken).toBe('ExponentPushToken[legacy-token]');
   });
+
+  it('allows users to delete their own account from /v1/me', async () => {
+    const register = await request(app.getHttpServer())
+      .post('/v1/auth/sign-up')
+      .send({ email: 'delete-me@example.com', password: strongPassword, name: 'Delete Me' })
+      .expect(201);
+    const token = register.body.data.accessToken;
+    const meBeforeDelete = await request(app.getHttpServer())
+      .get('/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const deletedUserId = meBeforeDelete.body.data.id;
+
+    await request(app.getHttpServer())
+      .patch('/v1/me/push-token')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ pushToken: 'ExponentPushToken[delete-me]' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .delete('/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data.success).toBe(true);
+      });
+
+    await request(app.getHttpServer())
+      .get('/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(404);
+
+    const deletedUser = await userRepo.findOne({
+      where: { id: deletedUserId },
+      withDeleted: true,
+    });
+    expect(deletedUser?.deletedAt).toBeTruthy();
+    expect(deletedUser?.email).toBeNull();
+    expect(deletedUser?.phone).toBeNull();
+    expect(deletedUser?.pushToken).toBeNull();
+    expect(deletedUser?.passwordResetCodeHash).toBeNull();
+    expect(deletedUser?.navigationAccessUntil).toBeNull();
+    expect(deletedUser?.name.startsWith('deleted-')).toBe(true);
+  });
 });

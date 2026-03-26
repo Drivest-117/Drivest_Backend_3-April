@@ -60,10 +60,22 @@ export class UsersService {
       email: null,
       phone: null,
       name: `deleted-${uuid()}`,
+      pushToken: null,
+      passwordResetCodeHash: null,
+      passwordResetCodeExpiresAt: null,
+      passwordResetFailedAttempts: 0,
+      navigationAccessUntil: null,
     };
     await this.usersRepo.update(userId, anonymized);
     await this.usersRepo.softDelete(userId);
-    await this.auditRepo.save({ userId, action: 'USER_DELETE', metadata: {} });
+    await this.auditRepo.save({
+      userId,
+      action: 'USER_DELETE',
+      metadata: {
+        anonymizedEmail: user.email != null,
+        clearedPushToken: Boolean(user.pushToken),
+      },
+    });
     return { success: true };
   }
 }
