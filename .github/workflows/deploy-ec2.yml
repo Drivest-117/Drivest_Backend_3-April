@@ -52,4 +52,8 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_PORT: ${{ secrets.EC2_PORT }}
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          DEPLOY_GIT_SHA: ${{ github.sha }}
+          DEPLOY_GIT_REF: ${{ github.ref_name }}
+          DEPLOY_RUN_ID: ${{ github.run_id }}
+          DEPLOY_RUN_NUMBER: ${{ github.run_number }}
         run: bash ./scripts/deploy_ec2.sh
