@@ -33,6 +33,9 @@ type AppRequestContext = {
   userId: string | null;
 };
 
+const UUID_V4_LIKE_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class AppLegalService {
   constructor(
@@ -440,7 +443,8 @@ export class AppLegalService {
 
     const platform = this.readHeader(req, APP_LEGAL_HEADER_PLATFORM) || 'unknown';
     const appVersion = this.readHeader(req, APP_LEGAL_HEADER_APP_VERSION) || null;
-    const userId = userIdOverride ?? (await this.resolveUserIdFromAuthorizationHeader(req));
+    const resolvedUserId = userIdOverride ?? (await this.resolveUserIdFromAuthorizationHeader(req));
+    const userId = await this.resolveExistingUserId(resolvedUserId);
 
     return {
       installIdentifier,
@@ -471,6 +475,19 @@ export class AppLegalService {
     }
   }
 
+  private async resolveExistingUserId(userId: string | null | undefined): Promise<string | null> {
+    const normalizedUserId = userId?.trim();
+    if (!normalizedUserId || !UUID_V4_LIKE_PATTERN.test(normalizedUserId)) {
+      return null;
+    }
+
+    const existingUser = await this.usersRepo.findOne({
+      where: { id: normalizedUserId },
+      select: { id: true },
+    });
+    return existingUser?.id ?? null;
+  }
+
   private readHeader(req: Request, headerName: string): string | null {
     const raw = req.headers[headerName];
     if (Array.isArray(raw)) {
@@ -483,4 +500,3 @@ export class AppLegalService {
     return null;
   }
 }
-
