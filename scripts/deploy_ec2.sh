@@ -18,16 +18,23 @@ if [[ -z "${EC2_HOST}" ]]; then
   exit 1
 fi
 
-if [[ ! -f "${SSH_KEY_PATH}" ]]; then
-  echo "SSH key not found at ${SSH_KEY_PATH}"
-  exit 1
-fi
-
 SSH_OPTS=(
-  -i "${SSH_KEY_PATH}"
   -p "${EC2_PORT}"
   -o StrictHostKeyChecking=accept-new
 )
+
+if [[ -S "${SSH_AUTH_SOCK:-}" ]]; then
+  echo "Using SSH agent at ${SSH_AUTH_SOCK}"
+elif [[ -f "${SSH_KEY_PATH}" ]]; then
+  SSH_OPTS=(
+    -i "${SSH_KEY_PATH}"
+    "${SSH_OPTS[@]}"
+  )
+  echo "Using SSH key at ${SSH_KEY_PATH}"
+else
+  echo "No SSH agent available and SSH key not found at ${SSH_KEY_PATH}"
+  exit 1
+fi
 
 RSYNC_RSH="ssh ${SSH_OPTS[*]}"
 export RSYNC_RSH
