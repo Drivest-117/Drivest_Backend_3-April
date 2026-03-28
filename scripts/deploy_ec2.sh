@@ -39,6 +39,16 @@ fi
 RSYNC_RSH="ssh ${SSH_OPTS[*]}"
 export RSYNC_RSH
 
+echo "Preparing remote directory ${EC2_APP_DIR} on ${EC2_USER}@${EC2_HOST}:${EC2_PORT}"
+ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" <<EOF
+set -euo pipefail
+if [ ! -d "${EC2_APP_DIR}" ]; then
+  sudo mkdir -p "${EC2_APP_DIR}"
+fi
+sudo chown -R "${EC2_USER}:${EC2_USER}" "${EC2_APP_DIR}"
+EOF
+
+echo "Syncing repository to ${EC2_APP_DIR}"
 rsync -az --delete \
   --exclude '.env' \
   --exclude '.git' \
@@ -46,6 +56,7 @@ rsync -az --delete \
   --exclude 'dist' \
   ./ "${EC2_USER}@${EC2_HOST}:${EC2_APP_DIR}"
 
+echo "Running remote install/build/bootstrap/reload"
 ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" <<EOF
 set -euo pipefail
 cd "${EC2_APP_DIR}"
@@ -55,6 +66,9 @@ export DEPLOY_GIT_REF="${DEPLOY_GIT_REF}"
 export DEPLOYED_AT="${DEPLOYED_AT}"
 export DEPLOY_RUN_ID="${DEPLOY_RUN_ID}"
 export DEPLOY_RUN_NUMBER="${DEPLOY_RUN_NUMBER}"
+echo "Remote directory: $(pwd)"
+echo "Node: $(node -v)"
+echo "npm: $(npm -v)"
 npm ci
 npm run build
 npm run db:bootstrap
