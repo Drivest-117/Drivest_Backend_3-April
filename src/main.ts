@@ -147,7 +147,7 @@ function buildFallbackSwaggerDocument(app: Awaited<ReturnType<typeof NestFactory
   return {
     openapi: '3.0.0',
     info: {
-      title: 'Route Master API',
+      title: 'drivest API',
       version: '1.0.0',
       description:
         'Route-complete fallback Swagger document. Full schema generation is still bypassed when circular geo model metadata prevents Nest Swagger from building component schemas.',
@@ -213,7 +213,7 @@ async function bootstrap() {
     const swaggerPath = configService.get<string>('SWAGGER_PATH', '/docs');
     try {
       const config = new DocumentBuilder()
-        .setTitle('Route Master API')
+        .setTitle('drivest API')
         .setVersion('1.0.0')
         .addBearerAuth()
         .build();

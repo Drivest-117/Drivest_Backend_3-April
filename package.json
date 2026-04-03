@@ -1,7 +1,7 @@
 {
-  "name": "route-master-backend",
+  "name": "drivest-backend",
   "version": "1.0.0",
-  "description": "Route Master backend API",
+  "description": "drivest backend API",
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",

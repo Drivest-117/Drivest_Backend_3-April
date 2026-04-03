@@ -1,17 +1,42 @@
+# Dependencies
 node_modules/
+
+# Build and coverage output
 dist/
 coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Environment files
 .env
 .env.*
 !.env.example
-.DS_Store
+
+# Logs and runtime artifacts
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# Temp/cache
 tmp/
+temp/
+.tmp/
 .cache/
-*.tsbuildinfo
+*.tmp
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local backend/test artifacts
 demo_backend.ps1
 latest_route_payload.json
 login.json
@@ -25,3 +50,14 @@ route_*.json
 
 src/seed/routes/*.gpx
 src/seed/routes/zebra_*.json
+
+# Generated API audit reports
+api-audit-*.json
+api-audit-*.md
+
+# Local docs (keep locally, do not push)
+.local-docs/
+docs/
+README.md
+EC2-DEPLOY.md
+CI-CD-SETUP.md

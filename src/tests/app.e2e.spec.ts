@@ -40,7 +40,7 @@ process.env.ACCESS_OVERRIDE_ADMIN_EMAILS = 'ferror@drivest.uk';
 process.env.ACCESS_OVERRIDE_PRIVILEGED_EMAILS = 'afaanmati@gmail.com';
 jest.setTimeout(20000);
 
-describe('Route Master API (e2e)', () => {
+describe('drivest API (e2e)', () => {
   const strongPassword = 'Password1';
   let app: INestApplication;
   let module: TestingModule;

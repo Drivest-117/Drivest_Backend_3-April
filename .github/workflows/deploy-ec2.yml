@@ -9,6 +9,12 @@ on:
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      EC2_PORT: ${{ secrets.EC2_PORT }}
+      EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+      SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY || secrets.EC2_SSH_PRIVATE_KEY || secrets.EC2_PRIVATE_KEY }}
 
     defaults:
       run:
@@ -34,26 +40,37 @@ jobs:
       - name: Test
         run: npm test -- --runInBand
 
+      - name: Validate Deploy Secrets
+        run: |
+          set -euo pipefail
+          missing=0
+          if [ -z "${EC2_HOST}" ]; then echo "Missing secret: EC2_HOST"; missing=1; fi
+          if [ -z "${EC2_USER}" ]; then echo "Missing secret: EC2_USER"; missing=1; fi
+          if [ -z "${EC2_APP_DIR}" ]; then echo "Missing secret: EC2_APP_DIR"; missing=1; fi
+          if [ -z "${SSH_PRIVATE_KEY}" ]; then
+            echo "Missing SSH key secret. Set one of: EC2_SSH_KEY, EC2_SSH_PRIVATE_KEY, EC2_PRIVATE_KEY"
+            missing=1
+          fi
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Setup SSH Key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
 
       - name: Add EC2 Host
         run: |
           mkdir -p ~/.ssh
-          PORT="${{ secrets.EC2_PORT }}"
+          PORT="${EC2_PORT}"
           PORT="${PORT:-22}"
-          ssh-keyscan -p "$PORT" "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "$PORT" "${EC2_HOST}" >> ~/.ssh/known_hosts
 
       - name: Deploy
+        run: bash ./scripts/deploy_ec2.sh
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_PORT: ${{ secrets.EC2_PORT }}
-          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
           DEPLOY_GIT_SHA: ${{ github.sha }}
           DEPLOY_GIT_REF: ${{ github.ref_name }}
           DEPLOY_RUN_ID: ${{ github.run_id }}
           DEPLOY_RUN_NUMBER: ${{ github.run_number }}
-        run: bash ./scripts/deploy_ec2.sh

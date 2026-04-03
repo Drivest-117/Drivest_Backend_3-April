@@ -1,4 +1,4 @@
--- Minimal OSM data for RouteMaster testing
+-- Minimal OSM data for drivest testing
 -- This creates basic planet_osm_line and planet_osm_point tables with sample data for Colchester area
 
 -- Create the tables if they don't exist (osm2pgsql would normally create these)
