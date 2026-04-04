@@ -235,7 +235,9 @@ async function main() {
     ? new Date(args['published-at']).toISOString()
     : new Date().toISOString();
   const rootDir = path.resolve(
-    args.root || path.resolve(__dirname, '../../DrivestJson'),
+    args.root ||
+      process.env.CONTENT_PACK_SOURCE_ROOT ||
+      path.resolve(__dirname, '../../DrivestJson'),
   );
   const baseUrl = normalizeBaseUrl(args['base-url'] || process.env.CONTENT_PACK_PUBLIC_BASE_URL);
 
