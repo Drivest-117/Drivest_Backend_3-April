@@ -97,11 +97,11 @@ export DEPLOY_GIT_REF="${DEPLOY_GIT_REF}"
 export DEPLOYED_AT="${DEPLOYED_AT}"
 export DEPLOY_RUN_ID="${DEPLOY_RUN_ID}"
 export DEPLOY_RUN_NUMBER="${DEPLOY_RUN_NUMBER}"
-echo "Remote directory: $(pwd)"
+echo "Remote directory: \$(pwd)"
 echo "Deploy target: ${DEPLOY_ENV}"
-echo "Node: $(node -v)"
-echo "npm: $(npm -v)"
-npm ci
+echo "Node: \$(node -v)"
+echo "npm: \$(npm -v)"
+npm ci --include=dev
 npm run build
 npm run db:bootstrap
 if pm2 describe "${PM2_APP_NAME}" >/dev/null 2>&1; then
