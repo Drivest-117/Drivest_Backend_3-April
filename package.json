@@ -7,6 +7,8 @@
     "start:dev": "nest start --watch",
     "build": "nest build",
     "deploy:ec2": "bash ./scripts/deploy_ec2.sh",
+    "deploy:ec2:prod": "DEPLOY_ENV=prod bash ./scripts/deploy_ec2.sh",
+    "deploy:ec2:dev": "DEPLOY_ENV=dev bash ./scripts/deploy_ec2.sh",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint --ext .ts src",
     "test": "jest",

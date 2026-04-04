@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      deploy_env:
+        description: Deploy target environment
+        required: true
+        default: prod
+        type: choice
+        options:
+          - prod
+          - dev
 
 jobs:
   build-test-deploy:
@@ -46,12 +55,41 @@ jobs:
           PORT="${PORT:-22}"
           ssh-keyscan -p "$PORT" "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Resolve Deploy Target
+        run: |
+          TARGET_ENV="prod"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET_ENV="${{ inputs.deploy_env }}"
+          fi
+
+          case "$TARGET_ENV" in
+            prod)
+              echo "DEPLOY_ENV=prod" >> "$GITHUB_ENV"
+              echo "EC2_APP_DIR=/var/www/drivest-backend" >> "$GITHUB_ENV"
+              echo "PM2_APP_NAME=drivest-backend" >> "$GITHUB_ENV"
+              echo "APP_PORT=3000" >> "$GITHUB_ENV"
+              ;;
+            dev)
+              echo "DEPLOY_ENV=dev" >> "$GITHUB_ENV"
+              echo "EC2_APP_DIR=/var/www/drivest-backend-dev" >> "$GITHUB_ENV"
+              echo "PM2_APP_NAME=drivest-backend-dev" >> "$GITHUB_ENV"
+              echo "APP_PORT=3001" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unsupported deploy target: $TARGET_ENV" >&2
+              exit 1
+              ;;
+          esac
+
       - name: Deploy
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_PORT: ${{ secrets.EC2_PORT }}
-          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          EC2_APP_DIR: ${{ env.EC2_APP_DIR }}
+          DEPLOY_ENV: ${{ env.DEPLOY_ENV }}
+          PM2_APP_NAME: ${{ env.PM2_APP_NAME }}
+          APP_PORT: ${{ env.APP_PORT }}
           DEPLOY_GIT_SHA: ${{ github.sha }}
           DEPLOY_GIT_REF: ${{ github.ref_name }}
           DEPLOY_RUN_ID: ${{ github.run_id }}
