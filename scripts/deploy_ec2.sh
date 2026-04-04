@@ -42,7 +42,7 @@ SSH_OPTS=(
   -o StrictHostKeyChecking=accept-new
 )
 
-if [[ -S "${SSH_AUTH_SOCK:-}" ]]; then
+if [[ -S "${SSH_AUTH_SOCK:-}" ]] && ssh-add -L >/dev/null 2>&1; then
   echo "Using SSH agent at ${SSH_AUTH_SOCK}"
 elif [[ -f "${SSH_KEY_PATH}" ]]; then
   SSH_OPTS=(
