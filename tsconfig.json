@@ -7,11 +7,13 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "es2017",
+    "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "strict": true,
     "strictPropertyInitialization": false,
     "paths": {
