@@ -1,0 +1,101 @@
+name: Publish Content Packs
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: Choose whether to preview or publish content-pack changes
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - apply
+      content_target:
+        description: Select which content target to publish
+        required: true
+        default: traffic-sign-images
+        type: choice
+        options:
+          - traffic-sign-images
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-traffic-sign-images:
+    if: ${{ inputs.content_target == 'traffic-sign-images' }}
+    runs-on: ubuntu-latest
+
+    env:
+      CONTENT_PACK_S3_BUCKET: ${{ vars.CONTENT_PACK_S3_BUCKET || 'contentpackages' }}
+      CONTENT_PACK_S3_REGION: ${{ vars.CONTENT_PACK_S3_REGION || 'eu-north-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || vars.CONTENT_PACK_S3_REGION || 'eu-north-1' }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      DB_SSL: ${{ secrets.DB_SSL }}
+      DB_SSL_REJECT_UNAUTHORIZED: ${{ secrets.DB_SSL_REJECT_UNAUTHORIZED }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Traffic Sign Index
+        run: node ./scripts/build-traffic-sign-image-index.js
+
+      - name: Configure AWS Credentials With OIDC
+        if: ${{ inputs.publish_mode == 'apply' && vars.AWS_ROLE_ARN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS Credentials With Static Secrets
+        if: ${{ inputs.publish_mode == 'apply' && vars.AWS_ROLE_ARN == '' && env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate Apply Prerequisites
+        if: ${{ inputs.publish_mode == 'apply' }}
+        run: |
+          if [ -z "${{ vars.AWS_ROLE_ARN }}" ] && { [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; }; then
+            echo "Missing AWS authentication for apply mode." >&2
+            exit 1
+          fi
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Missing DATABASE_URL secret for apply mode." >&2
+            exit 1
+          fi
+
+      - name: Preview Upload Plan
+        if: ${{ inputs.publish_mode == 'dry-run' }}
+        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --dry-run
+
+      - name: Preview Manifest Row
+        if: ${{ inputs.publish_mode == 'dry-run' }}
+        run: node ./scripts/seed-traffic-sign-image-manifest.js --dry-run
+
+      - name: Upload Traffic Sign Images
+        if: ${{ inputs.publish_mode == 'apply' }}
+        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --apply
+
+      - name: Apply Manifest Row
+        if: ${{ inputs.publish_mode == 'apply' }}
+        run: node ./scripts/seed-traffic-sign-image-manifest.js --apply
