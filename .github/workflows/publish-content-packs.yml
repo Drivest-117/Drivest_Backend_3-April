@@ -38,10 +38,18 @@ jobs:
       DB_SSL: ${{ secrets.DB_SSL }}
       DB_SSL_REJECT_UNAUTHORIZED: ${{ secrets.DB_SSL_REJECT_UNAUTHORIZED }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      IOS_SOURCE_ROOT: ./ios-source/DrivestNavigation/Resources/Data/trafficsigns
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout iOS Source Repo
+        uses: actions/checkout@v4
+        with:
+          repository: Drivest2026/drivest-ios
+          path: ios-source
+          token: ${{ secrets.IOS_REPO_READ_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -53,8 +61,19 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Validate iOS Source Availability
+        run: |
+          if [ -z "${{ secrets.IOS_REPO_READ_TOKEN }}" ]; then
+            echo "Missing IOS_REPO_READ_TOKEN secret for checkout of Drivest2026/drivest-ios." >&2
+            exit 1
+          fi
+          if [ ! -d "$IOS_SOURCE_ROOT" ]; then
+            echo "Traffic sign source root not found at $IOS_SOURCE_ROOT" >&2
+            exit 1
+          fi
+
       - name: Build Traffic Sign Index
-        run: node ./scripts/build-traffic-sign-image-index.js
+        run: node ./scripts/build-traffic-sign-image-index.js --root="$IOS_SOURCE_ROOT"
 
       - name: Configure AWS Credentials With OIDC
         if: ${{ inputs.publish_mode == 'apply' && vars.AWS_ROLE_ARN != '' }}
@@ -86,7 +105,7 @@ jobs:
 
       - name: Preview Upload Plan
         if: ${{ inputs.publish_mode == 'dry-run' }}
-        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --dry-run
+        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --dry-run --root="$IOS_SOURCE_ROOT"
 
       - name: Preview Manifest Row
         if: ${{ inputs.publish_mode == 'dry-run' }}
@@ -94,7 +113,7 @@ jobs:
 
       - name: Upload Traffic Sign Images
         if: ${{ inputs.publish_mode == 'apply' }}
-        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --apply
+        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --apply --root="$IOS_SOURCE_ROOT"
 
       - name: Apply Manifest Row
         if: ${{ inputs.publish_mode == 'apply' }}
