@@ -39,9 +39,9 @@ jobs:
       DB_SSL_REJECT_UNAUTHORIZED: ${{ secrets.DB_SSL_REJECT_UNAUTHORIZED }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       IOS_SOURCE_ROOT: ./ios-source/DrivestNavigation/Resources/Data/trafficsigns
-      TRAFFIC_SIGN_INDEX_SUMMARY_PATH: ./content-assets/traffic_sign_images/index-summary.json
-      TRAFFIC_SIGN_UPLOAD_PLAN_PATH: ./content-assets/traffic_sign_images/upload-plan.json
-      TRAFFIC_SIGN_MANIFEST_PLAN_PATH: ./content-assets/traffic_sign_images/manifest-plan.json
+      TRAFFIC_SIGN_INDEX_SUMMARY_PATH: ${{ runner.temp }}/traffic-sign-index-summary.json
+      TRAFFIC_SIGN_UPLOAD_PLAN_PATH: ${{ runner.temp }}/traffic-sign-upload-plan.json
+      TRAFFIC_SIGN_MANIFEST_PLAN_PATH: ${{ runner.temp }}/traffic-sign-manifest-plan.json
 
     steps:
       - name: Checkout
