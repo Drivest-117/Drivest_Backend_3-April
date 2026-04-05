@@ -42,6 +42,10 @@ jobs:
       TRAFFIC_SIGN_INDEX_SUMMARY_PATH: ./.github/tmp/traffic-sign-index-summary.json
       TRAFFIC_SIGN_UPLOAD_PLAN_PATH: ./.github/tmp/traffic-sign-upload-plan.json
       TRAFFIC_SIGN_MANIFEST_PLAN_PATH: ./.github/tmp/traffic-sign-manifest-plan.json
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      EC2_PORT: ${{ secrets.EC2_PORT || '22' }}
+      EC2_APP_DIR: ${{ secrets.EC2_APP_DIR || '/var/www/drivest-backend' }}
 
     steps:
       - name: Checkout
@@ -105,8 +109,8 @@ jobs:
             echo "Missing AWS authentication for apply mode." >&2
             exit 1
           fi
-          if [ -z "$DATABASE_URL" ]; then
-            echo "Missing DATABASE_URL secret for apply mode." >&2
+          if [ -z "$EC2_HOST" ] || [ -z "$EC2_USER" ] || [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "Missing EC2 publish secrets for apply mode." >&2
             exit 1
           fi
 
@@ -124,9 +128,31 @@ jobs:
         if: ${{ inputs.publish_mode == 'apply' }}
         run: node ./scripts/upload-traffic-sign-image-assets-s3.js --apply --root="$IOS_SOURCE_ROOT"
 
-      - name: Apply Manifest Row
+      - name: Prepare EC2 SSH Access
         if: ${{ inputs.publish_mode == 'apply' }}
-        run: node ./scripts/seed-traffic-sign-image-manifest.js --apply
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' '${{ secrets.EC2_SSH_KEY }}' > ~/.ssh/drivest_ec2_key
+          chmod 600 ~/.ssh/drivest_ec2_key
+          ssh-keyscan -p "$EC2_PORT" "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Apply Manifest Row From EC2
+        if: ${{ inputs.publish_mode == 'apply' }}
+        run: |
+          REMOTE_TMP_DIR="$EC2_APP_DIR/.content-pack-publish"
+          ssh -p "$EC2_PORT" -i ~/.ssh/drivest_ec2_key "$EC2_USER@$EC2_HOST" \
+            "mkdir -p '$REMOTE_TMP_DIR'"
+
+          scp -P "$EC2_PORT" -i ~/.ssh/drivest_ec2_key \
+            ./scripts/seed-traffic-sign-image-manifest.js \
+            ./content-assets/traffic_sign_images/index.json \
+            "$EC2_USER@$EC2_HOST:$REMOTE_TMP_DIR/"
+
+          ssh -p "$EC2_PORT" -i ~/.ssh/drivest_ec2_key "$EC2_USER@$EC2_HOST" "
+            set -euo pipefail
+            cd '$EC2_APP_DIR'
+            node '$REMOTE_TMP_DIR/seed-traffic-sign-image-manifest.js' --apply --index='$REMOTE_TMP_DIR/index.json'
+          "
 
       - name: Write Workflow Summary
         if: ${{ always() }}
