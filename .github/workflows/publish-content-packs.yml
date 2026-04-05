@@ -39,20 +39,23 @@ jobs:
       DB_SSL_REJECT_UNAUTHORIZED: ${{ secrets.DB_SSL_REJECT_UNAUTHORIZED }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       IOS_SOURCE_ROOT: ./ios-source/DrivestNavigation/Resources/Data/trafficsigns
+      TRAFFIC_SIGN_INDEX_SUMMARY_PATH: ./content-assets/traffic_sign_images/index-summary.json
+      TRAFFIC_SIGN_UPLOAD_PLAN_PATH: ./content-assets/traffic_sign_images/upload-plan.json
+      TRAFFIC_SIGN_MANIFEST_PLAN_PATH: ./content-assets/traffic_sign_images/manifest-plan.json
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout iOS Source Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: Drivest2026/drivest-ios
           path: ios-source
           token: ${{ secrets.IOS_REPO_READ_TOKEN }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
@@ -73,18 +76,19 @@ jobs:
           fi
 
       - name: Build Traffic Sign Index
-        run: node ./scripts/build-traffic-sign-image-index.js --root="$IOS_SOURCE_ROOT"
+        run: |
+          node ./scripts/build-traffic-sign-image-index.js --root="$IOS_SOURCE_ROOT" | tee "$TRAFFIC_SIGN_INDEX_SUMMARY_PATH"
 
       - name: Configure AWS Credentials With OIDC
         if: ${{ inputs.publish_mode == 'apply' && vars.AWS_ROLE_ARN != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS Credentials With Static Secrets
         if: ${{ inputs.publish_mode == 'apply' && vars.AWS_ROLE_ARN == '' && env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -105,11 +109,13 @@ jobs:
 
       - name: Preview Upload Plan
         if: ${{ inputs.publish_mode == 'dry-run' }}
-        run: node ./scripts/upload-traffic-sign-image-assets-s3.js --dry-run --root="$IOS_SOURCE_ROOT"
+        run: |
+          node ./scripts/upload-traffic-sign-image-assets-s3.js --dry-run --root="$IOS_SOURCE_ROOT" | tee "$TRAFFIC_SIGN_UPLOAD_PLAN_PATH"
 
       - name: Preview Manifest Row
         if: ${{ inputs.publish_mode == 'dry-run' }}
-        run: node ./scripts/seed-traffic-sign-image-manifest.js --dry-run
+        run: |
+          node ./scripts/seed-traffic-sign-image-manifest.js --dry-run | tee "$TRAFFIC_SIGN_MANIFEST_PLAN_PATH"
 
       - name: Upload Traffic Sign Images
         if: ${{ inputs.publish_mode == 'apply' }}
@@ -118,3 +124,55 @@ jobs:
       - name: Apply Manifest Row
         if: ${{ inputs.publish_mode == 'apply' }}
         run: node ./scripts/seed-traffic-sign-image-manifest.js --apply
+
+      - name: Write Workflow Summary
+        if: ${{ always() }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function readJson(path) {
+            if (!fs.existsSync(path)) return null;
+            try {
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            } catch {
+              return null;
+            }
+          }
+
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          const mode = process.env.PUBLISH_MODE;
+          const target = process.env.CONTENT_TARGET;
+          const indexSummary = readJson(process.env.TRAFFIC_SIGN_INDEX_SUMMARY_PATH);
+          const uploadPlan = readJson(process.env.TRAFFIC_SIGN_UPLOAD_PLAN_PATH);
+          const manifestPlan = readJson(process.env.TRAFFIC_SIGN_MANIFEST_PLAN_PATH);
+
+          const lines = [];
+          lines.push('# Content Pack Run Summary');
+          lines.push('');
+          lines.push(`- Mode: \`${mode}\``);
+          lines.push(`- Target: \`${target}\``);
+
+          if (indexSummary) {
+            lines.push(`- Indexed files: \`${indexSummary.fileCount}\``);
+            lines.push(`- Source root: \`${indexSummary.sourceRoot}\``);
+            lines.push(`- Version: \`${indexSummary.version}\``);
+          }
+
+          if (uploadPlan) {
+            lines.push(`- Upload bucket: \`${uploadPlan.bucket}\``);
+            lines.push(`- Upload prefix: \`${uploadPlan.prefix}\``);
+            lines.push(`- Upload size: \`${uploadPlan.totalSizeMB} MB\``);
+          }
+
+          if (manifestPlan && manifestPlan.row) {
+            lines.push(`- Manifest version: \`${manifestPlan.row.version}\``);
+            lines.push(`- Manifest URL: \`${manifestPlan.row.url}\``);
+          }
+
+          lines.push('');
+          fs.appendFileSync(summaryPath, lines.join('\n') + '\n');
+          NODE
+        env:
+          PUBLISH_MODE: ${{ inputs.publish_mode }}
+          CONTENT_TARGET: ${{ inputs.content_target }}
