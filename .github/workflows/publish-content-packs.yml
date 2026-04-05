@@ -39,9 +39,9 @@ jobs:
       DB_SSL_REJECT_UNAUTHORIZED: ${{ secrets.DB_SSL_REJECT_UNAUTHORIZED }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       IOS_SOURCE_ROOT: ./ios-source/DrivestNavigation/Resources/Data/trafficsigns
-      TRAFFIC_SIGN_INDEX_SUMMARY_PATH: ${{ runner.temp }}/traffic-sign-index-summary.json
-      TRAFFIC_SIGN_UPLOAD_PLAN_PATH: ${{ runner.temp }}/traffic-sign-upload-plan.json
-      TRAFFIC_SIGN_MANIFEST_PLAN_PATH: ${{ runner.temp }}/traffic-sign-manifest-plan.json
+      TRAFFIC_SIGN_INDEX_SUMMARY_PATH: ./.github/tmp/traffic-sign-index-summary.json
+      TRAFFIC_SIGN_UPLOAD_PLAN_PATH: ./.github/tmp/traffic-sign-upload-plan.json
+      TRAFFIC_SIGN_MANIFEST_PLAN_PATH: ./.github/tmp/traffic-sign-manifest-plan.json
 
     steps:
       - name: Checkout
@@ -63,6 +63,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Prepare Summary Paths
+        run: mkdir -p ./.github/tmp
 
       - name: Validate iOS Source Availability
         run: |
