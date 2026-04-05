@@ -629,4 +629,83 @@ describe("InstructorsService", () => {
       }),
     );
   });
+
+  it("bootstraps instructor profile on getMyProfile when instructor record is missing", async () => {
+    instructorsRepo.findOne.mockResolvedValueOnce(null);
+    usersRepo.findOne.mockResolvedValue({
+      id: "user-ins-1",
+      name: "Casey Instructor",
+      email: "casey@drivest.uk",
+      phone: "+447700900123",
+      deletedAt: null,
+    });
+    instructorsRepo.save.mockImplementation(async (input) => ({
+      id: "ins-bootstrapped",
+      deletedAt: null,
+      ...input,
+    }));
+
+    const result = await service.getMyProfile({
+      userId: "user-ins-1",
+      role: "INSTRUCTOR",
+    });
+
+    expect(instructorsRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-ins-1",
+        fullName: "Casey Instructor",
+        email: "casey@drivest.uk",
+        transmissionType: "both",
+        isApproved: false,
+      }),
+    );
+    expect(result.id).toBe("ins-bootstrapped");
+    expect(result.fullName).toBe("Casey Instructor");
+    expect(result.email).toBe("casey@drivest.uk");
+  });
+
+  it("bootstraps missing instructor profile before updateProfile", async () => {
+    instructorsRepo.findOne.mockResolvedValueOnce(null);
+    usersRepo.findOne.mockResolvedValue({
+      id: "user-ins-2",
+      name: "Taylor Coach",
+      email: "taylor@drivest.uk",
+      phone: null,
+      deletedAt: null,
+    });
+    instructorsRepo.save
+      .mockImplementationOnce(async (input) => ({
+        id: "ins-2",
+        deletedAt: null,
+        ...input,
+      }))
+      .mockImplementationOnce(async (input) => ({
+        id: "ins-2",
+        deletedAt: null,
+        ...input,
+      }));
+
+    const result = await service.updateProfile(
+      { userId: "user-ins-2", role: "INSTRUCTOR" },
+      {
+        fullName: "Taylor Coach ADI",
+        email: "taylor.coach@drivest.uk",
+        transmissionType: "manual",
+        adiNumber: "ADI-778899",
+      },
+    );
+
+    expect(instructorsRepo.save).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        userId: "user-ins-2",
+        fullName: "Taylor Coach ADI",
+        email: "taylor.coach@drivest.uk",
+        transmissionType: "manual",
+        adiNumber: "ADI-778899",
+      }),
+    );
+    expect(result.fullName).toBe("Taylor Coach ADI");
+    expect(result.adiNumber).toBe("ADI-778899");
+  });
 });

@@ -129,12 +129,7 @@ export class InstructorsService {
   ) {
     this.requireRole(user, "instructor");
 
-    const profile = await this.instructorsRepo.findOne({
-      where: { userId: user.userId },
-    });
-    if (!profile) {
-      throw new NotFoundException("Instructor profile not found");
-    }
+    const profile = await this.getOrBootstrapInstructorForUser(user.userId);
     this.validateBankDetailsInput(
       dto.bankAccountHolderName,
       dto.bankSortCode,
@@ -194,12 +189,7 @@ export class InstructorsService {
   async getMyProfile(user: AuthenticatedRequestUser) {
     this.requireRole(user, "instructor");
 
-    const profile = await this.instructorsRepo.findOne({
-      where: { userId: user.userId },
-    });
-    if (!profile || profile.deletedAt) {
-      throw new NotFoundException("Instructor profile not found");
-    }
+    const profile = await this.getOrBootstrapInstructorForUser(user.userId);
 
     return {
       id: profile.id,
