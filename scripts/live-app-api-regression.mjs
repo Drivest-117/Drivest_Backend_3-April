@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:3000';
+const QA_CENTRE = (process.env.QA_CENTRE || '').trim();
+const EXPECT_ENTITLEMENT = String(process.env.EXPECT_ENTITLEMENT || '').trim().toLowerCase();
 
 function loadEnv(filePath) {
   if (!fs.existsSync(filePath)) return {};
@@ -53,11 +55,53 @@ function ensure(condition, message) {
   console.log(`PASS ${message}`);
 }
 
+function normalizeExpectation(webhookSecret) {
+  if (EXPECT_ENTITLEMENT === '1' || EXPECT_ENTITLEMENT === 'true' || EXPECT_ENTITLEMENT === 'yes') {
+    return true;
+  }
+  if (EXPECT_ENTITLEMENT === '0' || EXPECT_ENTITLEMENT === 'false' || EXPECT_ENTITLEMENT === 'no') {
+    return false;
+  }
+  return Boolean(webhookSecret);
+}
+
 function readToken(response) {
   return (
     response?.json?.data?.accessToken ||
     response?.json?.accessToken ||
     ''
+  );
+}
+
+async function resolveCentreWithRoutes(centreItems) {
+  const preferred = centreItems.filter((centre) => {
+    if (!QA_CENTRE) return true;
+    const slug = String(centre.slug || '');
+    const id = String(centre.id || '');
+    const name = String(centre.name || '').toLowerCase();
+    const wanted = QA_CENTRE.toLowerCase();
+    return slug === wanted || id === QA_CENTRE || name.includes(wanted);
+  });
+
+  for (const centre of preferred) {
+    const centreKey = centre.slug || centre.id;
+    const centreRoutes = await req(
+      'GET',
+      `/centres/${encodeURIComponent(centreKey)}/routes`,
+    );
+    if (centreRoutes.status !== 200) {
+      continue;
+    }
+    const routes = itemsFrom(centreRoutes.json);
+    if (routes.length > 0) {
+      return { centre, centreKey, routes };
+    }
+  }
+
+  throw new Error(
+    QA_CENTRE
+      ? `No routes found for requested centre ${QA_CENTRE}`
+      : 'No centre with routes found in public catalogue',
   );
 }
 
@@ -93,22 +137,11 @@ async function main() {
   const centres = await req('GET', '/centres');
   ensure(centres.status === 200, 'centres 200');
   const centreItems = itemsFrom(centres.json);
-  const colchester = centreItems.find(
-    (c) =>
-      String(c.slug || '').includes('colchester') ||
-      String(c.name || '').toLowerCase().includes('colchester'),
-  );
-  ensure(Boolean(colchester), 'colchester centre exists');
-  const centreKey = colchester.slug || colchester.id;
-
-  const centreRoutes = await req(
-    'GET',
-    `/centres/${encodeURIComponent(centreKey)}/routes`,
-  );
-  ensure(centreRoutes.status === 200, 'centre routes 200');
-  const routes = itemsFrom(centreRoutes.json);
-  ensure(routes.length > 0, 'at least one centre route');
+  ensure(centreItems.length > 0, 'centres list not empty');
+  const { centre, centreKey, routes } = await resolveCentreWithRoutes(centreItems);
+  ensure(Boolean(centre), 'found centre with routes');
   const routeId = routes[0].id;
+  const expectEntitlement = normalizeExpectation(env.REVENUECAT_WEBHOOK_SECRET || '');
 
   const ent0 = await req('GET', '/entitlements/app', null, authHeaders);
   ensure(ent0.status === 200, 'entitlements app 200');
@@ -117,21 +150,28 @@ async function main() {
   const selBefore = await req(
     'POST',
     '/entitlements/app/select-centre',
-    { centreId: 'colchester' },
+    { centreId: centreKey },
     authHeaders,
   );
-  ensure(
-    selBefore.status === 200 || selBefore.status === 201 || selBefore.status === 403,
-    'select centre before purchase returned 200/201/403',
-  );
+  if (expectEntitlement) {
+    ensure(
+      selBefore.status === 200 || selBefore.status === 201 || selBefore.status === 403,
+      'select centre before purchase returned 200/201/403',
+    );
+  } else {
+    ensure(selBefore.status === 403, 'select centre blocked without entitlement');
+  }
 
   const webhookSecret = env.REVENUECAT_WEBHOOK_SECRET || '';
-  if (webhookSecret) {
+  if (expectEntitlement && webhookSecret) {
+    const productId =
+      env.REVENUECAT_PRODUCT_ID ||
+      `centre_${String(centre.slug || centre.id).replace(/-/g, '_')}_week_ios`;
     const webhookPayload = {
       event_id: `evt_${Date.now()}`,
       type: 'INITIAL_PURCHASE',
       app_user_id: userId,
-      product_id: 'centre_colchester_week_ios',
+      product_id: productId,
       transaction_id: `txn_${Date.now()}`,
       purchased_at: new Date().toISOString(),
     };
@@ -168,7 +208,7 @@ async function main() {
     selectAfterPurchase = await req(
       'POST',
       '/entitlements/app/select-centre',
-      { centreId: 'colchester' },
+      { centreId: centreKey },
       authHeaders,
     );
     ensure(
@@ -177,43 +217,22 @@ async function main() {
     );
 
     console.log('PASS webhook response', JSON.stringify(webhookJson));
+  } else if (expectEntitlement) {
+    console.log('INFO EXPECT_ENTITLEMENT set but REVENUECAT_WEBHOOK_SECRET missing; paid-path checks will likely fail');
   } else {
-    console.log('INFO webhook secret not set; skipping webhook entitlement step');
+    console.log('INFO running free-user mode; entitlement-gated app route endpoints are expected to return 403');
   }
 
   const route = await req('GET', `/routes/app/${routeId}`, null, authHeaders);
-  ensure(route.status === 200, 'route by app endpoint 200');
-
-  const start = await req('POST', `/routes/app/${routeId}/practice/start`, {}, authHeaders);
-  ensure(start.status === 200 || start.status === 201, 'practice start ok');
-
-  const finish = await req(
-    'POST',
-    `/routes/app/${routeId}/practice/finish`,
-    { completed: true, distanceM: 900, durationS: 420 },
-    authHeaders,
-  );
-  ensure(finish.status === 200 || finish.status === 201, 'practice finish ok');
-
-  const dlRes = await fetch(BASE + `/routes/app/${routeId}/download`, { headers: authHeaders });
-  const dlText = await dlRes.text();
-  ensure(dlRes.status === 200, 'route download 200');
-  ensure(
-    dlText.includes('<gpx') || dlText.includes('<rte') || dlText.includes('<trk'),
-    'download returns gpx-like xml',
-  );
-
-  const routeHaz = await req(
-    'GET',
-    `/routes/app/${routeId}/hazards?types=${encodeURIComponent(allowedTypes)}`,
-    null,
-    authHeaders,
-  );
-  ensure(routeHaz.status === 200, 'route hazards 200');
+  if (expectEntitlement) {
+    ensure(route.status === 200, 'route by app endpoint 200');
+  } else {
+    ensure(route.status === 403, 'route by app endpoint blocked without entitlement');
+  }
 
   const centreHaz = await req(
     'GET',
-    `/centres/colchester/hazards?types=${encodeURIComponent(allowedTypes)}`,
+    `/centres/${encodeURIComponent(centreKey)}/hazards?types=${encodeURIComponent(allowedTypes)}`,
   );
   ensure(centreHaz.status === 200, 'centre hazards 200');
 
@@ -240,7 +259,7 @@ async function main() {
   const east = lng + 0.01;
   const bboxHaz = await req(
     'GET',
-    `/hazards/route?south=${south}&west=${west}&north=${north}&east=${east}&centreId=colchester&types=${encodeURIComponent(
+    `/hazards/route?south=${south}&west=${west}&north=${north}&east=${east}&centreId=${encodeURIComponent(centreKey)}&types=${encodeURIComponent(
       allowedTypes,
     )}`,
   );
@@ -251,7 +270,7 @@ async function main() {
     '/navigation/app/hazards/nearby',
     {
       center: { lat, lng },
-      centreId: 'colchester',
+      centreId: centreKey,
       corridorWidthM: 45,
       lookaheadM: 450,
       limit: 10,
@@ -266,18 +285,56 @@ async function main() {
     },
     authHeaders,
   );
-  ensure(nearby.status === 200 || nearby.status === 201, 'nearby hazards 200');
+  if (expectEntitlement) {
+    ensure(nearby.status === 200 || nearby.status === 201, 'nearby hazards 200');
+  } else {
+    ensure(nearby.status === 403, 'nearby hazards blocked without entitlement');
+  }
   const nearbyItems = itemsFrom(nearby.json);
-  ensure(Array.isArray(nearbyItems), 'nearby hazards has items array');
+  if (expectEntitlement) {
+    ensure(Array.isArray(nearbyItems), 'nearby hazards has items array');
+  }
+
+  if (expectEntitlement) {
+    const start = await req('POST', `/routes/app/${routeId}/practice/start`, {}, authHeaders);
+    ensure(start.status === 200 || start.status === 201, 'practice start ok');
+
+    const finish = await req(
+      'POST',
+      `/routes/app/${routeId}/practice/finish`,
+      { completed: true, distanceM: 900, durationS: 420 },
+      authHeaders,
+    );
+    ensure(finish.status === 200 || finish.status === 201, 'practice finish ok');
+
+    const dlRes = await fetch(BASE + `/routes/app/${routeId}/download`, { headers: authHeaders });
+    const dlText = await dlRes.text();
+    ensure(dlRes.status === 200, 'route download 200');
+    ensure(
+      dlText.includes('<gpx') || dlText.includes('<rte') || dlText.includes('<trk'),
+      'download returns gpx-like xml',
+    );
+
+    const routeHaz = await req(
+      'GET',
+      `/routes/app/${routeId}/hazards?types=${encodeURIComponent(allowedTypes)}`,
+      null,
+      authHeaders,
+    );
+    ensure(routeHaz.status === 200, 'route hazards 200');
+  }
 
   console.log(
     'SUMMARY',
     JSON.stringify({
+      centreKey,
+      centreName: centre.name,
       userId,
       routeId,
+      expectEntitlement,
       selectBefore: selBefore.status,
       selectAfter: selectAfterPurchase?.status ?? null,
-      nearbyItems: nearbyItems.length,
+      nearbyItems: Array.isArray(nearbyItems) ? nearbyItems.length : null,
       nearbySourceStatus:
         nearby.json?.meta?.source_status ?? nearby.json?.data?.source_status ?? null,
     }),
