@@ -66,9 +66,9 @@ export DEPLOY_GIT_REF="${DEPLOY_GIT_REF}"
 export DEPLOYED_AT="${DEPLOYED_AT}"
 export DEPLOY_RUN_ID="${DEPLOY_RUN_ID}"
 export DEPLOY_RUN_NUMBER="${DEPLOY_RUN_NUMBER}"
-echo "Remote directory: $(pwd)"
-echo "Node: $(node -v)"
-echo "npm: $(npm -v)"
+echo "Remote directory: \$(pwd)"
+echo "Node: \$(node -v)"
+echo "npm: \$(npm -v)"
 npm ci
 npm run build
 npm run db:bootstrap
