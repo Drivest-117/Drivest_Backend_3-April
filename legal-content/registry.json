@@ -1,0 +1,154 @@
+{
+  "defaultLocale": "en-GB",
+  "updatedAt": "2026-04-05",
+  "documents": [
+    {
+      "id": "terms-and-conditions",
+      "title": "Drivest Terms and Conditions",
+      "locale": "en-GB",
+      "audience": "public",
+      "version": "3.0",
+      "lastUpdated": "2026-03-24",
+      "publicationTimestamp": "2026-03-24T00:00:00.000Z",
+      "relativePath": "source/en-GB/public/terms-and-conditions.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true,
+      "appLegalDocumentType": "terms",
+      "metadata": {
+        "url": "https://www.drivest.uk/terms.html",
+        "localizedUrls": {
+          "en-GB": "https://www.drivest.uk/terms.html"
+        },
+        "title": "Drivest Terms and Conditions"
+      }
+    },
+    {
+      "id": "privacy-policy",
+      "title": "Drivest Privacy Policy",
+      "locale": "en-GB",
+      "audience": "public",
+      "version": "3.0",
+      "lastUpdated": "2026-03-24",
+      "publicationTimestamp": "2026-03-24T00:00:00.000Z",
+      "relativePath": "source/en-GB/public/privacy-policy.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true,
+      "appLegalDocumentType": "privacy",
+      "metadata": {
+        "url": "https://www.drivest.uk/privacypolicy.html",
+        "localizedUrls": {
+          "en-GB": "https://www.drivest.uk/privacypolicy.html"
+        },
+        "title": "Drivest Privacy Policy"
+      }
+    },
+    {
+      "id": "faq",
+      "title": "Drivest FAQ",
+      "locale": "en-GB",
+      "audience": "public",
+      "version": "3.0",
+      "lastUpdated": "2026-03-24",
+      "publicationTimestamp": "2026-03-24T00:00:00.000Z",
+      "relativePath": "source/en-GB/public/faq.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true,
+      "metadata": {
+        "url": "https://www.drivest.uk/#trust",
+        "localizedUrls": {
+          "en-GB": "https://www.drivest.uk/#trust"
+        },
+        "title": "Drivest FAQ"
+      }
+    },
+    {
+      "id": "safety-notice",
+      "title": "Drivest Safety Notice",
+      "locale": "en-GB",
+      "audience": "public",
+      "version": "2026-03-24.v1",
+      "lastUpdated": "2026-03-24",
+      "publicationTimestamp": "2026-03-24T00:00:00.000Z",
+      "relativePath": "source/en-GB/public/safety-notice.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true,
+      "appLegalDocumentType": "safety_notice",
+      "metadata": {
+        "title": "Drivest Safety Notice",
+        "scope": "combined_onboarding_legal_screen"
+      }
+    },
+    {
+      "id": "backend-compliance-schema",
+      "title": "Backend Compliance Schema",
+      "locale": "en-GB",
+      "audience": "internal",
+      "version": "1.1",
+      "lastUpdated": "2026-04-05",
+      "publicationTimestamp": "2026-04-05T00:00:00.000Z",
+      "relativePath": "source/en-GB/internal/backend-compliance-schema.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true
+    },
+    {
+      "id": "permissions-and-consent-framework",
+      "title": "Permissions and Consent Framework",
+      "locale": "en-GB",
+      "audience": "internal",
+      "version": "1.1",
+      "lastUpdated": "2026-04-05",
+      "publicationTimestamp": "2026-04-05T00:00:00.000Z",
+      "relativePath": "source/en-GB/internal/permissions-and-consent-framework.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true
+    },
+    {
+      "id": "in-app-onboarding-legal-screens",
+      "title": "In-App Onboarding Legal Screens",
+      "locale": "en-GB",
+      "audience": "internal",
+      "version": "1.1",
+      "lastUpdated": "2026-04-05",
+      "publicationTimestamp": "2026-04-05T00:00:00.000Z",
+      "relativePath": "source/en-GB/internal/in-app-onboarding-legal-screens.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true
+    },
+    {
+      "id": "admin-checklist",
+      "title": "Admin Approval Checklist",
+      "locale": "en-GB",
+      "audience": "internal",
+      "version": "2026-04-05.v1",
+      "lastUpdated": "2026-04-05",
+      "publicationTimestamp": "2026-04-05T00:00:00.000Z",
+      "relativePath": "source/en-GB/internal/admin-checklist.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true
+    },
+    {
+      "id": "instructor-agreement",
+      "title": "Drivest Instructor Agreement",
+      "locale": "en-GB",
+      "audience": "internal",
+      "version": "1.1",
+      "lastUpdated": "2026-04-05",
+      "publicationTimestamp": "2026-04-05T00:00:00.000Z",
+      "relativePath": "source/en-GB/internal/instructor-agreement.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true
+    },
+    {
+      "id": "onboarding-checkbox",
+      "title": "Instructor Onboarding Checkbox Text",
+      "locale": "en-GB",
+      "audience": "internal",
+      "version": "2026-04-05.v1",
+      "lastUpdated": "2026-04-05",
+      "publicationTimestamp": "2026-04-05T00:00:00.000Z",
+      "relativePath": "source/en-GB/internal/onboarding-checkbox.md",
+      "sourceFormat": "markdown",
+      "translationEligible": true
+    }
+  ]
+}

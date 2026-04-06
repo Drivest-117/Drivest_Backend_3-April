@@ -1,0 +1,37 @@
+{
+  "locale": "nl",
+  "generatedAt": "2026-04-05T12:52:08.791Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest is een platform ter ondersteuning van het rijden. Het biedt alleen begeleiding en vervangt niet uw eigen oordeel, uw instructeur of de wet.\n\nU moet altijd de verkeersborden, verkeersregels en de werkelijke omstandigheden volgen. Als iets in de app in strijd is met de werkelijke weg, volg dan de weg.\n\nDoor verder te gaan bevestigt u dat u 16 jaar of ouder bent, de veiligheidsmelding begrijpt en accepteert, en akkoord gaat met de Algemene voorwaarden en het Privacybeleid.",
+    "onboarding.legal_checkbox": "Ik bevestig dat ik 16 jaar of ouder ben, de veiligheidsmelding begrijp en akkoord ga met de Algemene voorwaarden en het Privacybeleid.",
+    "onboarding.permissions.body": "Drivest heeft bepaalde machtigingen nodig om goed te werken. Locatie wordt gebruikt voor routes en navigatie wanneer die actief zijn. Analyse helpt de prestaties en betrouwbaarheid te verbeteren en is optioneel. Meldingen houden je op de hoogte van boekingen en activiteit.",
+    "onboarding.location.body": "Locatie wordt gebruikt voor routes en navigatie wanneer die actief zijn.",
+    "onboarding.analytics.body": "Analyse helpt de prestaties en betrouwbaarheid te verbeteren en is optioneel.",
+    "onboarding.notifications.body": "Meldingen houden je op de hoogte van boekingen en activiteit.",
+    "settings.content_accuracy.body": "De inhoud van Drivest is uitsluitend bedoeld als advies en kan onvolledig of verouderd zijn. Routeoverlays, waarschuwingssignalen en snelheidsbegeleiding zijn informatief en mogen niet als gegarandeerd worden beschouwd. Volg altijd live-borden, markeringen en wettelijke vereisten. De Highway Code blijft de gezaghebbende bron voor Britse verkeersregels en veilig rijgedrag.",
+    "settings.service_availability.body": "Sommige diensten zijn afhankelijk van netwerkdekking en externe providers; beschikbaarheid kan per locatie verschillen.",
+    "settings.safety_notice.body": "Drivest biedt alleen leerondersteuning. Blijf alert en gebruik de app nooit op een manier die de controle over uw voertuig vermindert.",
+    "disclaimer.driving_guidance.body": "De begeleiding van Drivest is alleen adviserend en vervangt geen verkeersborden, wettelijke plichten of instructies van instructeur/examinator. Houd de volledige controle over het voertuig en volg de live wegomstandigheden. Versie: %1$s",
+    "reference.traffic_signs_source_note": "Gebaseerd op UK DfT \\'Ken uw verkeersborden\\'-referentiemateriaal en afbeeldingsindexgegevens. Gebruik als revisieondersteuning en volg live verkeersborden en wettelijke vereisten.",
+    "reference.highway_code_footer_note": "Gebaseerd op de wegcode (GOV.UK). Alleen ter advies: volg altijd de verkeersborden en wettelijke vereisten.",
+    "marketplace.find_instructors.legal_body": "Drivest helpt leerlingen instructeurs te vinden en lesaanvragen te beheren. Rijles wordt gegeven door onafhankelijke instructeurs, niet door Drivest.\\n\\nVermeldingen garanderen geen kwaliteit, beschikbaarheid, resultaten of slaagkansen. Lesprijzen en commissieregistraties gelden voor marketplace-boekingen volgens de platformregels.\\n\\nGeschillen of beleidscontroles kunnen ertoe leiden dat gegevens worden vastgehouden. Jij blijft verantwoordelijk voor rechtmatig, nauwkeurig en eerlijk gebruik. Niets in deze kennisgeving beperkt je wettelijke consumentenrechten.",
+    "marketplace.instructor_hub.legal_body": "Je gebruikt Drivest als onafhankelijke instructeurszaak, niet als werknemer of franchisenemer.\\n\\nJe bent verantwoordelijk voor wettig onderwijs, vergunningen, verzekering en naleving. Drivest biedt marketplace-zichtbaarheid, planning, lesaanvragen en beleidsregistraties.\\n\\nVoor marketplace-boekingen wordt een commissie van 8 procent geregistreerd. De uitbetalingsstatus wordt vastgelegd en kan worden vastgehouden voor geschillen of beleidscontrole. Drivest kan marketplace-activiteit beoordelen, opschorten of beperken wanneer dat nodig is. Niets in deze kennisgeving beperkt niet-uitsluitbare wettelijke rechten."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

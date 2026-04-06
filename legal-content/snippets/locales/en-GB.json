@@ -1,0 +1,37 @@
+{
+  "locale": "en-GB",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest is a driving support platform. It provides guidance only and does not replace your judgement, your instructor, or the law.\\n\\nYou must always follow road signs, traffic laws, and real-world conditions. If anything in the app conflicts with the road, follow the road.\\n\\nBy continuing, you confirm that you are 16 years of age or older, that you understand and accept the safety notice, and that you agree to the Terms and Conditions and the Privacy Policy.",
+    "onboarding.legal_checkbox": "I confirm that I am 16 or older, I understand the safety notice, and I agree to the Terms and Conditions and Privacy Policy.",
+    "onboarding.permissions.body": "Drivest needs certain permissions to work properly. Location is used for routes and navigation when active. Analytics helps improve performance and reliability and is optional. Notifications keep you updated about bookings and activity.",
+    "onboarding.location.body": "Location is used for routes and navigation when active.",
+    "onboarding.analytics.body": "Analytics helps improve performance and reliability and is optional.",
+    "onboarding.notifications.body": "Notifications keep you updated about bookings and activity.",
+    "settings.content_accuracy.body": "Drivest content is advisory only and may be incomplete or outdated. Route overlays, hazard cues, and speed guidance are informational and must not be treated as guaranteed. Always follow live signs, markings, and legal requirements. The Highway Code remains the authoritative source for UK road rules and safe driving behavior.",
+    "settings.service_availability.body": "Some services depend on network coverage and third-party providers; availability may vary by location.",
+    "settings.safety_notice.body": "Drivest provides learning support only. Stay attentive and never use the app in a way that reduces control of your vehicle.",
+    "disclaimer.driving_guidance.body": "Drivest guidance is advisory only and does not replace road signs, legal duties, or instructor/examiner instructions. Keep full control of the vehicle and follow live road conditions. Version: %1$s",
+    "reference.traffic_signs_source_note": "Based on UK DfT \\\"Know your traffic signs\\\" reference assets and image index data. Use as revision support and follow live road signs and legal requirements.",
+    "reference.highway_code_footer_note": "Based on The Highway Code (GOV.UK). Advisory only — always follow live road signs and legal requirements.",
+    "marketplace.find_instructors.legal_body": "Drivest helps learners discover instructors and manage lesson requests. Driving instruction is provided by independent instructors, not by Drivest.\\n\\nListings do not guarantee quality, availability, results, or pass outcomes. Lesson pricing and commission records apply to marketplace bookings under platform rules.\\n\\nDisputes or policy checks may place records on hold. You remain responsible for lawful, accurate, and honest use. Nothing in this notice limits your statutory consumer rights.",
+    "marketplace.instructor_hub.legal_body": "You use Drivest as an independent instructor business, not as an employee or franchisee.\\n\\nYou are responsible for lawful instruction, licensing, insurance, and compliance. Drivest provides marketplace discovery, scheduling, lesson requests, and policy records.\\n\\nCommission for marketplace bookings is recorded at 8 percent. Payout status is recorded and may be held for disputes or policy review. Drivest may review, suspend, or limit marketplace activity where needed. Nothing in this notice limits non-excludable legal rights."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

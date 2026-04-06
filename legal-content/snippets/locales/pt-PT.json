@@ -1,0 +1,37 @@
+{
+  "locale": "pt-PT",
+  "generatedAt": "2026-04-05T12:52:08.823Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "A Drivest é uma plataforma de apoio à condução. Fornece apenas orientação e não substitui o seu próprio julgamento, o seu instrutor ou a lei.\n\nDeve seguir sempre a sinalização rodoviária, as regras de trânsito e as condições reais. Se algo na aplicação entrar em conflito com a estrada real, siga a estrada.\n\nAo continuar, confirma que tem 16 anos ou mais, que compreende e aceita o aviso de segurança e que aceita os Termos e Condições e a Política de Privacidade.",
+    "onboarding.legal_checkbox": "Confirmo que tenho 16 anos ou mais, que compreendo o aviso de segurança e que concordo com os Termos e Condições e com a Política de Privacidade.",
+    "onboarding.permissions.body": "A Drivest precisa de determinadas permissões para funcionar corretamente. A localização é usada para rotas e navegação quando estas estão ativas. A análise ajuda a melhorar o desempenho e a fiabilidade e é opcional. As notificações mantêm-no atualizado sobre reservas e atividade.",
+    "onboarding.location.body": "A localização é usada para rotas e navegação quando estas estão ativas.",
+    "onboarding.analytics.body": "A análise ajuda a melhorar o desempenho e a fiabilidade e é opcional.",
+    "onboarding.notifications.body": "As notificações mantêm-no atualizado sobre reservas e atividade.",
+    "settings.content_accuracy.body": "O conteúdo do Drivest é apenas consultivo e pode estar incompleto ou desatualizado. Sobreposições de rotas, dicas de perigo e orientações de velocidade são informativas e não devem ser tratadas como garantidas. Sempre siga sinais ao vivo, marcações e requisitos legais. O Código da Estrada continua a ser a fonte oficial das regras rodoviárias e do comportamento de condução seguro do Reino Unido.",
+    "settings.service_availability.body": "Alguns serviços dependem da cobertura da rede e de provedores terceirizados; a disponibilidade pode variar de acordo com o local.",
+    "settings.safety_notice.body": "Drivest fornece apenas suporte de aprendizagem. Fique atento e nunca use o aplicativo de forma que reduza o controle do seu veículo.",
+    "disclaimer.driving_guidance.body": "A orientação Drivest é apenas consultiva e não substitui sinais de trânsito, deveres legais ou instruções do instrutor/examinador. Mantenha o controle total do veículo e siga as condições da estrada em tempo real. Versão: %1$s",
+    "reference.traffic_signs_source_note": "Com base nos ativos de referência e dados de índice de imagem do DfT do Reino Unido \"Conheça seus sinais de trânsito\". Use como suporte de revisão e siga os sinais de trânsito e os requisitos legais.",
+    "reference.highway_code_footer_note": "Baseado no Código da Estrada (GOV.UK). Apenas para aconselhamento – siga sempre os sinais de trânsito e os requisitos legais.",
+    "marketplace.find_instructors.legal_body": "A Drivest ajuda os alunos a descobrir instrutores e a gerir pedidos de aulas. O ensino de condução é prestado por instrutores independentes, não pela Drivest.\\n\\nOs anúncios não garantem qualidade, disponibilidade, resultados ou aprovação em exame. Os preços das aulas e os registos de comissão aplicam-se às reservas do marketplace segundo as regras da plataforma.\\n\\nLitígios ou verificações de política podem colocar registos em espera. Continua responsável por uma utilização legal, precisa e honesta. Nada neste aviso limita os seus direitos legais de consumidor.",
+    "marketplace.instructor_hub.legal_body": "Utiliza a Drivest como negócio independente de instrutor, não como empregado ou franchisado.\\n\\nÉ responsável pelo ensino legal, licenciamento, seguro e conformidade. A Drivest fornece descoberta no marketplace, agendamento, pedidos de aulas e registos de política.\\n\\nÉ registada uma comissão de 8 por cento para reservas do marketplace. O estado do pagamento é registado e pode ficar retido por litígios ou revisão de política. A Drivest pode rever, suspender ou limitar a atividade no marketplace quando necessário. Nada neste aviso limita direitos legais que não possam ser excluídos."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

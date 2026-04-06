@@ -1,0 +1,37 @@
+{
+  "locale": "es",
+  "generatedAt": "2026-04-05T12:52:08.759Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest es una plataforma de apoyo a la conducción. Solo proporciona orientación y no sustituye su propio criterio, a su instructor ni a la ley.\n\nDebe seguir siempre las señales de tráfico, las normas de circulación y las condiciones reales de la vía. Si algo en la aplicación entra en conflicto con la carretera real, siga la carretera.\n\nAl continuar, usted confirma que tiene 16 años o más, que comprende y acepta el aviso de seguridad y que acepta los Términos y Condiciones y la Política de Privacidad.",
+    "onboarding.legal_checkbox": "Confirmo que tengo 16 años o más, que entiendo el aviso de seguridad y que acepto los Términos y Condiciones y la Política de Privacidad.",
+    "onboarding.permissions.body": "Drivest necesita ciertos permisos para funcionar correctamente. La ubicación se utiliza para rutas y navegación cuando están activas. Los análisis ayudan a mejorar el rendimiento y la fiabilidad, y son opcionales. Las notificaciones le mantienen al día sobre reservas y actividad.",
+    "onboarding.location.body": "La ubicación se utiliza para rutas y navegación cuando están activas.",
+    "onboarding.analytics.body": "Los análisis ayudan a mejorar el rendimiento y la fiabilidad, y son opcionales.",
+    "onboarding.notifications.body": "Las notificaciones le mantienen al día sobre reservas y actividad.",
+    "settings.content_accuracy.body": "El contenido de Drivest es únicamente informativo y puede estar incompleto o desactualizado. Las superposiciones de ruta, las señales de peligro y la guía de velocidad son informativas y no deben considerarse como garantizadas. Siga siempre las señales, marcas y requisitos legales vigentes. El Código de Carreteras sigue siendo la fuente autorizada de normas de circulación y conductas de conducción seguras en el Reino Unido.",
+    "settings.service_availability.body": "Algunos servicios dependen de la cobertura de la red y de proveedores externos; la disponibilidad puede variar según la ubicación.",
+    "settings.safety_notice.body": "Drivest proporciona únicamente apoyo al aprendizaje. Manténgase atento y nunca utilice la aplicación de forma que reduzca el control de su vehículo.",
+    "disclaimer.driving_guidance.body": "La guía de Drivest es solo orientativa y no sustituye señales, obligaciones legales ni instrucciones de instructor/examinador. Mantén el control total del vehículo y sigue las condiciones reales de la vía. Versión: %1$s",
+    "reference.traffic_signs_source_note": "Basado en recursos de referencia y datos de índice de imágenes del DfT del Reino Unido \"Conozca sus señales de tráfico\". Úselo como soporte de revisión y siga las señales de tránsito en vivo y los requisitos legales.",
+    "reference.highway_code_footer_note": "Basado en el Código de circulación (GOV.UK). Solo asesoramiento: siga siempre las señales de tráfico activas y los requisitos legales.",
+    "marketplace.find_instructors.legal_body": "Drivest ayuda a los alumnos a descubrir instructores y gestionar solicitudes de clases. La enseñanza de la conducción la imparten instructores independientes, no Drivest.\\n\\nLos anuncios no garantizan calidad, disponibilidad, resultados ni aprobados. Los precios de las clases y los registros de comisión se aplican a las reservas del marketplace según las reglas de la plataforma.\\n\\nLas disputas o revisiones de políticas pueden dejar registros en espera. Usted sigue siendo responsable de un uso legal, preciso y honesto. Nada de este aviso limita sus derechos legales como consumidor.",
+    "marketplace.instructor_hub.legal_body": "Usted usa Drivest como negocio independiente de instructor, no como empleado ni franquiciado.\\n\\nUsted es responsable de la enseñanza legal, la licencia, el seguro y el cumplimiento normativo. Drivest ofrece descubrimiento en el marketplace, programación, solicitudes de clases y registros de políticas.\\n\\nLa comisión para las reservas del marketplace se registra en un 8 por ciento. El estado de pago se registra y puede quedar retenido por disputas o revisiones de políticas. Drivest puede revisar, suspender o limitar la actividad del marketplace cuando sea necesario. Nada de este aviso limita derechos legales que no puedan excluirse."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

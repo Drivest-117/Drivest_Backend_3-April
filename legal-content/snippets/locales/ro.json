@@ -1,0 +1,37 @@
+{
+  "locale": "ro",
+  "generatedAt": "2026-04-05T12:52:08.849Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest este o platformă de sprijin pentru conducere. Oferă doar îndrumare și nu înlocuiește judecata dvs., instructorul dvs. sau legea.\n\nTrebuie să urmați întotdeauna indicatoarele rutiere, regulile de circulație și condițiile reale. Dacă orice element din aplicație intră în conflict cu drumul real, urmați drumul.\n\nContinuând, confirmați că aveți 16 ani sau mai mult, că înțelegeți și acceptați nota de siguranță și că sunteți de acord cu Termenii și condițiile și cu Politica de confidențialitate.",
+    "onboarding.legal_checkbox": "Confirm că am 16 ani sau mai mult, că înțeleg notificarea de siguranță și că sunt de acord cu Termenii și condițiile și Politica de confidențialitate.",
+    "onboarding.permissions.body": "Drivest are nevoie de anumite permisiuni pentru a funcționa corect. Locația este utilizată pentru trasee și navigație atunci când acestea sunt active. Analizele ajută la îmbunătățirea performanței și fiabilității și sunt opționale. Notificările vă țin la curent cu rezervările și activitatea.",
+    "onboarding.location.body": "Locația este utilizată pentru trasee și navigație atunci când acestea sunt active.",
+    "onboarding.analytics.body": "Analizele ajută la îmbunătățirea performanței și fiabilității și sunt opționale.",
+    "onboarding.notifications.body": "Notificările vă țin la curent cu rezervările și activitatea.",
+    "settings.content_accuracy.body": "Conținutul Drivest este doar consultativ și poate fi incomplet sau depășit. Suprapunerea rutelor, indicațiile de pericol și ghidarea vitezei sunt informative și nu trebuie tratate ca garantate. Respectați întotdeauna semnele active, marcajele și cerințele legale. Codul rutier rămâne sursa autorizată pentru regulile rutiere din Regatul Unit și comportamentul de conducere în siguranță.",
+    "settings.service_availability.body": "Unele servicii depind de acoperirea rețelei și de furnizorii terți; disponibilitatea poate varia în funcție de locație.",
+    "settings.safety_notice.body": "Drivest oferă doar suport pentru învățare. Fiți atenți și nu utilizați niciodată aplicația într-un mod care reduce controlul asupra vehiculului dvs.",
+    "disclaimer.driving_guidance.body": "Îndrumarea conducerii este doar consultativă și nu înlocuiește semnele rutiere, obligațiile legale sau instrucțiunile instructorului/examinatorului. Păstrați controlul deplin asupra vehiculului și urmăriți condițiile de drum în timp real. Versiune: %1$s",
+    "reference.traffic_signs_source_note": "Pe baza materialelor de referință „„Know your traffic signs” DfT din Marea Britanie și a datelor de index de imagine. Utilizați ca suport de revizuire și urmați semnele rutiere active și cerințele legale.",
+    "reference.highway_code_footer_note": "Pe baza Codului rutier (GOV.UK). Numai consiliere — urmați întotdeauna indicatoarele rutiere active și cerințele legale.",
+    "marketplace.find_instructors.legal_body": "Drivest îi ajută pe cursanți să descopere instructori și să gestioneze cereri de lecții. Instruirea auto este oferită de instructori independenți, nu de Drivest.\\n\\nListările nu garantează calitatea, disponibilitatea, rezultatele sau promovarea examenului. Prețurile lecțiilor și evidențele de comision se aplică rezervărilor din marketplace conform regulilor platformei.\\n\\nDisputele sau verificările de politică pot pune în așteptare înregistrările. Rămâneți responsabil pentru utilizarea legală, exactă și onestă. Nimic din această notificare nu vă limitează drepturile legale de consumator.",
+    "marketplace.instructor_hub.legal_body": "Folosiți Drivest ca activitate independentă de instructor, nu ca angajat sau francizat.\\n\\nSunteți responsabil pentru instruirea legală, licențiere, asigurare și conformitate. Drivest oferă descoperire în marketplace, programare, cereri de lecții și evidențe de politică.\\n\\nPentru rezervările din marketplace se înregistrează un comision de 8 la sută. Starea plății este înregistrată și poate fi reținută pentru dispute sau revizuire de politică. Drivest poate revizui, suspenda sau limita activitatea din marketplace atunci când este necesar. Nimic din această notificare nu limitează drepturile legale care nu pot fi excluse."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "locale": "ar",
+  "generatedAt": "2026-04-05T12:52:08.730Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest منصة دعم للقيادة. وهي تقدم إرشادًا فقط ولا تحل محل حكمك الشخصي أو مدربك أو القانون.\n\nيجب عليك دائمًا اتباع إشارات الطريق وقوانين المرور والظروف الواقعية. إذا تعارض أي شيء في التطبيق مع الطريق، فاتبع الطريق.\n\nبمتابعتك، فإنك تؤكد أن عمرك 16 عامًا أو أكثر، وأنك تفهم إشعار السلامة وتقبله، وأنك توافق على الشروط والأحكام وسياسة الخصوصية.",
+    "onboarding.legal_checkbox": "أؤكد أن عمري 16 عامًا أو أكثر، وأنني أفهم إشعار السلامة، وأوافق على الشروط والأحكام وسياسة الخصوصية.",
+    "onboarding.permissions.body": "يحتاج Drivest إلى أذونات معينة للعمل بشكل صحيح. يتم استخدام الموقع للمسارات والملاحة عند تفعيلها. تساعد التحليلات في تحسين الأداء والموثوقية وهي اختيارية. تبقيك الإشعارات على اطلاع بالحجوزات والنشاط.",
+    "onboarding.location.body": "يتم استخدام الموقع للمسارات والملاحة عند تفعيلها.",
+    "onboarding.analytics.body": "تساعد التحليلات في تحسين الأداء والموثوقية وهي اختيارية.",
+    "onboarding.notifications.body": "تبقيك الإشعارات على اطلاع بالحجوزات والنشاط.",
+    "settings.content_accuracy.body": "يعد محتوى Drivest استشاريًا فقط وقد يكون غير مكتمل أو قديم. تعتبر تراكبات المسار وإشارات الخطر وتوجيهات السرعة معلوماتية ويجب ألا يتم التعامل معها على أنها مضمونة. اتبع دائمًا العلامات والعلامات والمتطلبات القانونية الحية. يظل قانون الطريق السريع هو المصدر الرسمي لقواعد الطريق في المملكة المتحدة وسلوك القيادة الآمنة.",
+    "settings.service_availability.body": "تعتمد بعض الخدمات على تغطية الشبكة وموفري الطرف الثالث؛ قد يختلف التوفر حسب الموقع.",
+    "settings.safety_notice.body": "يوفر Drivest الدعم التعليمي فقط. كن منتبهًا ولا تستخدم التطبيق مطلقًا بطريقة تقلل من التحكم في سيارتك.",
+    "disclaimer.driving_guidance.body": "تعتبر إرشادات القيادة استشارية فقط ولا تحل محل علامات الطريق أو الواجبات القانونية أو تعليمات المدرب/الممتحن. حافظ على السيطرة الكاملة على السيارة واتبع ظروف الطريق الحية. الإصدار: %1$s",
+    "reference.traffic_signs_source_note": "استنادًا إلى الأصول المرجعية لـ DfT في المملكة المتحدة \"اعرف إشارات المرور\" وبيانات فهرس الصور. استخدم كدعم للمراجعة واتبع إشارات الطريق الحية والمتطلبات القانونية.",
+    "reference.highway_code_footer_note": "بناءً على قانون الطريق السريع (GOV.UK). استشاري فقط - اتبع دائمًا علامات الطريق المباشرة والمتطلبات القانونية.",
+    "marketplace.find_instructors.legal_body": "يساعد Drivest المتعلمين في العثور على المدربين وإدارة طلبات الدروس. يتم تقديم التدريب العملي بواسطة مدربين مستقلين وليس بواسطة Drivest.\\n\\nلا تضمن القوائم الجودة أو التوفر أو النتائج أو اجتياز الاختبار. تُسجَّل أسعار الدروس وعمولة المنصة على حجوزات السوق وفق قواعد المنصة.\\n\\nقد تؤدي النزاعات أو مراجعات السياسات إلى تعليق السجلات. تبقى مسؤولًا عن الاستخدام القانوني والدقيق والصادق. لا يحد هذا الإشعار من حقوقك القانونية كمستهلك.",
+    "marketplace.instructor_hub.legal_body": "تستخدم Drivest كعمل مدرب مستقل، وليس كموظف أو ضمن امتياز.\\n\\nأنت مسؤول عن التدريب القانوني، والترخيص، والتأمين، والالتزام التنظيمي. توفر Drivest اكتشاف السوق، والجدولة، وطلبات الدروس، وسجلات السياسات.\\n\\nتُسجَّل عمولة حجوزات السوق بنسبة 8%. وتُسجَّل حالة الدفعات وقد يتم تعليقها بسبب نزاع أو مراجعة سياسة. يجوز لـ Drivest المراجعة أو التعليق أو تقييد نشاط السوق عند الحاجة. لا يحد هذا الإشعار من الحقوق القانونية غير القابلة للاستبعاد."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

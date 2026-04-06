@@ -43,6 +43,7 @@ Node.js 20 + NestJS API for the Route Master mobile app. Implements driving test
 - `npm run migration:generate` – generate new migration
 - `npm run migration:run` – run migrations (uses `DATABASE_URL`)
 - `npm run seed` – seed demo data
+- `npm run legal:verify` – validate backend legal source files and print app-legal hashes
 
 ## Business Logic Notes
 - Route access requires either an active subscription (GLOBAL entitlement) or a purchased centre pack entitlement.
@@ -51,6 +52,16 @@ Node.js 20 + NestJS API for the Route Master mobile app. Implements driving test
 - Cashback can be started once per user; submission auto-approves unless basic fraud checks flag it as suspicious (then stays `PENDING`).
 - Account delete anonymizes user data and soft deletes.
 - RevenueCat webhook is HMAC-validated (`x-revenuecat-signature`) and idempotent by `transactionId`.
+
+## Legal Content Channel
+
+Canonical legal documents now live in [`legal-content`](./legal-content).
+
+- `legal-content/source/en-GB/...` contains the canonical English source files
+- `legal-content/registry.json` catalogs versions, paths, and app-legal document mappings
+- `npm run legal:verify` checks that the catalog is complete and prints the computed hashes for `terms`, `privacy`, and `safety_notice`
+
+This solves backend-side legal drift, but mobile legal/disclaimer strings are not yet fully dynamic. They still need a later sync pipeline if you want one end-to-end legal copy source across backend, Android, and iOS.
 
 ## API Overview
 - `GET /health`
@@ -97,3 +108,10 @@ The backend now includes an EC2-oriented deployment path:
 - setup guide: [`EC2-DEPLOY.md`](./EC2-DEPLOY.md)
 
 The deploy flow is: install dependencies, build, run migrations, then `pm2 startOrReload ecosystem.config.cjs`.
+
+## Content Pack Operations
+
+The backend also contains a manual GitHub Actions flow for content-pack publishing.
+
+- traffic-sign image channel: [`content-assets/traffic_sign_images/README.md`](./content-assets/traffic_sign_images/README.md)
+- operator runbook: [`docs/content-pack-publish-runbook.md`](./docs/content-pack-publish-runbook.md)

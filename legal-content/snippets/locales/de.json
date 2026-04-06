@@ -1,0 +1,37 @@
+{
+  "locale": "de",
+  "generatedAt": "2026-04-05T12:52:08.745Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest ist eine Plattform zur Unterstützung beim Fahren. Sie bietet nur Orientierung und ersetzt weder Ihr eigenes Urteilsvermögen noch Ihren Fahrlehrer noch das Gesetz.\n\nSie müssen stets die Verkehrsschilder, die Verkehrsregeln und die tatsächlichen Bedingungen vor Ort befolgen. Wenn irgendetwas in der App der realen Straße widerspricht, folgen Sie der Straße.\n\nIndem Sie fortfahren, bestätigen Sie, dass Sie 16 Jahre oder älter sind, den Sicherheitshinweis verstehen und akzeptieren und den Allgemeinen Geschäftsbedingungen sowie der Datenschutzrichtlinie zustimmen.",
+    "onboarding.legal_checkbox": "Ich bestätige, dass ich 16 Jahre oder älter bin, den Sicherheitshinweis verstanden habe und den Allgemeinen Geschäftsbedingungen sowie der Datenschutzrichtlinie zustimme.",
+    "onboarding.permissions.body": "Drivest benötigt bestimmte Berechtigungen, um richtig zu funktionieren. Der Standort wird für Routen und Navigation verwendet, wenn diese aktiv sind. Analysen helfen dabei, Leistung und Zuverlässigkeit zu verbessern, und sind optional. Benachrichtigungen halten Sie über Buchungen und Aktivitäten auf dem Laufenden.",
+    "onboarding.location.body": "Der Standort wird für Routen und Navigation verwendet, wenn diese aktiv sind.",
+    "onboarding.analytics.body": "Analysen helfen dabei, Leistung und Zuverlässigkeit zu verbessern, und sind optional.",
+    "onboarding.notifications.body": "Benachrichtigungen halten Sie über Buchungen und Aktivitäten auf dem Laufenden.",
+    "settings.content_accuracy.body": "Der Inhalt von Drivest dient lediglich der Beratung und kann unvollständig oder veraltet sein. Routeneinblendungen, Gefahrenhinweise und Geschwindigkeitshinweise dienen der Information und dürfen nicht als garantiert betrachtet werden. Befolgen Sie immer die Verkehrsschilder, Markierungen und gesetzlichen Vorschriften. Die Straßenverkehrsordnung bleibt die maßgebliche Quelle für britische Straßenverkehrsregeln und sicheres Fahrverhalten.",
+    "settings.service_availability.body": "Einige Dienste sind von der Netzabdeckung und Drittanbietern abhängig. Die Verfügbarkeit kann je nach Standort variieren.",
+    "settings.safety_notice.body": "Drivest bietet nur Lernunterstützung. Bleiben Sie aufmerksam und nutzen Sie die App niemals auf eine Weise, die die Kontrolle über Ihr Fahrzeug beeinträchtigt.",
+    "disclaimer.driving_guidance.body": "Die Fahranleitung hat lediglich beratenden Charakter und ersetzt keine Verkehrsschilder, gesetzlichen Pflichten oder Anweisungen des Ausbilders/Prüfers. Behalten Sie die volle Kontrolle über das Fahrzeug und verfolgen Sie die aktuellen Straßenbedingungen. Version: %1$s",
+    "reference.traffic_signs_source_note": "Basierend auf den Referenzressourcen und Bildindexdaten des britischen DfT „Know your Traffic Signs“. Verwenden Sie es als Revisionsunterstützung und befolgen Sie Live-Verkehrszeichen und gesetzliche Anforderungen.",
+    "reference.highway_code_footer_note": "Basierend auf der Straßenverkehrsordnung (GOV.UK). Nur zur Beratung – befolgen Sie stets die Verkehrsschilder und die gesetzlichen Vorschriften.",
+    "marketplace.find_instructors.legal_body": "Drivest hilft Lernenden dabei, Fahrlehrer zu finden und Unterrichtsanfragen zu verwalten. Der Fahrunterricht wird von unabhängigen Fahrlehrern erbracht, nicht von Drivest.\\n\\nEinträge garantieren weder Qualität, Verfügbarkeit, Ergebnisse noch Prüfungserfolge. Unterrichtspreise und Provisionsaufzeichnungen gelten für Marktplatzbuchungen nach den Plattformregeln.\\n\\nStreitfälle oder Richtlinienprüfungen können dazu führen, dass Datensätze zurückgehalten werden. Sie bleiben für eine rechtmäßige, genaue und ehrliche Nutzung verantwortlich. Nichts in diesem Hinweis schränkt Ihre gesetzlichen Verbraucherrechte ein.",
+    "marketplace.instructor_hub.legal_body": "Sie nutzen Drivest als unabhängiges Fahrlehrerunternehmen, nicht als Arbeitnehmer oder Franchisenehmer.\\n\\nSie sind für rechtmäßigen Unterricht, Zulassung, Versicherung und Compliance verantwortlich. Drivest bietet Marktplatzsichtbarkeit, Terminplanung, Unterrichtsanfragen und Richtlinienaufzeichnungen.\\n\\nFür Marktplatzbuchungen wird eine Provision von 8 Prozent erfasst. Der Auszahlungsstatus wird protokolliert und kann bei Streitfällen oder Richtlinienprüfungen zurückgehalten werden. Drivest kann Marktplatzaktivitäten bei Bedarf prüfen, aussetzen oder einschränken. Nichts in diesem Hinweis schränkt nicht ausschließbare gesetzliche Rechte ein."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "supportedLocales": [
+    "en-GB",
+    "ar",
+    "de",
+    "es",
+    "fr",
+    "it",
+    "nl",
+    "pl",
+    "pt-PT",
+    "ro",
+    "zh-Hans"
+  ],
+  "snippets": [
+    {
+      "id": "onboarding.before_you_start.body",
+      "documents": ["terms-and-conditions", "privacy-policy"],
+      "androidKey": "onboarding_consent_message",
+      "iosKey": "onboarding.before_you_start.body"
+    },
+    {
+      "id": "onboarding.legal_checkbox",
+      "documents": ["terms-and-conditions", "privacy-policy", "safety-notice"],
+      "androidKey": "onboarding_legal_checkbox",
+      "iosKey": "onboarding.legal_checkbox"
+    },
+    {
+      "id": "onboarding.permissions.body",
+      "documents": ["permissions-and-consent-framework"],
+      "androidKey": "onboarding_permissions_message",
+      "iosKey": "onboarding.permissions.body"
+    },
+    {
+      "id": "onboarding.location.body",
+      "documents": ["permissions-and-consent-framework"],
+      "androidKey": "onboarding_location_message",
+      "iosKey": "onboarding.location.body"
+    },
+    {
+      "id": "onboarding.analytics.body",
+      "documents": ["permissions-and-consent-framework"],
+      "androidKey": "onboarding_analytics_message_v2",
+      "iosKey": "onboarding.analytics.body"
+    },
+    {
+      "id": "onboarding.notifications.body",
+      "documents": ["permissions-and-consent-framework"],
+      "androidKey": "onboarding_notifications_message_v2",
+      "iosKey": "onboarding.notifications.body"
+    },
+    {
+      "id": "settings.content_accuracy.body",
+      "documents": ["terms-and-conditions"],
+      "androidKey": "content_accuracy_body",
+      "iosKey": "settings.content_accuracy_body"
+    },
+    {
+      "id": "settings.service_availability.body",
+      "documents": ["terms-and-conditions"],
+      "iosKey": "settings.service_availability_body"
+    },
+    {
+      "id": "settings.safety_notice.body",
+      "documents": ["safety-notice"],
+      "iosKey": "settings.safety_notice_body"
+    },
+    {
+      "id": "disclaimer.driving_guidance.body",
+      "documents": ["safety-notice", "terms-and-conditions"],
+      "androidKey": "disclaimer_message"
+    },
+    {
+      "id": "reference.traffic_signs_source_note",
+      "documents": ["faq"],
+      "androidKey": "traffic_signs_source_note"
+    },
+    {
+      "id": "reference.highway_code_footer_note",
+      "documents": ["faq"],
+      "androidKey": "highway_code_footer_note"
+    },
+    {
+      "id": "marketplace.find_instructors.legal_body",
+      "documents": ["terms-and-conditions", "instructor-agreement"],
+      "androidKey": "instructors_legal_find_body"
+    },
+    {
+      "id": "marketplace.instructor_hub.legal_body",
+      "documents": ["terms-and-conditions", "instructor-agreement"],
+      "androidKey": "instructors_legal_hub_body"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "locale": "zh-Hans",
+  "generatedAt": "2026-04-05T12:52:08.883Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest 是一个驾驶支持平台。它仅提供指导，不替代您的判断、您的教练或法律。\n\n您必须始终遵循道路标志、交通法规和真实道路情况。如果应用中的任何内容与真实道路情况冲突，请以道路实际情况为准。\n\n继续即表示您确认自己年满 16 周岁，已理解并接受安全提示，并同意《条款与条件》和《隐私政策》。",
+    "onboarding.legal_checkbox": "我确认自己已年满16岁，已理解安全提示，并同意《条款与条件》和《隐私政策》。",
+    "onboarding.permissions.body": "Drivest 需要某些权限才能正常工作。位置会在路线和导航处于活动状态时使用。分析有助于提升性能和可靠性，并且是可选的。通知会让您及时了解预订和活动情况。",
+    "onboarding.location.body": "位置会在路线和导航处于活动状态时使用。",
+    "onboarding.analytics.body": "分析有助于提升性能和可靠性，并且是可选的。",
+    "onboarding.notifications.body": "通知会让您及时了解预订和活动情况。",
+    "settings.content_accuracy.body": "Drivest 内容仅供参考，可能不完整或过时。路线叠加、危险提示和速度指导仅供参考，不得视为有保证。始终遵循现场标志、标记和法律要求。 《公路法规》仍然是英国道路规则和安全驾驶行为的权威来源。",
+    "settings.service_availability.body": "某些服务取决于网络覆盖范围和第三方提供商；可用性可能因地点而异。",
+    "settings.safety_notice.body": "Drivest 仅提供学习支持。请保持注意力集中，切勿以降低对车辆控制的方式使用该应用程序。",
+    "disclaimer.driving_guidance.body": "驾驶指南仅供参考，不能取代路标、法律义务或教练/考官指示。完全控制车辆并遵循实时路况。版本：%1$s",
+    "reference.traffic_signs_source_note": "基于英国 DfT“了解你的交通标志”参考资源和图像索引数据。用作修订支持并遵循实时路标和法律要求。",
+    "reference.highway_code_footer_note": "基于《公路法规》(GOV.UK)。仅供参考——始终遵循实时路标和法律要求。",
+    "marketplace.find_instructors.legal_body": "Drivest 帮助学员发现教练并管理课程请求。驾驶教学由独立教练提供，而非 Drivest。\\n\\n列表内容不保证质量、可用性、结果或通过考试。课程价格和佣金记录适用于平台规则下的市场预订。\\n\\n争议或政策审查可能会导致记录被暂时保留。您仍需对合法、准确和诚实的使用负责。本提示中的任何内容均不会限制您的法定消费者权利。",
+    "marketplace.instructor_hub.legal_body": "您将 Drivest 用作独立教练业务，而不是作为员工或加盟商。\\n\\n您需对合法教学、执照、保险和合规负责。Drivest 提供市场发现、排程、课程请求和政策记录。\\n\\n市场预订会记录 8% 的佣金。付款状态会被记录，并可能因争议或政策审查而暂缓。Drivest 可在必要时审查、暂停或限制市场活动。本提示中的任何内容均不会限制不可排除的法定权利。"
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

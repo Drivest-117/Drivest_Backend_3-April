@@ -1,0 +1,32 @@
+{
+  "ar": {
+    "onboarding.before_you_start.body": "Drivest منصة دعم للقيادة. وهي تقدم إرشادًا فقط ولا تحل محل حكمك الشخصي أو مدربك أو القانون.\n\nيجب عليك دائمًا اتباع إشارات الطريق وقوانين المرور والظروف الواقعية. إذا تعارض أي شيء في التطبيق مع الطريق، فاتبع الطريق.\n\nبمتابعتك، فإنك تؤكد أن عمرك 16 عامًا أو أكثر، وأنك تفهم إشعار السلامة وتقبله، وأنك توافق على الشروط والأحكام وسياسة الخصوصية."
+  },
+  "de": {
+    "onboarding.before_you_start.body": "Drivest ist eine Plattform zur Unterstützung beim Fahren. Sie bietet nur Orientierung und ersetzt weder Ihr eigenes Urteilsvermögen noch Ihren Fahrlehrer noch das Gesetz.\n\nSie müssen stets die Verkehrsschilder, die Verkehrsregeln und die tatsächlichen Bedingungen vor Ort befolgen. Wenn irgendetwas in der App der realen Straße widerspricht, folgen Sie der Straße.\n\nIndem Sie fortfahren, bestätigen Sie, dass Sie 16 Jahre oder älter sind, den Sicherheitshinweis verstehen und akzeptieren und den Allgemeinen Geschäftsbedingungen sowie der Datenschutzrichtlinie zustimmen."
+  },
+  "es": {
+    "onboarding.before_you_start.body": "Drivest es una plataforma de apoyo a la conducción. Solo proporciona orientación y no sustituye su propio criterio, a su instructor ni a la ley.\n\nDebe seguir siempre las señales de tráfico, las normas de circulación y las condiciones reales de la vía. Si algo en la aplicación entra en conflicto con la carretera real, siga la carretera.\n\nAl continuar, usted confirma que tiene 16 años o más, que comprende y acepta el aviso de seguridad y que acepta los Términos y Condiciones y la Política de Privacidad."
+  },
+  "fr": {
+    "onboarding.before_you_start.body": "Drivest est une plateforme d’assistance à la conduite. Elle fournit uniquement des indications et ne remplace ni votre propre jugement, ni votre instructeur, ni la loi.\n\nVous devez toujours suivre les panneaux routiers, le code de la route et les conditions réelles. Si un élément de l’application est en contradiction avec la route réelle, suivez la route.\n\nEn continuant, vous confirmez que vous avez 16 ans ou plus, que vous comprenez et acceptez l’avis de sécurité, et que vous acceptez les Conditions générales et la Politique de confidentialité."
+  },
+  "it": {
+    "onboarding.before_you_start.body": "Drivest è una piattaforma di supporto alla guida. Fornisce solo indicazioni e non sostituisce il tuo giudizio, il tuo istruttore o la legge.\n\nDevi sempre seguire la segnaletica stradale, le norme del traffico e le condizioni reali. Se qualcosa nell’app è in conflitto con la strada reale, segui la strada.\n\nContinuando, confermi di avere 16 anni o più, di comprendere e accettare l’avviso di sicurezza e di accettare i Termini e Condizioni e l’Informativa sulla privacy."
+  },
+  "nl": {
+    "onboarding.before_you_start.body": "Drivest is een platform ter ondersteuning van het rijden. Het biedt alleen begeleiding en vervangt niet uw eigen oordeel, uw instructeur of de wet.\n\nU moet altijd de verkeersborden, verkeersregels en de werkelijke omstandigheden volgen. Als iets in de app in strijd is met de werkelijke weg, volg dan de weg.\n\nDoor verder te gaan bevestigt u dat u 16 jaar of ouder bent, de veiligheidsmelding begrijpt en accepteert, en akkoord gaat met de Algemene voorwaarden en het Privacybeleid."
+  },
+  "pl": {
+    "onboarding.before_you_start.body": "Drivest to platforma wspierająca kierowcę. Zapewnia wyłącznie wskazówki i nie zastępuje Twojej oceny sytuacji, instruktora ani prawa.\n\nZawsze musisz stosować się do znaków drogowych, przepisów ruchu drogowego i rzeczywistych warunków. Jeśli cokolwiek w aplikacji pozostaje w sprzeczności z rzeczywistą drogą, należy kierować się drogą.\n\nKontynuując, potwierdzasz, że masz 16 lat lub więcej, rozumiesz i akceptujesz informację o bezpieczeństwie oraz akceptujesz Regulamin i Politykę prywatności."
+  },
+  "pt-PT": {
+    "onboarding.before_you_start.body": "A Drivest é uma plataforma de apoio à condução. Fornece apenas orientação e não substitui o seu próprio julgamento, o seu instrutor ou a lei.\n\nDeve seguir sempre a sinalização rodoviária, as regras de trânsito e as condições reais. Se algo na aplicação entrar em conflito com a estrada real, siga a estrada.\n\nAo continuar, confirma que tem 16 anos ou mais, que compreende e aceita o aviso de segurança e que aceita os Termos e Condições e a Política de Privacidade."
+  },
+  "ro": {
+    "onboarding.before_you_start.body": "Drivest este o platformă de sprijin pentru conducere. Oferă doar îndrumare și nu înlocuiește judecata dvs., instructorul dvs. sau legea.\n\nTrebuie să urmați întotdeauna indicatoarele rutiere, regulile de circulație și condițiile reale. Dacă orice element din aplicație intră în conflict cu drumul real, urmați drumul.\n\nContinuând, confirmați că aveți 16 ani sau mai mult, că înțelegeți și acceptați nota de siguranță și că sunteți de acord cu Termenii și condițiile și cu Politica de confidențialitate."
+  },
+  "zh-Hans": {
+    "onboarding.before_you_start.body": "Drivest 是一个驾驶支持平台。它仅提供指导，不替代您的判断、您的教练或法律。\n\n您必须始终遵循道路标志、交通法规和真实道路情况。如果应用中的任何内容与真实道路情况冲突，请以道路实际情况为准。\n\n继续即表示您确认自己年满 16 周岁，已理解并接受安全提示，并同意《条款与条件》和《隐私政策》。"
+  }
+}

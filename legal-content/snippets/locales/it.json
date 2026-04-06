@@ -1,0 +1,37 @@
+{
+  "locale": "it",
+  "generatedAt": "2026-04-05T12:52:08.780Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest è una piattaforma di supporto alla guida. Fornisce solo indicazioni e non sostituisce il tuo giudizio, il tuo istruttore o la legge.\n\nDevi sempre seguire la segnaletica stradale, le norme del traffico e le condizioni reali. Se qualcosa nell’app è in conflitto con la strada reale, segui la strada.\n\nContinuando, confermi di avere 16 anni o più, di comprendere e accettare l’avviso di sicurezza e di accettare i Termini e Condizioni e l’Informativa sulla privacy.",
+    "onboarding.legal_checkbox": "Confermo di avere 16 anni o più, di comprendere lavviso di sicurezza e di accettare i Termini e Condizioni e lInformativa sulla privacy.",
+    "onboarding.permissions.body": "Drivest richiede determinate autorizzazioni per funzionare correttamente. La posizione viene utilizzata per percorsi e navigazione quando sono attivi. Le analisi aiutano a migliorare prestazioni e affidabilità e sono facoltative. Le notifiche ti tengono aggiornato su prenotazioni e attività.",
+    "onboarding.location.body": "La posizione viene utilizzata per percorsi e navigazione quando sono attivi.",
+    "onboarding.analytics.body": "Le analisi aiutano a migliorare prestazioni e affidabilità e sono facoltative.",
+    "onboarding.notifications.body": "Le notifiche ti tengono aggiornato su prenotazioni e attività.",
+    "settings.content_accuracy.body": "I contenuti di Drivest sono solo consultivi e potrebbero essere incompleti o obsoleti. Le sovrapposizioni del percorso, i segnali di pericolo e le indicazioni sulla velocità sono informativi e non devono essere considerati garantiti. Seguire sempre la segnaletica viva, la segnaletica e i requisiti legali. Il codice della strada rimane la fonte autorevole per le regole stradali del Regno Unito e il comportamento di guida sicuro.",
+    "settings.service_availability.body": "Alcuni servizi dipendono dalla copertura di rete e da fornitori terzi; la disponibilità può variare in base alla località.",
+    "settings.safety_notice.body": "Drivest fornisce solo supporto per l'apprendimento. Stai attento e non utilizzare mai l'app in modo da ridurre il controllo del tuo veicolo.",
+    "disclaimer.driving_guidance.body": "La guida Drivest è solo consultiva e non sostituisce la segnaletica stradale, gli obblighi legali o le istruzioni dell\\'istruttore/esaminatore. Mantieni il pieno controllo del veicolo e segui le condizioni stradali in tempo reale. Versione: %1$s",
+    "reference.traffic_signs_source_note": "Basato sulle risorse di riferimento e sui dati dell\\'indice delle immagini del DfT del Regno Unito \"Conosci i tuoi segnali stradali\". Utilizzare come supporto per la revisione e seguire i segnali stradali in tempo reale e i requisiti legali.",
+    "reference.highway_code_footer_note": "Basato sul codice della strada (GOV.UK). Solo a titolo informativo: seguire sempre la segnaletica stradale in tempo reale e i requisiti legali.",
+    "marketplace.find_instructors.legal_body": "Drivest aiuta gli allievi a trovare istruttori e a gestire richieste di lezioni. Listruzione di guida è fornita da istruttori indipendenti, non da Drivest.\\n\\nGli annunci non garantiscono qualità, disponibilità, risultati o esiti di esame. I prezzi delle lezioni e i registri delle commissioni si applicano alle prenotazioni del marketplace secondo le regole della piattaforma.\\n\\nControversie o controlli di policy possono mettere in sospeso i registri. Resta tua responsabilità usare il servizio in modo lecito, accurato e onesto. Nulla in questo avviso limita i tuoi diritti legali di consumatore.",
+    "marketplace.instructor_hub.legal_body": "Usi Drivest come attività indipendente di istruttore, non come dipendente o affiliato.\\n\\nSei responsabile della legalità dellinsegnamento, delle licenze, dellassicurazione e della conformità. Drivest fornisce visibilità nel marketplace, programmazione, richieste di lezioni e registri di policy.\\n\\nPer le prenotazioni del marketplace viene registrata una commissione dell8 per cento. Lo stato del pagamento viene registrato e può essere trattenuto in caso di controversie o controlli di policy. Drivest può riesaminare, sospendere o limitare lattività nel marketplace quando necessario. Nulla in questo avviso limita diritti legali non escludibili."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "manual_override",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}
