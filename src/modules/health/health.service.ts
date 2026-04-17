@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DataSource } from 'typeorm';
 
 type HealthBuildMetadata = {
   version: string;
@@ -12,12 +14,28 @@ type HealthBuildMetadata = {
   workflowRunNumber: string | null;
 };
 
+type HealthDependencyStatus = {
+  status: 'ok' | 'error' | 'skipped';
+  latencyMs: number | null;
+  error: string | null;
+};
+
 @Injectable()
 export class HealthService {
-  snapshot() {
+  constructor(
+    @Optional()
+    @InjectDataSource()
+    private readonly dataSource?: DataSource,
+  ) {}
+
+  async snapshot() {
+    const database = await this.databaseStatus();
     return {
-      status: 'ok',
+      status: database.status === 'ok' ? 'ok' : 'degraded',
       build: this.buildMetadata(),
+      dependencies: {
+        database,
+      },
     };
   }
 
@@ -59,5 +77,41 @@ export class HealthService {
   private normalizedEnv(key: string): string | null {
     const value = process.env[key]?.trim();
     return value ? value : null;
+  }
+
+  private async databaseStatus(): Promise<HealthDependencyStatus> {
+    if (!this.dataSource) {
+      return {
+        status: 'skipped',
+        latencyMs: null,
+        error: 'Database connection not configured',
+      };
+    }
+
+    const startedAt = Date.now();
+    try {
+      await this.dataSource.query('SELECT 1');
+      return {
+        status: 'ok',
+        latencyMs: Date.now() - startedAt,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        latencyMs: Date.now() - startedAt,
+        error: this.formatError(error),
+      };
+    }
+  }
+
+  private formatError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    return 'Unknown database error';
   }
 }

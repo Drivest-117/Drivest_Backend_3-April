@@ -6,7 +6,7 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
-  health() {
+  async health() {
     return this.healthService.snapshot();
   }
 }
