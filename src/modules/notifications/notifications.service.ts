@@ -8,12 +8,14 @@ import { User } from '../../entities/user.entity';
 import { UserNotification, UserNotificationCategory } from '../../entities/user-notification.entity';
 import { CreateBroadcastNotificationDto } from './dto/create-broadcast-notification.dto';
 import { ListMyNotificationsDto } from './dto/list-my-notifications.dto';
+import { buildFcmDataPayload, normalizeFcmPushToken } from './push-delivery.utils';
 
 @Injectable()
 export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NotificationsService.name);
   private running = false;
   private apnsJwtCache: { token: string; expiresAtMs: number } | null = null;
+  private fcmAccessTokenCache: { token: string; expiresAtMs: number } | null = null;
   private tickInterval: NodeJS.Timeout | null = null;
   private readonly reminderLockKey = 782451;
 
@@ -107,6 +109,10 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     }
     if (this.isApnsDeviceToken(to)) {
       return this.sendApnsPush(to, title, body, payload);
+    }
+    const fcmToken = normalizeFcmPushToken(to);
+    if (fcmToken) {
+      return this.sendFcmPush(fcmToken, title, body, payload);
     }
     this.logger.warn(`Push send skipped: unrecognized token format`);
     return false;
@@ -225,6 +231,58 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       );
       request.end();
     });
+  }
+
+  private async sendFcmPush(
+    deviceToken: string,
+    title: string,
+    body: string,
+    payload?: Record<string, unknown>,
+  ): Promise<boolean> {
+    const config = this.resolveFcmConfig();
+    if (!config) {
+      this.logger.warn('FCM send skipped: config missing');
+      return false;
+    }
+
+    const accessToken = await this.fetchFcmAccessToken(config);
+    if (!accessToken) {
+      this.logger.warn('FCM send skipped: access token unavailable');
+      return false;
+    }
+
+    try {
+      const res = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${config.projectId}/messages:send`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: {
+              token: deviceToken,
+              data: buildFcmDataPayload(title, body, payload),
+              android: {
+                priority: 'high',
+              },
+            },
+          }),
+        },
+      );
+
+      if (res.ok) {
+        return true;
+      }
+
+      const responseBody = await res.text();
+      this.logger.warn(`FCM send failed: status=${res.status} body=${responseBody}`);
+      return false;
+    } catch (error) {
+      this.logger.warn(`FCM send error: ${String(error)}`);
+      return false;
+    }
   }
 
   async createForUser(
@@ -459,6 +517,42 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  private resolveFcmConfig():
+    | {
+        projectId: string;
+        clientEmail: string;
+        privateKey: string;
+        tokenUri: string;
+      }
+    | null {
+    const projectId = (
+      process.env.FCM_PROJECT_ID ??
+      process.env.FIREBASE_PROJECT_ID ??
+      ''
+    ).trim();
+    const clientEmail = (
+      process.env.FCM_CLIENT_EMAIL ??
+      process.env.GOOGLE_CLIENT_EMAIL ??
+      ''
+    ).trim();
+    const privateKey = this.resolveFcmPrivateKey();
+    const tokenUri = (
+      process.env.FCM_TOKEN_URI ??
+      'https://oauth2.googleapis.com/token'
+    ).trim();
+
+    if (!projectId || !clientEmail || !privateKey || !tokenUri) {
+      return null;
+    }
+
+    return {
+      projectId,
+      clientEmail,
+      privateKey,
+      tokenUri,
+    };
+  }
+
   private resolveApnsPrivateKey(): string | null {
     const inline = (process.env.APNS_PRIVATE_KEY ?? '').trim();
     if (inline) {
@@ -466,6 +560,24 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     }
 
     const base64 = (process.env.APNS_PRIVATE_KEY_BASE64 ?? '').trim();
+    if (!base64) {
+      return null;
+    }
+
+    try {
+      return Buffer.from(base64, 'base64').toString('utf8');
+    } catch {
+      return null;
+    }
+  }
+
+  private resolveFcmPrivateKey(): string | null {
+    const inline = (process.env.FCM_PRIVATE_KEY ?? '').trim();
+    if (inline) {
+      return inline.replace(/\\n/g, '\n');
+    }
+
+    const base64 = (process.env.FCM_PRIVATE_KEY_BASE64 ?? '').trim();
     if (!base64) {
       return null;
     }
@@ -507,6 +619,93 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       return token;
     } catch (error) {
       this.logger.warn(`APNs JWT build failed: ${String(error)}`);
+      return null;
+    }
+  }
+
+  private async fetchFcmAccessToken(config: {
+    clientEmail: string;
+    privateKey: string;
+    tokenUri: string;
+  }): Promise<string | null> {
+    if (this.fcmAccessTokenCache && this.fcmAccessTokenCache.expiresAtMs > Date.now()) {
+      return this.fcmAccessTokenCache.token;
+    }
+
+    const assertion = this.buildFcmServiceAccountJwt(config);
+    if (!assertion) {
+      return null;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion,
+      });
+      const res = await fetch(config.tokenUri, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+
+      if (!res.ok) {
+        this.logger.warn(`FCM token exchange failed: status=${res.status} body=${await res.text()}`);
+        return null;
+      }
+
+      const json = (await res.json()) as {
+        access_token?: string;
+        expires_in?: number;
+      };
+      const accessToken = json.access_token?.trim();
+      if (!accessToken) {
+        this.logger.warn('FCM token exchange returned no access_token');
+        return null;
+      }
+
+      const expiresInSec = Number(json.expires_in ?? 3600);
+      this.fcmAccessTokenCache = {
+        token: accessToken,
+        expiresAtMs: Date.now() + Math.max(60, expiresInSec - 120) * 1000,
+      };
+      return accessToken;
+    } catch (error) {
+      this.logger.warn(`FCM token exchange error: ${String(error)}`);
+      return null;
+    }
+  }
+
+  private buildFcmServiceAccountJwt(config: {
+    clientEmail: string;
+    privateKey: string;
+    tokenUri: string;
+  }): string | null {
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    try {
+      const header = this.base64UrlEncode(
+        JSON.stringify({ alg: 'RS256', typ: 'JWT' }),
+      );
+      const claims = this.base64UrlEncode(
+        JSON.stringify({
+          iss: config.clientEmail,
+          sub: config.clientEmail,
+          aud: config.tokenUri,
+          scope: 'https://www.googleapis.com/auth/firebase.messaging',
+          iat: nowSec,
+          exp: nowSec + 3600,
+        }),
+      );
+      const signingInput = `${header}.${claims}`;
+      const signer = crypto.createSign('RSA-SHA256');
+      signer.update(signingInput);
+      signer.end();
+      const signature = signer.sign(config.privateKey);
+      return `${signingInput}.${this.base64UrlEncode(signature)}`;
+    } catch (error) {
+      this.logger.warn(`FCM JWT build failed: ${String(error)}`);
       return null;
     }
   }
