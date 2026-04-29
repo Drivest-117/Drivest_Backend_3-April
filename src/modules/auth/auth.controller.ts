@@ -31,7 +31,7 @@ export class AuthController {
   @Post('v1/auth/sign-in')
   @HttpCode(200)
   @UseGuards(SimpleThrottleGuard)
-  @SimpleThrottle(15, 15 * 60 * 1000)
+  @SimpleThrottle(15, 15 * 60 * 1000, { resetOnSuccess: true })
   async signIn(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -39,7 +39,7 @@ export class AuthController {
   @Post('auth/sign-in')
   @HttpCode(200)
   @UseGuards(SimpleThrottleGuard)
-  @SimpleThrottle(15, 15 * 60 * 1000)
+  @SimpleThrottle(15, 15 * 60 * 1000, { resetOnSuccess: true })
   async signInLegacy(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -86,7 +86,7 @@ export class AuthController {
   @Post('auth/login')
   @HttpCode(200)
   @UseGuards(SimpleThrottleGuard)
-  @SimpleThrottle(15, 15 * 60 * 1000)
+  @SimpleThrottle(15, 15 * 60 * 1000, { resetOnSuccess: true })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }

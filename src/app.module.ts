@@ -18,6 +18,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ContentPacksModule } from './modules/content-packs/content-packs.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
 import { LegalAcceptanceModule } from './modules/legal-acceptance/legal-acceptance.module';
+import { ReferralsModule } from './modules/referrals/referrals.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { LegalAcceptanceModule } from './modules/legal-acceptance/legal-acceptan
     ContentPacksModule,
     DisputesModule,
     LegalAcceptanceModule,
+    ReferralsModule,
   ],
 })
 export class AppModule {}

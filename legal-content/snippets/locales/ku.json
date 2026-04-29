@@ -1,0 +1,37 @@
+{
+  "locale": "ku",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest platformek piştgirî ajotinê ye. Ew tenê rêbernameyê peyda dike û şûna dadbariya we, mamosteyê we, an qanûnê nagire.\\n\\nDivê hûn her gav îşaretên rê, qanûnên trafîkê û şert û mercên cîhana rastîn bişopînin. Ger tiştek di sepanê de bi rê re nakok be, rê bişopînin.\\n\\nBi berdewamkirinê, hûn piştrast dikin ku hûn 16 salî an mezintir in, ku hûn hişyariya ewlehiyê fam dikin û dipejirînin, û ku hûn şert û merc û Polîtîkaya nepenîtiyê qebûl dikin.",
+    "onboarding.legal_checkbox": "Ez piştrast dikim ku ez 16 salî an mezintir im, ez hişyariya ewlehiyê fam dikim, û ez bi şert û merc û Siyaseta nepenîtiyê razî me.",
+    "onboarding.permissions.body": "Drivest ji bo ku bi rêkûpêk bixebite hin destûr hewce dike. Cih ji bo rê û navîgasyon dema çalak tê bikar anîn. Analytics alîkariya çêtirkirina performans û pêbaweriyê dike û vebijarkî ye. Agahdarî we di derbarê veqetandin û çalakiyê de nûve dike.",
+    "onboarding.location.body": "Cih ji bo rê û navîgasyon dema çalak tê bikar anîn.",
+    "onboarding.analytics.body": "Analytics alîkariya çêtirkirina performans û pêbaweriyê dike û vebijarkî ye.",
+    "onboarding.notifications.body": "Agahdarî we di derbarê veqetandin û çalakiyê de nûve dike.",
+    "settings.content_accuracy.body": "Naveroka Drivest tenê şêwirmendî ye û dibe ku netemam an kevnar be. Zêdekirina rê, nîşanên xetereyê, û rêbernameya bilez agahdarî ne û divê wekî garantî neyên hesibandin. Her gav nîşanên zindî, nîşankirin, û daxwazên qanûnî bişopînin. Qanûna Rêwî ji bo qaîdeyên rê û tevgera ajotina ewledar çavkaniya otorîter dimîne.",
+    "settings.service_availability.body": "Hin karûbar bi vegirtina torê û pêşkêşkerên partiya sêyemîn ve girêdayî ne; hebûna dibe ku li gor cihan diguhere.",
+    "settings.safety_notice.body": "Drivest tenê piştgiriya fêrbûnê peyda dike. Hişyar bimînin û tu carî serîlêdanê bi rengek ku kontrola wesayîta we kêm bike bikar neynin.",
+    "disclaimer.driving_guidance.body": "Rêbernameya Drivest tenê şîretkar e û li şûna nîşaneyên rê, erkên qanûnî, an rêwerzên mamoste/lêkolînerê nagire. Bi tevahî kontrola wesayitê bigirin û şert û mercên rê yên zindî bişopînin. Versiyon: %1$s",
+    "reference.traffic_signs_source_note": "Li ser bingeha DfT ya Keyaniya Yekbûyî \\\"Nîşeyên trafîkê\\\" hebûnên referansa xwe û daneya nîşaneya wêneyê bizane. Wekî piştgirîya guhertoyê bikar bînin û nîşanên rêyên zindî û daxwazên qanûnî bişopînin.",
+    "reference.highway_code_footer_note": "Li ser bingeha Kodê Rêwî (GOV.UK). Tenê şêwirmendî - her gav nîşanên rêyên zindî û daxwazên qanûnî bişopînin.",
+    "marketplace.find_instructors.legal_body": "Drivest ji xwendekaran re dibe alîkar ku mamosteyan kifş bikin û daxwazên dersê birêve bibin. Hîndariya ajotinê ji hêla mamosteyên serbixwe ve tê peyda kirin, ne ji hêla Drivest.\\n\\nListings qalîteyê, hebûna, encam, an encamên derbasbûnê garantî nakin. Qeydên bihayê dersê û komîsyonê li gorî qaîdeyên platformê ji bo veqetandinên sûkê derbas dibin. Hûn ji karanîna zagonî, rast û rast berpirsiyar dimînin. Tiştek di vê agahiyê de mafên weyên xerîdar ên zagonî sînordar nake.",
+    "marketplace.instructor_hub.legal_body": "Hûn Drivest-ê wekî karsaziyek mamosteyek serbixwe bikar tînin, ne wekî karmendek an franchisee.\\n\\nHûn ji rêwerzên qanûnî, lîsans, sîgorte û lihevhatinê berpirsiyar in. Drivest vedîtina bazarê, bername, daxwazên dersê, û tomarên polîtîkayê peyda dike. Rewşa dravdanê tête tomar kirin û dibe ku ji bo nakokî an vekolîna siyasetê were girtin. Drivest dikare li cihê ku hewce be çalakiya bazarê binirxîne, bide sekinandin an sînordar bike. Tiştek di vê agahiyê de mafên qanûnî yên ku nayên veqetandin sînordar nake."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

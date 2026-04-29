@@ -26,9 +26,18 @@ export class SimpleThrottleGuard implements CanActivate {
       ip?: string;
       originalUrl?: string;
       body?: Record<string, unknown>;
+      headers?: Record<string, string | string[] | undefined>;
+    }>();
+    const response = context.switchToHttp().getResponse<{
+      setHeader(name: string, value: number | string): void;
+      once(event: string, listener: () => void): void;
+      statusCode?: number;
     }>();
     const now = Date.now();
+    const installIdHeader = request.headers?.['x-drivest-install-id'];
+    const installId = Array.isArray(installIdHeader) ? installIdHeader[0] : installIdHeader;
     const identityParts = [
+      installId?.trim().toLowerCase() ?? '',
       request.ip ?? 'unknown-ip',
       request.originalUrl ?? 'unknown-route',
       typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '',
@@ -42,15 +51,35 @@ export class SimpleThrottleGuard implements CanActivate {
         count: 1,
         expiresAt: now + rule.ttlMs,
       });
+      this.attachResetOnSuccess(response, key, rule);
       return true;
     }
 
     if (existing.count >= rule.limit) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((existing.expiresAt - now) / 1000));
+      response.setHeader('Retry-After', retryAfterSeconds);
       throw new HttpException('Too many requests', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     existing.count += 1;
     SimpleThrottleGuard.counters.set(key, existing);
+    this.attachResetOnSuccess(response, key, rule);
     return true;
+  }
+
+  private attachResetOnSuccess(
+    response: { once(event: string, listener: () => void): void; statusCode?: number },
+    key: string,
+    rule: SimpleThrottleRule,
+  ) {
+    if (!rule.resetOnSuccess) {
+      return;
+    }
+
+    response.once('finish', () => {
+      if ((response.statusCode ?? 500) < 400) {
+        SimpleThrottleGuard.counters.delete(key);
+      }
+    });
   }
 }

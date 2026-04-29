@@ -14,6 +14,7 @@ import { Product, ProductPeriod, ProductType } from '../../entities/product.enti
 import { Purchase, PurchaseProvider, PurchaseStatus } from '../../entities/purchase.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { ActivateApplePurchaseDto } from './dto/activate-apple-purchase.dto';
+import { ReferralsService } from '../referrals/referrals.service';
 
 type AppPurchaseKind =
   | 'practice_monthly'
@@ -88,6 +89,7 @@ export class EntitlementsService {
     @InjectRepository(AuditLog)
     private auditRepo: Repository<AuditLog>,
     private readonly accessOverrides: AccessOverridesService,
+    private readonly referralsService: ReferralsService,
   ) {}
 
   async appAccessState(userId: string) {
@@ -177,6 +179,10 @@ export class EntitlementsService {
       action: 'APP_PRACTICE_SUBSCRIBED',
       metadata: { centreId: centre.id, purchaseId: purchase.id, productId: product.iosProductId },
     });
+
+    // Trigger L2L referral reward if applicable (EPIC-22)
+    await this.referralsService.grantL2LBonusForPurchase(userId, purchase.id);
+
     return this.appAccessState(userId);
   }
 
@@ -224,6 +230,7 @@ export class EntitlementsService {
       this.ensureNavigationYearlyProduct(),
       this.ensureAnnualBundleProduct(),
     ]);
+    const practiceProductId = products[0].id;
     const productIds = products.map((product) => product.id);
     const purchases = await this.purchaseRepo.find({
       where: { userId, status: PurchaseStatus.COMPLETED },
@@ -249,6 +256,19 @@ export class EntitlementsService {
         .where('userId = :userId', { userId })
         .andWhere('sourcePurchaseId IN (:...purchaseIds)', { purchaseIds })
         .execute();
+
+      for (const purchase of purchases) {
+        if (
+          purchase.productId === practiceProductId &&
+          purchaseIds.includes(purchase.id)
+        ) {
+          await this.referralsService.reverseL2LBonusForCanceledPurchase(
+            userId,
+            purchase.id,
+            'practice_subscription_canceled',
+          );
+        }
+      }
     }
     await this.userRepo.update(userId, { navigationAccessUntil: null });
     await this.auditRepo.save({
@@ -355,6 +375,15 @@ export class EntitlementsService {
         purchaseId: savedPurchase.id,
       },
     });
+
+    // Trigger L2L referral reward if applicable (EPIC-22)
+    if (kind === 'practice_monthly') {
+      await this.referralsService.grantL2LBonusForPurchase(
+        userId,
+        savedPurchase.id,
+      );
+    }
+
     return this.appAccessState(userId);
   }
 

@@ -78,6 +78,21 @@ export class User {
   @Column({ type: DB_AWARE_TIMESTAMP_TYPE, nullable: true } as any)
   navigationAccessUntil?: Date | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  referredById?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  referralType?: 'I2L' | 'I2I' | 'L2L' | 'L2I' | null;
+
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  deviceIdHash?: string | null;
+
+  @Column({ name: 'lesson_credit_balance_pence', type: 'int', default: 0 })
+  lessonCreditBalancePence: number;
+
+  @Column({ name: 'lesson_credit_granted_total_pence', type: 'int', default: 0 })
+  lessonCreditGrantedTotalPence: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

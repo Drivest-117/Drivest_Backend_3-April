@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   ServiceUnavailableException,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { EntityManager, In, IsNull, Repository } from "typeorm";
@@ -48,6 +50,8 @@ import {
 import { SubmitLearnerLinkRequestDto } from "./dto/submit-learner-link-request.dto";
 import { ListAdminReviewsQueryDto } from "./dto/list-admin-reviews-query.dto";
 import { ReportReviewDto } from "./dto/report-review.dto";
+import { ReferralsService } from "../referrals/referrals.service";
+import { ReferralType } from "../../entities/referral-event.entity";
 
 @Injectable()
 export class InstructorsService {
@@ -75,6 +79,8 @@ export class InstructorsService {
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
     private readonly notificationsService: NotificationsService,
+    @Inject(forwardRef(() => ReferralsService))
+    private readonly referralsService: ReferralsService,
   ) {}
 
   async createProfile(
@@ -751,6 +757,7 @@ export class InstructorsService {
 
     const instructor = await this.instructorsRepo.findOne({
       where: { id: dto.instructorId },
+      relations: ["user"],
     });
     if (!instructor || instructor.deletedAt) {
       throw new NotFoundException("Instructor not found");
@@ -771,11 +778,16 @@ export class InstructorsService {
 
     const learner = await this.usersRepo.findOne({
       where: { id: user.userId },
-      select: ["id", "phone"],
+      select: ["id", "phone", "referredById", "referralType", "createdAt"],
     });
     const pickupContactNumber = this.resolvePickupContactNumber(
       dto.pickup?.contactNumber,
       learner?.phone ?? null,
+    );
+
+    const commissionRateApplied = this.resolveLessonCommissionRate(
+      learner,
+      instructor,
     );
 
     const { lesson: savedLesson, finance } =
@@ -798,6 +810,7 @@ export class InstructorsService {
           pickupPlaceId: this.normaliseOptionalText(dto.pickup?.placeId),
           pickupNote: this.normaliseOptionalText(dto.pickup?.note),
           pickupContactNumber,
+          commissionRateApplied,
         });
         const saved = await lessonRepo.save(lesson);
         const financeSnapshot =
@@ -958,6 +971,12 @@ export class InstructorsService {
         user.userId,
       );
     }
+
+    if (nextStatus === "completed") {
+      await this.referralsService.processI2IStake(saved.id);
+      await this.referralsService.grantL2IRewardsForFirstSettledLesson(saved.id);
+    }
+
     return this.mapLessonWithFinance(saved, finance);
   }
 
@@ -2417,6 +2436,7 @@ export class InstructorsService {
 
       const instructor = await instructorRepo.findOne({
         where: { id: slot.instructorId },
+        relations: ["user"],
       });
       if (
         !instructor ||
@@ -2443,11 +2463,16 @@ export class InstructorsService {
 
       const learner = await manager.getRepository(User).findOne({
         where: { id: user.userId },
-        select: ["id", "phone"],
+        select: ["id", "phone", "referredById", "referralType"],
       });
       const pickupContactNumber = this.resolvePickupContactNumber(
         dto.pickup?.contactNumber,
         learner?.phone ?? null,
+      );
+
+      const commissionRateApplied = this.resolveLessonCommissionRate(
+        learner,
+        instructor,
       );
 
       const lesson = lessonRepo.create({
@@ -2465,6 +2490,7 @@ export class InstructorsService {
         pickupPlaceId: this.normaliseOptionalText(dto.pickup?.placeId),
         pickupNote: this.normaliseOptionalText(dto.pickup?.note),
         pickupContactNumber,
+        commissionRateApplied,
       });
 
       const savedLesson = await lessonRepo.save(lesson);
@@ -2646,6 +2672,7 @@ export class InstructorsService {
       hourlyRatePence: instructor?.hourlyRatePence ?? null,
       durationMinutes: lesson.durationMinutes,
       hasOpenDispute: openDisputeCount > 0,
+      commissionRateApplied: lesson.commissionRateApplied,
     });
 
     const snapshot =
@@ -3756,5 +3783,37 @@ export class InstructorsService {
     throw new BadRequestException(
       "Unable to generate a unique instructor code",
     );
+  }
+
+  private resolveLessonCommissionRate(
+    learner: User | null,
+    instructor: InstructorEntity,
+  ): number | null {
+    if (!learner) return null;
+
+    // ItoL Referral check (US-20.5) - Priority 1 (Best Rate)
+    // "apply a 4% commission rate (instead of 8%) when capturing funds for a 
+    // referred learner booking with their referring instructor."
+    if (
+      learner.referralType === "I2L" &&
+      learner.referredById === instructor.userId
+    ) {
+      return 4.0;
+    }
+
+    // Instructor Referral Discount check (I2I/L2I) - Priority 2
+    // EPIC-21 (I2I): "invited instructor pays 7% commission for the same 12-month window."
+    // EPIC-23 (L2I): "new instructor receives a 1% commission discount (paying 7% instead of 8%) for their first 12 months."
+    if (instructor.user?.referralType === "I2I" || instructor.user?.referralType === "L2I") {
+      const signupDate = instructor.user.createdAt;
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+      if (signupDate > twelveMonthsAgo) {
+        return 7.0;
+      }
+    }
+
+    return null; // Fallback to marketplace default in calculator
   }
 }

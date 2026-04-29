@@ -1,0 +1,37 @@
+{
+  "locale": "hu",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "A Drivest egy vezetéstámogató platform. Csak útmutatást ad, és nem helyettesíti az ítélőképességét, az oktatóját vagy a törvényt.\\n\\nMindig be kell tartania az útjelző táblákat, a közlekedési törvényeket és a valós körülményeket. Ha az alkalmazásban bármi ütközik az úttal, kövesse az utat.\\n\\nA továbblépéssel megerősíti, hogy betöltötte a 16. életévét, megértette és elfogadja a biztonsági megjegyzést, valamint hogy elfogadja a Felhasználási feltételeket és az Adatvédelmi szabályzatot.",
+    "onboarding.legal_checkbox": "Kijelentem, hogy 16 éves vagy idősebb vagyok, megértettem a biztonsági megjegyzést, és elfogadom az Általános Szerződési Feltételeket és az Adatvédelmi szabályzatot.",
+    "onboarding.permissions.body": "A Drivest megfelelő működéséhez bizonyos engedélyekre van szüksége. Ha aktív, a hely az útvonalakhoz és a navigációhoz használatos. Az Analytics segít a teljesítmény és a megbízhatóság javításában, és nem kötelező. Az értesítések folyamatosan tájékoztatják Önt a foglalásokról és tevékenységekről.",
+    "onboarding.location.body": "Ha aktív, a hely az útvonalakhoz és a navigációhoz használatos.",
+    "onboarding.analytics.body": "Az Analytics segít a teljesítmény és a megbízhatóság javításában, és nem kötelező.",
+    "onboarding.notifications.body": "Az értesítések folyamatosan tájékoztatják Önt a foglalásokról és tevékenységekről.",
+    "settings.content_accuracy.body": "A Drivest tartalom csak tájékoztató jellegű, és előfordulhat, hogy hiányos vagy elavult. Az útvonalfedések, a veszélyjelzések és a sebességre vonatkozó útmutatások tájékoztató jellegűek, és nem kezelhetők garantáltként. Mindig kövesse az élő jelzéseket, jelöléseket és a jogi előírásokat. A KRESZ továbbra is az Egyesült Királyság közúti szabályok és a biztonságos vezetési magatartás mérvadó forrása.",
+    "settings.service_availability.body": "Egyes szolgáltatások a hálózati lefedettségtől és a külső szolgáltatóktól függenek; elérhetősége helyenként változhat.",
+    "settings.safety_notice.body": "A Drivest csak tanulási támogatást nyújt. Legyen figyelmes, és soha ne használja az alkalmazást oly módon, hogy csökkentse az irányítást a jármű felett.",
+    "disclaimer.driving_guidance.body": "A Drivest útmutatás csak tájékoztató jellegű, és nem helyettesíti az útjelző táblákat, a jogi kötelezettségeket vagy az oktatói/vizsgáztatói utasításokat. Tartsa teljes uralmát a jármű felett, és kövesse az élő útviszonyokat. Verzió: %1$s",
+    "reference.traffic_signs_source_note": "Az Egyesült Királyság DfT alapján \\\"Ismerje meg közlekedési tábláit\\\" referenciaeszközeit és képindex adatait. Használja felülvizsgálati támogatásként, és kövesse az élő útjelző táblákat és a jogi előírásokat.",
+    "reference.highway_code_footer_note": "A KRESZ (GOV.UK) alapján. Csak tájékoztató jellegű – mindig kövesse az élő útjelző táblákat és a jogi előírásokat.",
+    "marketplace.find_instructors.legal_body": "Drivest segít a tanulóknak felfedezni az oktatókat és kezelni az órakéréseket. A vezetési oktatást független oktatók biztosítják, nem pedig Drivest.\\n\\nA listák nem garantálják a minőséget, a rendelkezésre állást, az eredményeket vagy a sikeres teljesítést. A leckék árazása és a jutalékok feljegyzései a platformszabályok értelmében a piactéri foglalásokra vonatkoznak.\\n\\nA viták vagy az irányelvek ellenőrzése a rekordokat felfüggesztheti. Ön továbbra is felelős a jogszerű, pontos és becsületes használatért. Ebben a közleményben semmi sem korlátozza az Ön törvényes fogyasztói jogait.",
+    "marketplace.instructor_hub.legal_body": "Ön a Drivest-t független oktatói vállalkozásként használja, nem alkalmazottként vagy franchise-vevőként.\\n\\nÖn a felelős a törvényes oktatásért, engedélyezésért, biztosításért és megfelelőségért. A Drivest piactér-felderítést, ütemezést, leckékkéréseket és házirend-rekordokat biztosít.\\n\\nA piactéri foglalások jutaléka 8 százalék. A kifizetés állapota rögzítésre kerül, és viták vagy irányelvek felülvizsgálata miatt visszatartható. Drivest szükség esetén felülvizsgálhatja, felfüggesztheti vagy korlátozhatja a piactéri tevékenységet. Ebben a közleményben semmi sem korlátozza a ki nem zárható törvényes jogokat."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

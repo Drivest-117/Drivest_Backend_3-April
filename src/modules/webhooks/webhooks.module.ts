@@ -7,9 +7,13 @@ import { Product } from '../../entities/product.entity';
 import { Entitlement } from '../../entities/entitlement.entity';
 import { User } from '../../entities/user.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
+import { ReferralsModule } from '../referrals/referrals.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Purchase, Product, Entitlement, User, AuditLog])],
+  imports: [
+    TypeOrmModule.forFeature([Purchase, Product, Entitlement, User, AuditLog]),
+    ReferralsModule,
+  ],
   controllers: [WebhooksController],
   providers: [WebhooksService],
 })

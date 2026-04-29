@@ -1,0 +1,37 @@
+{
+  "locale": "ps-AF",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest د موټر چلولو ملاتړ پلیټ فارم دی. دا یوازې لارښوونې وړاندې کوي او ستاسو قضاوت، ستاسو ښوونکي، یا قانون ځای نه نیسي. که په اپلیکیشن کې کوم شی د سړک سره په ټکر کې وي، سړک تعقیب کړئ.\\nDrivestپه دوام ورکولو سره، تاسو تایید کوئ چې تاسو 16 کلن یا ډیر عمر لرئ، تاسو د خوندیتوب خبرتیا پوهیږئ او منئ، او دا چې تاسو د شرایطو او شرایطو او محرمیت پالیسۍ سره موافق یاست.",
+    "onboarding.legal_checkbox": "زه تاییدوم چې زه 16 یا ډیر عمر لرم، زه د خوندیتوب خبرتیا پوهیږم، او زه د شرایطو او شرایطو او د محرمیت پالیسۍ سره موافق یم.",
+    "onboarding.permissions.body": "Drivest د سم کار کولو لپاره ځینې اجازې ته اړتیا لري. موقعیت د لارو او نیویګیشن لپاره کارول کیږي کله چې فعال وي. تحلیلونه د فعالیت او اعتبار ښه کولو کې مرسته کوي او اختیاري دي. خبرتیاوې تاسو د بکینګ او فعالیت په اړه تازه ساتي.",
+    "onboarding.location.body": "موقعیت د لارو او نیویګیشن لپاره کارول کیږي کله چې فعال وي.",
+    "onboarding.analytics.body": "تحلیلونه د فعالیت او اعتبار ښه کولو کې مرسته کوي او اختیاري دي.",
+    "onboarding.notifications.body": "خبرتیاوې تاسو د بکینګ او فعالیت په اړه تازه ساتي.",
+    "settings.content_accuracy.body": "Drivest منځپانګه یوازې مشورتي ده او کیدای شي نامکمل یا زوړ وي. د لارې پوښښ، د خطر نښې، او د سرعت لارښوونې معلوماتي دي او باید د تضمین په توګه چلند ونشي. تل ژوندۍ نښې، نښه، او قانوني اړتیاوې تعقیب کړئ. د لویې لارې کوډ د انګلستان د سړک قواعدو او خوندي موټر چلولو چلند لپاره مستند سرچینه پاتې ده.",
+    "settings.service_availability.body": "ځینې خدمتونه د شبکې پوښښ او د دریمې ډلې چمتو کونکو پورې اړه لري؛ شتون ممکن د موقعیت له مخې توپیر ولري.",
+    "settings.safety_notice.body": "Drivest یوازې د زده کړې ملاتړ چمتو کوي. متوجه اوسئ او هیڅکله هم په داسې طریقه اپلیکیشن مه کاروئ چې ستاسو د موټر کنټرول کم کړي.",
+    "disclaimer.driving_guidance.body": "Drivest لارښود یوازې مشورتي دی او د سړک نښې، قانوني دندې، یا د ښوونکي / معاینه کونکي لارښوونې نه بدلوي. د موټر بشپړ کنټرول وساتئ او د سړک ژوند شرایط تعقیب کړئ. نسخه: %1$s",
+    "reference.traffic_signs_source_note": "د UK DfT \\\" پر بنسټ د ټرافيکي نښو پوه شئ\\\" د اثاثو او د انځور شاخص ډاټا. د بیاکتنې مالتړ په توګه وکاروئ او د ژوندي سړک نښې او قانوني اړتیاوې تعقیب کړئ.",
+    "reference.highway_code_footer_note": "د لویې لارې کوډ (GOV.UK) پر بنسټ. یوازې مشورې - تل د سړکونو ژوندۍ نښې او قانوني اړتیاوې تعقیب کړئ.",
+    "marketplace.find_instructors.legal_body": "Drivest له زده کوونکو سره مرسته کوي چې ښوونکي ومومي او د درس غوښتنې اداره کړي. د موټر چلولو لارښوونه د خپلواکو ښوونکو لخوا چمتو کیږي، نه د Drivest.\\nDrivest لخوا لیست کول د کیفیت، شتون، پایلو، یا پاس پایلو تضمین نه کوي. د درس نرخونه او د کمیسیون ریکارډونه د پلیټ فارم قواعدو لاندې د بازار موندنې لپاره پلي کیږي. تاسو د حلال، دقیق، او صادقانه کارونې لپاره مسؤل یاست. پدې خبرتیا کې هیڅ شی ستاسو قانوني مصرف کونکي حقونه محدود نه کوي.",
+    "marketplace.instructor_hub.legal_body": "تاسو Drivest د یو خپلواک ښوونکي سوداګرۍ په توګه کاروئ، نه د یو کارمند یا فرنچائز په توګه. Drivest د بازار موندنې، مهالویش، د درس غوښتنې، او د پالیسۍ ریکارډونه وړاندې کوي. د تادیې حالت ثبت شوی او ممکن د شخړو یا پالیسۍ بیاکتنې لپاره ساتل کیږي. Drivest کیدای شي د اړتیا په صورت کې د بازار فعالیت بیاکتنه، تعلیق، یا محدود کړي. په دې خبرتیا کې هیڅ شی د نه استثنا وړ قانوني حقونه محدودوي."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

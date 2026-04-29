@@ -384,7 +384,17 @@ export class AppLegalService {
         },
       });
       if (existing) {
-        if (!existing.isActive || existing.contentHash !== document.contentHash) {
+        const metadataChanged =
+          JSON.stringify(existing.metadata ?? null) !== JSON.stringify(document.metadata ?? null);
+        const publicationChanged =
+          existing.publicationTimestamp.toISOString() !== document.publicationTimestamp;
+
+        if (
+          !existing.isActive
+          || existing.contentHash !== document.contentHash
+          || metadataChanged
+          || publicationChanged
+        ) {
           existing.isActive = true;
           existing.contentHash = document.contentHash;
           existing.publicationTimestamp = new Date(document.publicationTimestamp);

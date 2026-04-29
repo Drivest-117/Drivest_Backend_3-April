@@ -1,17 +1,31 @@
-import { BadRequestException, ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
-import { JwtService } from '@nestjs/jwt';
-import { randomInt } from 'crypto';
-import { User } from '../../entities/user.entity';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { AuditLog } from '../../entities/audit-log.entity';
-import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
-import { AccessOverridesService } from '../access-overrides/access-overrides.service';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import * as bcrypt from "bcryptjs";
+import { JwtService } from "@nestjs/jwt";
+import { randomInt } from "crypto";
+import { User } from "../../entities/user.entity";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import { AuditLog } from "../../entities/audit-log.entity";
+import {
+  Entitlement,
+  EntitlementScope,
+} from "../../entities/entitlement.entity";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { AccessOverridesService } from "../access-overrides/access-overrides.service";
+import { ReferralsService } from "../referrals/referrals.service";
+import {
+  ReferralEventState,
+  ReferralType,
+} from "../../entities/referral-event.entity";
 
 @Injectable()
 export class AuthService {
@@ -21,9 +35,11 @@ export class AuthService {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
-    @InjectRepository(Entitlement) private entitlementRepo: Repository<Entitlement>,
+    @InjectRepository(Entitlement)
+    private entitlementRepo: Repository<Entitlement>,
     private jwtService: JwtService,
     private accessOverrides: AccessOverridesService,
+    private referralsService: ReferralsService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -31,27 +47,70 @@ export class AuthService {
     const name = dto.name.trim();
     this.ensureStrongPassword(dto.password);
     const existing = await this.usersRepo
-      .createQueryBuilder('user')
-      .where('LOWER(user.email) = :email', { email })
+      .createQueryBuilder("user")
+      .where("LOWER(user.email) = :email", { email })
       .getOne();
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException("Email already registered");
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const role = dto.role === 'INSTRUCTOR' ? 'INSTRUCTOR' : 'USER';
-    const user = this.usersRepo.create({
-      email,
-      name,
-      phone: dto.phone ?? null,
-      passwordHash,
-      role,
+    const role = dto.role === "INSTRUCTOR" ? "INSTRUCTOR" : "USER";
+    const validatedReferral =
+      await this.referralsService.validateSignupReferral({
+        referredById: dto.referredById ?? null,
+        referralType: dto.referralType ?? null,
+        registeringRole: role,
+        deviceIdHash: dto.deviceIdHash ?? null,
+      });
+
+    if (dto.deviceIdHash) {
+      const deviceExists = await this.usersRepo.findOne({
+        where: { deviceIdHash: dto.deviceIdHash },
+      });
+      if (deviceExists) {
+        throw new BadRequestException(
+          "Device already registered with another account",
+        );
+      }
+    }
+
+    const user = await this.usersRepo.manager.transaction(async (manager) => {
+      const uRepo = manager.getRepository(User);
+      const newUser = uRepo.create({
+        email,
+        name,
+        phone: dto.phone ?? null,
+        passwordHash,
+        role,
+        referredById: validatedReferral?.referrerId ?? null,
+        referralType: validatedReferral?.referralType ?? null,
+        deviceIdHash: dto.deviceIdHash ?? null,
+      });
+      const savedUser = await uRepo.save(newUser);
+
+      if (savedUser.referredById && savedUser.referralType) {
+        await this.referralsService.logEvent(
+          {
+            userId: savedUser.id,
+            referrerId: savedUser.referredById,
+            referralType: savedUser.referralType as ReferralType,
+            state: ReferralEventState.CAPTURED,
+            metadata: { source: "registration" },
+          },
+          manager,
+        );
+
+        // US-20.4 Automated Handshake
+        await this.referralsService.handleReferredSignup(savedUser, manager);
+      }
+      return savedUser;
     });
-    await this.usersRepo.save(user);
+
     await this.accessOverrides.applyToUser(user);
     await this.ensureWhitelistedEntitlement(user);
     await this.auditRepo.save({
       userId: user.id,
-      action: 'USER_REGISTER',
+      action: "USER_REGISTER",
       metadata: { email: user.email },
     });
     return this.buildToken(user);
@@ -60,13 +119,19 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User> {
     const normalizedEmail = this.normalizeEmail(email);
     const user = await this.usersRepo
-      .createQueryBuilder('user')
-      .select(['user.id', 'user.email', 'user.name', 'user.passwordHash', 'user.role'])
-      .where('LOWER(user.email) = :email', { email: normalizedEmail })
+      .createQueryBuilder("user")
+      .select([
+        "user.id",
+        "user.email",
+        "user.name",
+        "user.passwordHash",
+        "user.role",
+      ])
+      .where("LOWER(user.email) = :email", { email: normalizedEmail })
       .getOne();
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user) throw new UnauthorizedException("Invalid credentials");
     const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) throw new UnauthorizedException('Invalid credentials');
+    if (!match) throw new UnauthorizedException("Invalid credentials");
     return user;
   }
 
@@ -78,12 +143,13 @@ export class AuthService {
   }
 
   async requestPasswordReset(dto: ForgotPasswordDto) {
-    const genericMessage = 'If an account exists for this email, a reset code has been sent.';
+    const genericMessage =
+      "If an account exists for this email, a reset code has been sent.";
     const email = this.normalizeEmail(dto.email);
     const user = await this.usersRepo
-      .createQueryBuilder('user')
-      .select(['user.id', 'user.email'])
-      .where('LOWER(user.email) = :email', { email })
+      .createQueryBuilder("user")
+      .select(["user.id", "user.email"])
+      .where("LOWER(user.email) = :email", { email })
       .getOne();
 
     if (!user) {
@@ -105,12 +171,14 @@ export class AuthService {
 
     await this.auditRepo.save({
       userId: user.id,
-      action: 'PASSWORD_RESET_REQUESTED',
+      action: "PASSWORD_RESET_REQUESTED",
       metadata: { email: user.email },
     });
 
     if (this.shouldExposePasswordResetCode()) {
-      this.logger.warn(`password_reset_dev_code email=${user.email ?? 'unknown'} code=${code}`);
+      this.logger.warn(
+        `password_reset_dev_code email=${user.email ?? "unknown"} code=${code}`,
+      );
       return { message: genericMessage, devCode: code };
     }
     return { message: genericMessage };
@@ -120,24 +188,28 @@ export class AuthService {
     const email = this.normalizeEmail(dto.email);
     const code = dto.code.trim();
     const user = await this.usersRepo
-      .createQueryBuilder('user')
+      .createQueryBuilder("user")
       .select([
-        'user.id',
-        'user.email',
-        'user.passwordResetCodeHash',
-        'user.passwordResetCodeExpiresAt',
-        'user.passwordResetFailedAttempts',
+        "user.id",
+        "user.email",
+        "user.passwordResetCodeHash",
+        "user.passwordResetCodeExpiresAt",
+        "user.passwordResetFailedAttempts",
       ])
-      .where('LOWER(user.email) = :email', { email })
+      .where("LOWER(user.email) = :email", { email })
       .getOne();
 
-    if (!user || !user.passwordResetCodeHash || !user.passwordResetCodeExpiresAt) {
-      throw new BadRequestException('Invalid or expired reset code');
+    if (
+      !user ||
+      !user.passwordResetCodeHash ||
+      !user.passwordResetCodeExpiresAt
+    ) {
+      throw new BadRequestException("Invalid or expired reset code");
     }
 
     if (user.passwordResetCodeExpiresAt.getTime() < Date.now()) {
       await this.clearResetState(user.id);
-      throw new BadRequestException('Invalid or expired reset code');
+      throw new BadRequestException("Invalid or expired reset code");
     }
 
     const validCode = await bcrypt.compare(code, user.passwordResetCodeHash);
@@ -153,7 +225,7 @@ export class AuthService {
           },
         );
       }
-      throw new BadRequestException('Invalid or expired reset code');
+      throw new BadRequestException("Invalid or expired reset code");
     }
 
     this.ensureStrongPassword(dto.newPassword);
@@ -170,21 +242,25 @@ export class AuthService {
 
     await this.auditRepo.save({
       userId: user.id,
-      action: 'PASSWORD_RESET_COMPLETED',
+      action: "PASSWORD_RESET_COMPLETED",
       metadata: { email: user.email },
     });
 
-    return { message: 'Password reset successful' };
+    return { message: "Password reset successful" };
   }
 
   private buildToken(user: User) {
-    const payload = { sub: user.id, email: user.email, role: user.role || 'USER' };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role || "USER",
+    };
     const accessToken = this.jwtService.sign(payload);
-    return { accessToken, role: user.role || 'USER' };
+    return { accessToken, role: user.role || "USER" };
   }
 
   private generateResetCode(): string {
-    return String(randomInt(0, 1_000_000)).padStart(6, '0');
+    return String(randomInt(0, 1_000_000)).padStart(6, "0");
   }
 
   private passwordResetCodeTtlMs(): number {
@@ -194,23 +270,25 @@ export class AuthService {
   }
 
   private shouldExposePasswordResetCode(): boolean {
-    const raw = (process.env.PASSWORD_RESET_EXPOSE_CODE ?? '').trim().toLowerCase();
-    if (raw !== 'true') return false;
+    const raw = (process.env.PASSWORD_RESET_EXPOSE_CODE ?? "")
+      .trim()
+      .toLowerCase();
+    if (raw !== "true") return false;
 
     const runtimeEnv = (
       process.env.APP_ENV ??
       process.env.ENVIRONMENT ??
       process.env.NODE_ENV ??
-      ''
+      ""
     )
       .trim()
       .toLowerCase();
-    const safeExposureEnvs = new Set(['development', 'dev', 'local', 'test']);
+    const safeExposureEnvs = new Set(["development", "dev", "local", "test"]);
     const isSafeEnv = safeExposureEnvs.has(runtimeEnv);
 
     if (!isSafeEnv) {
       this.logger.warn(
-        `Ignoring PASSWORD_RESET_EXPOSE_CODE outside local/test runtime (env=${runtimeEnv || 'unknown'})`,
+        `Ignoring PASSWORD_RESET_EXPOSE_CODE outside local/test runtime (env=${runtimeEnv || "unknown"})`,
       );
     }
 
@@ -230,15 +308,19 @@ export class AuthService {
   }
 
   private async ensureWhitelistedEntitlement(user: User) {
-    const whitelistEnv = process.env.WHITELIST_EMAILS || '';
+    const whitelistEnv = process.env.WHITELIST_EMAILS || "";
     const whitelist = whitelistEnv
-      .split(',')
+      .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
     if (!user.email || !whitelist.includes(user.email.toLowerCase())) return;
 
     const existing = await this.entitlementRepo.findOne({
-      where: { userId: user.id, scope: EntitlementScope.GLOBAL, isActive: true },
+      where: {
+        userId: user.id,
+        scope: EntitlementScope.GLOBAL,
+        isActive: true,
+      },
     });
     if (existing) return;
 
@@ -259,13 +341,13 @@ export class AuthService {
   }
 
   private ensureStrongPassword(password: string) {
-    const normalized = String(password ?? '');
+    const normalized = String(password ?? "");
     const hasUppercase = /[A-Z]/.test(normalized);
     const hasLowercase = /[a-z]/.test(normalized);
     const hasNumber = /\d/.test(normalized);
     if (normalized.length < 8 || !hasUppercase || !hasLowercase || !hasNumber) {
       throw new BadRequestException(
-        'Password must be at least 8 characters and include uppercase, lowercase, and a number',
+        "Password must be at least 8 characters and include uppercase, lowercase, and a number",
       );
     }
   }

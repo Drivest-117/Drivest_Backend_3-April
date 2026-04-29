@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { InstructorsController } from "./instructors.controller";
 import { ReviewsController } from "./reviews.controller";
@@ -18,10 +18,12 @@ import { User } from "../../entities/user.entity";
 import { AuditLog } from "../../entities/audit-log.entity";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { DisputeCaseEntity } from "../disputes/entities/dispute-case.entity";
+import { ReferralsModule } from "../referrals/referrals.module";
 
 @Module({
   imports: [
     NotificationsModule,
+    forwardRef(() => ReferralsModule),
     TypeOrmModule.forFeature([
       InstructorEntity,
       InstructorReviewEntity,

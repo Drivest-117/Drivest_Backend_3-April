@@ -13,12 +13,14 @@ import { AuditLog } from '../../entities/audit-log.entity';
 import { Entitlement } from '../../entities/entitlement.entity';
 import { AccessOverridesModule } from '../access-overrides/access-overrides.module';
 import { SimpleThrottleGuard } from '../../common/simple-throttle.guard';
+import { ReferralsModule } from '../referrals/referrals.module';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
     AccessOverridesModule,
+    ReferralsModule,
     TypeOrmModule.forFeature([User, AuditLog, Entitlement]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

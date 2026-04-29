@@ -1,0 +1,37 @@
+{
+  "locale": "ur",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest ایک ڈرائیونگ سپورٹ پلیٹ فارم ہے۔ یہ صرف رہنمائی فراہم کرتا ہے اور آپ کے فیصلے، آپ کے انسٹرکٹر، یا قانون کی جگہ نہیں لیتا ہے۔\\nDrivestآپ کو ہمیشہ سڑک کے اشاروں، ٹریفک قوانین اور حقیقی دنیا کے حالات پر عمل کرنا چاہیے۔ اگر ایپ میں کوئی چیز سڑک سے متصادم ہے تو سڑک پر چلیں۔\\n\\nجاری رکھ کر، آپ تصدیق کرتے ہیں کہ آپ کی عمر 16 سال یا اس سے زیادہ ہے، کہ آپ حفاظتی نوٹس کو سمجھتے اور قبول کرتے ہیں، اور یہ کہ آپ شرائط و ضوابط اور رازداری کی پالیسی سے اتفاق کرتے ہیں۔",
+    "onboarding.legal_checkbox": "میں تصدیق کرتا ہوں کہ میری عمر 16 سال یا اس سے زیادہ ہے، میں حفاظتی نوٹس کو سمجھتا ہوں، اور میں شرائط و ضوابط اور رازداری کی پالیسی سے اتفاق کرتا ہوں۔",
+    "onboarding.permissions.body": "Drivest کو صحیح طریقے سے کام کرنے کے لیے کچھ اجازتوں کی ضرورت ہے۔ فعال ہونے پر راستوں اور نیویگیشن کے لیے مقام کا استعمال کیا جاتا ہے۔ تجزیات کارکردگی اور وشوسنییتا کو بہتر بنانے میں مدد کرتا ہے اور یہ اختیاری ہے۔ اطلاعات آپ کو بکنگ اور سرگرمی کے بارے میں اپ ڈیٹ کرتی رہتی ہیں۔",
+    "onboarding.location.body": "فعال ہونے پر راستوں اور نیویگیشن کے لیے مقام کا استعمال کیا جاتا ہے۔",
+    "onboarding.analytics.body": "تجزیات کارکردگی اور وشوسنییتا کو بہتر بنانے میں مدد کرتا ہے اور یہ اختیاری ہے۔",
+    "onboarding.notifications.body": "اطلاعات آپ کو بکنگ اور سرگرمی کے بارے میں اپ ڈیٹ کرتی رہتی ہیں۔",
+    "settings.content_accuracy.body": "Drivest مواد صرف مشاورتی ہے اور نامکمل یا پرانا ہو سکتا ہے۔ روٹ اوورلیز، خطرے کے اشارے، اور رفتار کی رہنمائی معلوماتی ہیں اور انہیں ضمانت کے طور پر نہیں سمجھا جانا چاہیے۔ ہمیشہ زندہ نشانیوں، نشانات اور قانونی تقاضوں کی پیروی کریں۔ ہائی وے کوڈ برطانیہ کے سڑک کے قوانین اور محفوظ ڈرائیونگ رویے کا مستند ذریعہ ہے۔",
+    "settings.service_availability.body": "کچھ خدمات کا انحصار نیٹ ورک کوریج اور تھرڈ پارٹی فراہم کنندگان پر ہے۔ دستیابی جگہ کے لحاظ سے مختلف ہو سکتی ہے۔",
+    "settings.safety_notice.body": "Drivest صرف سیکھنے میں مدد فراہم کرتا ہے۔ ہوشیار رہیں اور ایپ کو کبھی بھی اس طرح استعمال نہ کریں جس سے آپ کی گاڑی کا کنٹرول کم ہو۔",
+    "disclaimer.driving_guidance.body": "Drivest رہنمائی صرف مشاورتی ہے اور سڑک کے نشانات، قانونی فرائض، یا انسٹرکٹر/ممتحن کی ہدایات کو تبدیل نہیں کرتی ہے۔ گاڑی پر مکمل کنٹرول رکھیں اور لائیو سڑک کے حالات پر عمل کریں۔ ورژن: %1$s",
+    "reference.traffic_signs_source_note": "UK DfT \\\"اپنے ٹریفک کے نشانات کو جانیں\\\" حوالہ جات اور امیج انڈیکس ڈیٹا کی بنیاد پر۔ نظرثانی کی معاونت کے طور پر استعمال کریں اور لائیو روڈ سائنز اور قانونی تقاضوں پر عمل کریں۔",
+    "reference.highway_code_footer_note": "The Highway Code (GOV.UK) کی بنیاد پر۔ صرف ایڈوائزری — ہمیشہ لائیو روڈ سائنز اور قانونی تقاضوں پر عمل کریں۔",
+    "marketplace.find_instructors.legal_body": "Drivest سیکھنے والوں کو انسٹرکٹرز تلاش کرنے اور سبق کی درخواستوں کا نظم کرنے میں مدد کرتا ہے۔ ڈرائیونگ کی ہدایات آزاد انسٹرکٹرز کے ذریعے فراہم کی جاتی ہیں، نہ کہ Drivest کی طرف سے۔\\n\\n فہرستیں معیار، دستیابی، نتائج، یا پاس نتائج کی ضمانت نہیں دیتی ہیں۔ سبق کی قیمتوں کا تعین اور کمیشن کے ریکارڈ پلیٹ فارم کے قوانین کے تحت مارکیٹ پلیس کی بکنگ پر لاگو ہوتے ہیں۔ آپ قانونی، درست اور دیانتدارانہ استعمال کے ذمہ دار رہیں گے۔ اس نوٹس میں کچھ بھی آپ کے قانونی صارفین کے حقوق کو محدود نہیں کرتا ہے۔",
+    "marketplace.instructor_hub.legal_body": "آپ Drivest کو ایک آزاد انسٹرکٹر کاروبار کے طور پر استعمال کرتے ہیں، نہ کہ بطور ملازم یا فرنچائز۔ Drivest مارکیٹ پلیس کی دریافت، شیڈولنگ، سبق کی درخواستیں، اور پالیسی ریکارڈ فراہم کرتا ہے۔ ادائیگی کی حیثیت ریکارڈ کی جاتی ہے اور اسے تنازعات یا پالیسی کے جائزے کے لیے رکھا جا سکتا ہے۔ Drivest ضرورت پڑنے پر مارکیٹ پلیس کی سرگرمیوں کا جائزہ لے سکتا ہے، معطل یا محدود کر سکتا ہے۔ اس نوٹس میں کوئی بھی چیز غیر مستثنیٰ قانونی حقوق کو محدود نہیں کرتی۔"
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

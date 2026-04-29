@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import axios from 'axios';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContentPackManifest } from '../../entities/content-pack-manifest.entity';
@@ -28,8 +29,69 @@ type ManifestItem = {
   metadata: Record<string, unknown> | null;
 };
 
+type ManifestResolution = {
+  row: ContentPackManifest;
+  languageOverride?: string;
+};
+
 @Injectable()
 export class ContentPacksService {
+  private static readonly FINES_MODULE_KEY = 'fines_penalties';
+  private static readonly FINES_KIND_KEY = 'questions';
+  private static readonly ENGLISH_LANGUAGE = 'en';
+  private static readonly FINES_PACK_CHECK_CACHE_TTL_MS = 15 * 60 * 1000;
+  private static readonly FINES_PACK_SAMPLE_QUESTION_LIMIT = 15;
+  private static readonly FINES_PACK_MIN_TOKEN_HITS = 6;
+
+  private readonly logger = new Logger(ContentPacksService.name);
+  private readonly finesPackContaminationCache = new Map<
+    string,
+    { checkedAtMs: number; contaminated: boolean }
+  >();
+  private readonly finesContaminationTokens = new Set<string>([
+    'primarily',
+    'supply',
+    'firms',
+    'confirm',
+    'confirms',
+    'clerk',
+    'vehicle',
+    'warning',
+    'mobile',
+    'phone',
+    'speeding',
+    'insurance',
+    'court',
+    'fixed',
+    'penalty',
+    'points',
+    'limit',
+    'driving',
+    'offence',
+    'offences',
+    'licence',
+    'motorway',
+    'failure',
+    'this',
+    'much',
+    'were',
+    'size',
+    'their',
+    'considered',
+    'standard',
+    'handles',
+    'selling',
+    'renewing',
+    'house',
+    'tow',
+    'day',
+    'safe',
+    'route',
+    'choice',
+    'nothing',
+    'only',
+  ]);
+
   constructor(
     @InjectRepository(ContentPackManifest)
     private readonly contentPackRepo: Repository<ContentPackManifest>,
@@ -39,10 +101,13 @@ export class ContentPacksService {
     const normalized = this.normalizeManifestQuery(query);
     const rows = await this.queryCandidateRows(normalized);
     const latest = this.pickLatestByKey(rows);
+    const resolved = await this.resolveManifestRowsForLocalization(latest, normalized);
     return {
       generatedAt: new Date().toISOString(),
       platform: normalized.platform ?? null,
-      items: latest.map((row) => this.toManifestItem(row)),
+      items: resolved.map((entry) =>
+        this.toManifestItem(entry.row, entry.languageOverride),
+      ),
     };
   }
 
@@ -134,6 +199,62 @@ export class ContentPacksService {
     });
   }
 
+  private async resolveManifestRowsForLocalization(
+    rows: ContentPackManifest[],
+    query: ManifestQuery,
+  ): Promise<ManifestResolution[]> {
+    if (!query.language || query.language === ContentPacksService.ENGLISH_LANGUAGE) {
+      return rows.map((row) => ({ row }));
+    }
+
+    const latestByKey = new Map<string, ContentPackManifest>();
+    for (const row of rows) {
+      latestByKey.set(this.rowIdentityKey(row), row);
+    }
+
+    const fallbackCache = new Map<string, ContentPackManifest | null>();
+
+    const resolved = await Promise.all(
+      rows.map(async (row): Promise<ManifestResolution> => {
+        if (!this.shouldApplyFinesLocalizationScreening(row)) {
+          return { row };
+        }
+
+        let contaminated = this.isFinesPackMarkedContaminated(row);
+        if (!contaminated) {
+          contaminated = await this.isLikelyContaminatedFinesPack(row.url, row.language);
+        }
+        if (!contaminated) {
+          return { row };
+        }
+
+        const baseKey = this.finesBaseKey(row);
+        const englishRowKey = `${baseKey}::${ContentPacksService.ENGLISH_LANGUAGE}`;
+        let fallback =
+          latestByKey.get(englishRowKey) ??
+          (fallbackCache.has(baseKey) ? fallbackCache.get(baseKey) ?? undefined : undefined);
+        if (!fallback) {
+          const queried = await this.findLatestEnglishFinesRow(row, query.appVersion);
+          fallbackCache.set(baseKey, queried);
+          fallback = queried ?? undefined;
+        }
+        if (!fallback) {
+          this.logger.warn(
+            `Detected contaminated fines pack for language=${row.language} but no English fallback was found (platform=${row.platform}, kind=${row.contentKind})`,
+          );
+          return { row };
+        }
+
+        this.logger.warn(
+          `Detected contaminated fines pack language=${row.language}; serving English fallback version=${fallback.version}`,
+        );
+        return { row: fallback, languageOverride: row.language };
+      }),
+    );
+
+    return resolved;
+  }
+
   private isNewerCandidate(
     candidate: ContentPackManifest,
     current: ContentPackManifest,
@@ -154,13 +275,16 @@ export class ContentPacksService {
     return candidate.updatedAt.getTime() > current.updatedAt.getTime();
   }
 
-  private toManifestItem(row: ContentPackManifest): ManifestItem {
+  private toManifestItem(
+    row: ContentPackManifest,
+    languageOverride?: string,
+  ): ManifestItem {
     return {
       id: row.id,
       platform: row.platform,
       module: row.moduleKey,
       kind: row.contentKind,
-      language: row.language,
+      language: languageOverride ?? row.language,
       version: row.version,
       hash: row.hash,
       sizeBytes: row.sizeBytes,
@@ -169,6 +293,195 @@ export class ContentPacksService {
       publishedAt: row.publishedAt.toISOString(),
       metadata: row.metadata,
     };
+  }
+
+  private shouldApplyFinesLocalizationScreening(row: ContentPackManifest): boolean {
+    return (
+      row.moduleKey === ContentPacksService.FINES_MODULE_KEY &&
+      row.contentKind === ContentPacksService.FINES_KIND_KEY &&
+      row.language !== ContentPacksService.ENGLISH_LANGUAGE
+    );
+  }
+
+  private isFinesPackMarkedContaminated(row: ContentPackManifest): boolean {
+    if (!row.metadata || typeof row.metadata !== 'object' || Array.isArray(row.metadata)) {
+      return false;
+    }
+
+    const metadata = row.metadata as Record<string, unknown>;
+    if (metadata.localizationContaminated === true) {
+      return true;
+    }
+
+    const localization = metadata.localization;
+    if (
+      !localization ||
+      typeof localization !== 'object' ||
+      Array.isArray(localization)
+    ) {
+      return false;
+    }
+
+    const quality = (localization as Record<string, unknown>).quality;
+    if (!quality || typeof quality !== 'object' || Array.isArray(quality)) {
+      return false;
+    }
+
+    return (quality as Record<string, unknown>).contaminated === true;
+  }
+
+  private async isLikelyContaminatedFinesPack(
+    url: string,
+    language: string,
+  ): Promise<boolean> {
+    if (!url || language === ContentPacksService.ENGLISH_LANGUAGE) {
+      return false;
+    }
+
+    const cacheKey = `${language}::${url}`;
+    const cached = this.finesPackContaminationCache.get(cacheKey);
+    const now = Date.now();
+    if (
+      cached &&
+      now - cached.checkedAtMs < ContentPacksService.FINES_PACK_CHECK_CACHE_TTL_MS
+    ) {
+      return cached.contaminated;
+    }
+
+    let contaminated = false;
+    try {
+      const response = await axios.get(url, {
+        timeout: 5000,
+        responseType: 'json',
+        validateStatus: (status) => status >= 200 && status < 300,
+      });
+      const texts = this.extractFinesQuestionTextSegments(response.data);
+      const tokenHits = this.countEnglishContaminationTokenHits(texts);
+      contaminated = tokenHits >= ContentPacksService.FINES_PACK_MIN_TOKEN_HITS;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to verify fines pack localization at ${url}: ${message}`,
+      );
+    }
+
+    this.finesPackContaminationCache.set(cacheKey, {
+      checkedAtMs: now,
+      contaminated,
+    });
+    return contaminated;
+  }
+
+  private extractFinesQuestionTextSegments(payload: unknown): string[] {
+    const questions = this.extractFinesQuestions(payload);
+    if (questions.length === 0) {
+      return [];
+    }
+
+    const texts: string[] = [];
+    for (const question of questions.slice(
+      0,
+      ContentPacksService.FINES_PACK_SAMPLE_QUESTION_LIMIT,
+    )) {
+      if (!question || typeof question !== 'object' || Array.isArray(question)) {
+        continue;
+      }
+
+      const item = question as Record<string, unknown>;
+      const promptCandidate = item.prompt ?? item.question ?? item.questionText;
+      if (typeof promptCandidate === 'string' && promptCandidate.trim().length > 0) {
+        texts.push(promptCandidate);
+      }
+
+      const explanation = item.explanation;
+      if (typeof explanation === 'string' && explanation.trim().length > 0) {
+        texts.push(explanation);
+      }
+
+      const options = item.options;
+      if (!Array.isArray(options)) {
+        continue;
+      }
+      for (const option of options) {
+        if (typeof option === 'string' && option.trim().length > 0) {
+          texts.push(option);
+        }
+      }
+    }
+
+    return texts;
+  }
+
+  private extractFinesQuestions(payload: unknown): unknown[] {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return [];
+    }
+
+    const questions = (payload as Record<string, unknown>).questions;
+    return Array.isArray(questions) ? questions : [];
+  }
+
+  private countEnglishContaminationTokenHits(texts: string[]): number {
+    let hits = 0;
+    for (const text of texts) {
+      const words = text.toLowerCase().match(/[a-z]{3,}/g);
+      if (!words) continue;
+      for (const word of words) {
+        if (this.finesContaminationTokens.has(word)) {
+          hits += 1;
+        }
+      }
+    }
+    return hits;
+  }
+
+  private async findLatestEnglishFinesRow(
+    row: ContentPackManifest,
+    appVersion?: string,
+  ): Promise<ContentPackManifest | null> {
+    const candidates = await this.contentPackRepo
+      .createQueryBuilder('pack')
+      .where('pack.isActive = :isActive', { isActive: true })
+      .andWhere('pack.platform = :platform', { platform: row.platform })
+      .andWhere('pack.moduleKey = :module', {
+        module: ContentPacksService.FINES_MODULE_KEY,
+      })
+      .andWhere('pack.contentKind = :kind', {
+        kind: ContentPacksService.FINES_KIND_KEY,
+      })
+      .andWhere('pack.language = :language', {
+        language: ContentPacksService.ENGLISH_LANGUAGE,
+      })
+      .orderBy('pack.publishedAt', 'DESC')
+      .addOrderBy('pack.updatedAt', 'DESC')
+      .getMany();
+
+    if (!appVersion) {
+      return candidates[0] ?? null;
+    }
+
+    return (
+      candidates.find((candidate) =>
+        this.isAppVersionCompatible(appVersion, candidate.minAppVersion),
+      ) ?? null
+    );
+  }
+
+  private rowIdentityKey(row: ContentPackManifest): string {
+    return [
+      row.platform,
+      row.moduleKey,
+      row.contentKind,
+      row.language,
+    ].join('::');
+  }
+
+  private finesBaseKey(row: ContentPackManifest): string {
+    return [row.platform, row.moduleKey, row.contentKind].join('::');
   }
 
   private normalizeManifestQuery(query: GetContentManifestQueryDto): ManifestQuery {

@@ -127,6 +127,123 @@ function parseBoolean(value, defaultValue = false) {
   return lowered === '1' || lowered === 'true' || lowered === 'yes';
 }
 
+const FINES_CONTAMINATION_TOKENS = new Set([
+  'primarily',
+  'supply',
+  'firms',
+  'confirm',
+  'confirms',
+  'clerk',
+  'vehicle',
+  'warning',
+  'mobile',
+  'phone',
+  'speeding',
+  'insurance',
+  'court',
+  'fixed',
+  'penalty',
+  'points',
+  'limit',
+  'driving',
+  'offence',
+  'offences',
+  'licence',
+  'motorway',
+  'failure',
+  'this',
+  'much',
+  'were',
+  'size',
+  'their',
+  'considered',
+  'standard',
+  'handles',
+  'selling',
+  'renewing',
+  'house',
+  'tow',
+  'day',
+  'safe',
+  'route',
+  'choice',
+  'nothing',
+  'only',
+]);
+
+function assessFinesLocalizationQuality(rawContent, language) {
+  if (!rawContent || language === 'en') {
+    return {
+      sampledTextCount: 0,
+      englishTokenHits: 0,
+      contaminated: false,
+    };
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawContent.toString('utf8'));
+  } catch (_) {
+    return {
+      sampledTextCount: 0,
+      englishTokenHits: 0,
+      contaminated: false,
+    };
+  }
+
+  const questions = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === 'object' && Array.isArray(payload.questions)
+      ? payload.questions
+      : [];
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return {
+      sampledTextCount: 0,
+      englishTokenHits: 0,
+      contaminated: false,
+    };
+  }
+
+  const texts = [];
+  for (const question of questions.slice(0, 15)) {
+    if (!question || typeof question !== 'object') continue;
+    const prompt = question.prompt ?? question.question ?? question.questionText;
+    if (typeof prompt === 'string' && prompt.trim().length > 0) {
+      texts.push(prompt);
+    }
+    if (
+      typeof question.explanation === 'string' &&
+      question.explanation.trim().length > 0
+    ) {
+      texts.push(question.explanation);
+    }
+    if (Array.isArray(question.options)) {
+      for (const option of question.options) {
+        if (typeof option === 'string' && option.trim().length > 0) {
+          texts.push(option);
+        }
+      }
+    }
+  }
+
+  let englishTokenHits = 0;
+  for (const text of texts) {
+    const words = text.toLowerCase().match(/[a-z]{3,}/g);
+    if (!words) continue;
+    for (const word of words) {
+      if (FINES_CONTAMINATION_TOKENS.has(word)) {
+        englishTokenHits += 1;
+      }
+    }
+  }
+
+  return {
+    sampledTextCount: texts.length,
+    englishTokenHits,
+    contaminated: englishTokenHits >= 6,
+  };
+}
+
 function buildSslConfig() {
   const enabled = parseBoolean(process.env.DB_SSL, false);
   if (!enabled) {
@@ -256,6 +373,21 @@ async function main() {
     const content = fs.readFileSync(absolutePath);
     const hash = sha256Hex(content);
     const fileName = path.basename(absolutePath);
+    const metadata = {
+      fileName,
+      sourceRelativePath: path.relative(rootDir, absolutePath).replace(/\\/g, '/'),
+      uploadKey: `${platform}/${detected.module}/${detected.kind}/${detected.language}/${fileName}`,
+    };
+
+    if (detected.module === 'fines_penalties' && detected.kind === 'questions') {
+      const quality = assessFinesLocalizationQuality(content, detected.language);
+      metadata.localizationContaminated = quality.contaminated;
+      metadata.localization = {
+        sourceLanguage: detected.language,
+        quality,
+      };
+    }
+
     rows.push({
       platform,
       module: detected.module,
@@ -277,11 +409,7 @@ async function main() {
       minAppVersion,
       isActive: true,
       publishedAt,
-      metadata: {
-        fileName,
-        sourceRelativePath: path.relative(rootDir, absolutePath).replace(/\\/g, '/'),
-        uploadKey: `${platform}/${detected.module}/${detected.kind}/${detected.language}/${fileName}`,
-      },
+      metadata,
     });
   }
 

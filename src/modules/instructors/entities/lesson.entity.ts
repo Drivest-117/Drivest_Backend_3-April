@@ -71,6 +71,12 @@ export class LessonEntity {
   @Column({ name: 'pickup_contact_number', type: 'text', nullable: true })
   pickupContactNumber: string | null;
 
+  @Column({ name: 'commission_rate_applied', type: 'decimal', precision: 5, scale: 2, nullable: true })
+  commissionRateApplied: number | null;
+
+  @Column({ name: 'referral_stake_payout_id', type: 'uuid', nullable: true })
+  referralStakePayoutId: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: DB_AWARE_TIMESTAMP_TYPE } as any)
   createdAt: Date;
 

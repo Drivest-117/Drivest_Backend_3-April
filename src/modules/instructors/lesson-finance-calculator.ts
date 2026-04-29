@@ -13,6 +13,7 @@ export interface LessonFinanceComputationInput {
   hourlyRatePence: number | null;
   durationMinutes: number | null;
   hasOpenDispute: boolean;
+  commissionRateApplied?: number | null;
 }
 
 export interface LessonFinanceComputation {
@@ -103,8 +104,15 @@ function derivePayoutStatus(
 
 export function computeLessonFinance(input: LessonFinanceComputationInput): LessonFinanceComputation {
   const grossAmountPence = calculateGrossAmountPence(input.hourlyRatePence, input.durationMinutes);
-  const commissionPercentBasisPoints =
-    input.bookingSource === 'marketplace' ? MARKETPLACE_COMMISSION_BPS : 0;
+
+  let commissionPercentBasisPoints = 0;
+  if (input.commissionRateApplied != null) {
+    commissionPercentBasisPoints = Math.round(Number(input.commissionRateApplied) * 100);
+  } else {
+    commissionPercentBasisPoints =
+      input.bookingSource === 'marketplace' ? MARKETPLACE_COMMISSION_BPS : 0;
+  }
+
   const commissionAmountPence = calculateCommissionAmountPence(
     grossAmountPence,
     commissionPercentBasisPoints,

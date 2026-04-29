@@ -12,6 +12,7 @@ import { Purchase } from './purchase.entity';
 export enum EntitlementScope {
   GLOBAL = 'GLOBAL',
   CENTRE = 'CENTRE',
+  BONUS_ROUTE = 'BONUS_ROUTE',
 }
 
 const DATE_TYPE = process.env.NODE_ENV === 'test' ? 'datetime' : 'timestamptz';
@@ -51,6 +52,9 @@ export class Entitlement {
 
   @Column({ nullable: true })
   sourcePurchaseId: string | null;
+
+  @Column({ name: 'source_referral_event_id', type: 'uuid', nullable: true })
+  sourceReferralEventId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

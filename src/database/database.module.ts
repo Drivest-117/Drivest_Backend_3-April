@@ -23,6 +23,8 @@ import { UserModuleProgress } from '../entities/user-module-progress.entity';
 import { UserModulePassStatus } from '../entities/user-module-pass-status.entity';
 import { UserAnalyticsRollup } from '../entities/user-analytics-rollup.entity';
 import { ContentPackManifest } from '../entities/content-pack-manifest.entity';
+import { ReferralEvent } from '../entities/referral-event.entity';
+import { ReferralPayout } from '../entities/referral-payout.entity';
 import { DisputeCaseEntity } from '../modules/disputes/entities/dispute-case.entity';
 import { ConsentHistoryEntity } from '../modules/legal-acceptance/entities/consent-history.entity';
 import { LegalDocumentVersionEntity } from '../modules/legal-acceptance/entities/legal-document-version.entity';
@@ -64,6 +66,8 @@ import { InstructorLearnerLinkEntity } from '../modules/instructors/entities/ins
             UserModulePassStatus,
             UserAnalyticsRollup,
             ContentPackManifest,
+            ReferralEvent,
+            ReferralPayout,
             DisputeCaseEntity,
             LegalDocumentVersionEntity,
             UserLegalAcceptanceEntity,

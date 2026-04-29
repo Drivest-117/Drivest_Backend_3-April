@@ -1,0 +1,37 @@
+{
+  "locale": "hi",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest एक ड्राइविंग सपोर्ट प्लेटफॉर्म है। यह केवल मार्गदर्शन प्रदान करता है और आपके निर्णय, आपके प्रशिक्षक या कानून को प्रतिस्थापित नहीं करता है।\\n\\nआपको हमेशा सड़क संकेतों, यातायात कानूनों और वास्तविक दुनिया की स्थितियों का पालन करना चाहिए। यदि ऐप में कुछ भी सड़क के साथ टकराव करता है, तो सड़क का अनुसरण करें।\\n\\nजारी रखकर, आप पुष्टि करते हैं कि आपकी उम्र 16 वर्ष या उससे अधिक है, कि आप सुरक्षा नोटिस को समझते हैं और स्वीकार करते हैं, और आप नियम और शर्तों और गोपनीयता नीति से सहमत हैं।",
+    "onboarding.legal_checkbox": "मैं पुष्टि करता हूं कि मेरी उम्र 16 वर्ष या उससे अधिक है, मैं सुरक्षा नोटिस को समझता हूं, और मैं नियम और शर्तों और गोपनीयता नीति से सहमत हूं।",
+    "onboarding.permissions.body": "Drivest को ठीक से काम करने के लिए कुछ अनुमतियों की आवश्यकता है। सक्रिय होने पर स्थान का उपयोग मार्गों और नेविगेशन के लिए किया जाता है। एनालिटिक्स प्रदर्शन और विश्वसनीयता को बेहतर बनाने में मदद करता है और वैकल्पिक है। सूचनाएं आपको बुकिंग और गतिविधि के बारे में अपडेट रखती हैं।",
+    "onboarding.location.body": "सक्रिय होने पर स्थान का उपयोग मार्गों और नेविगेशन के लिए किया जाता है।",
+    "onboarding.analytics.body": "एनालिटिक्स प्रदर्शन और विश्वसनीयता को बेहतर बनाने में मदद करता है और वैकल्पिक है।",
+    "onboarding.notifications.body": "सूचनाएं आपको बुकिंग और गतिविधि के बारे में अपडेट रखती हैं।",
+    "settings.content_accuracy.body": "Drivest सामग्री केवल सलाहकारी है और अधूरी या पुरानी हो सकती है। रूट ओवरले, खतरे के संकेत और गति मार्गदर्शन सूचनात्मक हैं और इन्हें गारंटी के रूप में नहीं माना जाना चाहिए। हमेशा लाइव संकेतों, चिह्नों और कानूनी आवश्यकताओं का पालन करें। हाईवे कोड यूके के सड़क नियमों और सुरक्षित ड्राइविंग व्यवहार के लिए आधिकारिक स्रोत बना हुआ है।",
+    "settings.service_availability.body": "कुछ सेवाएँ नेटवर्क कवरेज और तृतीय-पक्ष प्रदाताओं पर निर्भर करती हैं; उपलब्धता स्थान के अनुसार भिन्न हो सकती है।",
+    "settings.safety_notice.body": "Drivest केवल सीखने में सहायता प्रदान करता है। सावधान रहें और ऐप का उपयोग कभी भी इस तरह से न करें जिससे आपके वाहन पर नियंत्रण कम हो जाए।",
+    "disclaimer.driving_guidance.body": "Drivest मार्गदर्शन केवल सलाह है और सड़क संकेतों, कानूनी कर्तव्यों, या प्रशिक्षक/परीक्षक निर्देशों को प्रतिस्थापित नहीं करता है। वाहन पर पूरा नियंत्रण रखें और लाइव सड़क स्थितियों का पालन करें। संस्करण: %1$s",
+    "reference.traffic_signs_source_note": "यूके डीएफटी के आधार पर \\\"अपने ट्रैफ़िक संकेतों को जानें\\\" संदर्भ संपत्ति और छवि सूचकांक डेटा। पुनरीक्षण समर्थन के रूप में उपयोग करें और लाइव सड़क संकेतों और कानूनी आवश्यकताओं का पालन करें।",
+    "reference.highway_code_footer_note": "हाईवे कोड (GOV.UK) पर आधारित। केवल सलाह - हमेशा लाइव सड़क संकेतों और कानूनी आवश्यकताओं का पालन करें।",
+    "marketplace.find_instructors.legal_body": "Drivest शिक्षार्थियों को प्रशिक्षकों को खोजने और पाठ अनुरोधों को प्रबंधित करने में मदद करता है। ड्राइविंग निर्देश स्वतंत्र प्रशिक्षकों द्वारा प्रदान किया जाता है, Drivest द्वारा नहीं। \\n\\nलिस्टिंग गुणवत्ता, उपलब्धता, परिणाम या उत्तीर्ण परिणामों की गारंटी नहीं देती है। प्लेटफ़ॉर्म नियमों के तहत मार्केटप्लेस बुकिंग पर पाठ मूल्य निर्धारण और कमीशन रिकॉर्ड लागू होते हैं। \\n\\nविवाद या नीति जांच रिकॉर्ड को रोक सकती है। आप वैध, सटीक और ईमानदार उपयोग के लिए जिम्मेदार हैं। इस नोटिस में कुछ भी आपके वैधानिक उपभोक्ता अधिकारों को सीमित नहीं करता है।",
+    "marketplace.instructor_hub.legal_body": "आप Drivest का उपयोग एक स्वतंत्र प्रशिक्षक व्यवसाय के रूप में करते हैं, न कि एक कर्मचारी या फ्रेंचाइजी के रूप में। \\n\\nआप वैध निर्देश, लाइसेंसिंग, बीमा और अनुपालन के लिए जिम्मेदार हैं। Drivest मार्केटप्लेस खोज, शेड्यूलिंग, पाठ अनुरोध और नीति रिकॉर्ड प्रदान करता है।\\n\\nमार्केटप्लेस बुकिंग के लिए कमीशन 8 प्रतिशत दर्ज किया गया है। भुगतान की स्थिति दर्ज की जाती है और इसे विवादों या नीति समीक्षा के लिए रोका जा सकता है। Drivest जहां आवश्यक हो, बाज़ार गतिविधि की समीक्षा कर सकता है, निलंबित कर सकता है या सीमित कर सकता है। इस नोटिस में कुछ भी गैर-बहिष्कृत कानूनी अधिकारों को सीमित नहीं करता है।"
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

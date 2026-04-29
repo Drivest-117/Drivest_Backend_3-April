@@ -1,0 +1,37 @@
+{
+  "locale": "lt",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest yra vairavimo palaikymo platforma. Jame pateikiami tik nurodymai ir nepakeičiami jūsų sprendimo, instruktoriaus ar įstatymų.\\n\\nVisada turite laikytis kelio ženklų, eismo įstatymų ir realių sąlygų. Jei kas nors programoje prieštarauja keliui, sekite keliu.\\n\\nTęsdami patvirtinate, kad jums yra 16 metų arba vyresni, kad suprantate ir sutinkate su saugos įspėjimu ir kad sutinkate su taisyklėmis ir nuostatomis bei privatumo politika.",
+    "onboarding.legal_checkbox": "Patvirtinu, kad man yra 16 metų ar vyresni, suprantu saugos įspėjimą ir sutinku su taisyklėmis ir sąlygomis bei privatumo politika.",
+    "onboarding.permissions.body": "Kad tinkamai veiktų, Drivest reikia tam tikrų leidimų. Kai aktyvi, vieta naudojama maršrutams ir navigacijai. „Analytics“ padeda pagerinti našumą ir patikimumą ir yra neprivaloma. Pranešimai jus informuoja apie užsakymus ir veiklą.",
+    "onboarding.location.body": "Kai aktyvi, vieta naudojama maršrutams ir navigacijai.",
+    "onboarding.analytics.body": "„Analytics“ padeda pagerinti našumą ir patikimumą ir yra neprivaloma.",
+    "onboarding.notifications.body": "Pranešimai jus informuoja apie užsakymus ir veiklą.",
+    "settings.content_accuracy.body": "Drivest turinys yra tik patariamasis ir gali būti neišsamus arba pasenęs. Maršruto perdangos, pavojaus signalai ir greičio nurodymai yra informacinio pobūdžio ir neturi būti traktuojami kaip garantuoti. Visada laikykitės gyvų ženklų, ženklų ir teisinių reikalavimų. Kelių kodeksas išlieka autoritetingu JK kelių taisyklių ir saugaus vairavimo elgsenos šaltiniu.",
+    "settings.service_availability.body": "Kai kurios paslaugos priklauso nuo tinklo aprėpties ir trečiųjų šalių teikėjų; prieinamumas gali skirtis priklausomai nuo vietos.",
+    "settings.safety_notice.body": "Drivest teikia tik mokymosi palaikymą. Būkite dėmesingi ir niekada nenaudokite programos taip, kad sumažintumėte savo transporto priemonės valdymą.",
+    "disclaimer.driving_guidance.body": "Drivest nurodymai yra tik patariamieji ir nepakeičia kelio ženklų, teisinių pareigų ar instruktoriaus / egzaminuotojo nurodymų. Visiškai valdykite transporto priemonę ir stebėkite tiesiogines kelio sąlygas. Versija: %1$s",
+    "reference.traffic_signs_source_note": "Remiantis JK DfT \\\"Žinokite savo kelio ženklus\\\" nuorodas ir vaizdo indekso duomenis. Naudokite kaip peržiūros palaikymą ir laikykitės tiesioginių kelio ženklų bei teisinių reikalavimų.",
+    "reference.highway_code_footer_note": "Remiantis Kelių kodeksu (GOV.UK). Tik patariamasis – visada vadovaukitės tiesioginiais kelio ženklais ir teisiniais reikalavimais.",
+    "marketplace.find_instructors.legal_body": "Drivest padeda besimokantiesiems atrasti instruktorius ir tvarkyti pamokų užklausas. Vairavimo mokymą teikia nepriklausomi instruktoriai, o ne Drivest.\\n\\nSąrašai negarantuoja kokybės, prieinamumo, rezultatų ar išlaikymo rezultatų. Pamokų kainodaros ir komisinių įrašai taikomi prekyvietės užsakymams pagal platformos taisykles.\\n\\nDėl ginčų ar politikos patikrinimų įrašai gali būti sulaikyti. Jūs liekate atsakingi už teisėtą, tikslų ir sąžiningą naudojimą. Niekas šiame pranešime neriboja jūsų įstatymų nustatytų vartotojų teisių.",
+    "marketplace.instructor_hub.legal_body": "Drivest naudojate kaip nepriklausomą instruktorių verslą, o ne kaip darbuotojas ar franšizės gavėjas.\\n\\nEsate atsakingi už teisėtus nurodymus, licencijavimą, draudimą ir atitiktį. Drivest teikia prekyvietės atradimą, planavimą, pamokų užklausas ir politikos įrašus.\\n\\nKomisiniai už prekyvietės užsakymus yra 8 proc. Išmokėjimo būsena įrašoma ir gali būti sulaikyta dėl ginčų ar politikos peržiūros. Drivest gali peržiūrėti, sustabdyti arba apriboti prekyvietės veiklą, kai reikia. Niekas šiame pranešime neriboja neatskiriamų teisinių teisių."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

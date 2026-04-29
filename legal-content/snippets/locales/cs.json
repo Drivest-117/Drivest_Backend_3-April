@@ -1,0 +1,37 @@
+{
+  "locale": "cs",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest je platforma podpory řízení. Poskytuje pouze pokyny a nenahrazuje váš úsudek, vašeho instruktora nebo zákon.\\n\\nVždy musíte dodržovat dopravní značky, dopravní zákony a skutečné podmínky. Pokud něco v aplikaci koliduje se silnicí, jděte po silnici.\\n\\nPokračováním potvrzujete, že je vám 16 let nebo více, že rozumíte bezpečnostnímu upozornění a přijímáte ho a že souhlasíte se Smluvními podmínkami a Zásadami ochrany osobních údajů.",
+    "onboarding.legal_checkbox": "Potvrzuji, že je mi 16 nebo více let, rozumím bezpečnostnímu upozornění a souhlasím s Podmínkami a Zásadami ochrany osobních údajů.",
+    "onboarding.permissions.body": "Drivest potřebuje ke správnému fungování určitá oprávnění. Poloha se používá pro trasy a navigaci, když je aktivní. Analytics pomáhá zlepšit výkon a spolehlivost a je volitelná. Oznámení vás informují o rezervacích a aktivitě.",
+    "onboarding.location.body": "Poloha se používá pro trasy a navigaci, když je aktivní.",
+    "onboarding.analytics.body": "Analytics pomáhá zlepšit výkon a spolehlivost a je volitelná.",
+    "onboarding.notifications.body": "Oznámení vás informují o rezervacích a aktivitě.",
+    "settings.content_accuracy.body": "Obsah Drivest je pouze informativní a může být neúplný nebo zastaralý. Překryvy tras, upozornění na nebezpečí a navádění rychlosti jsou informativní a nelze je považovat za zaručené. Vždy dodržujte živé značky, značení a zákonné požadavky. Dálniční zákon zůstává autoritativním zdrojem pro britská silniční pravidla a bezpečné chování při jízdě.",
+    "settings.service_availability.body": "Některé služby závisí na pokrytí sítě a poskytovatelích třetích stran; dostupnost se může lišit podle lokality.",
+    "settings.safety_notice.body": "Drivest poskytuje pouze podporu při výuce. Zůstaňte pozorní a nikdy nepoužívejte aplikaci způsobem, který snižuje kontrolu nad vaším vozidlem.",
+    "disclaimer.driving_guidance.body": "Pokyny Drivest jsou pouze informativní a nenahrazují dopravní značky, zákonné povinnosti ani pokyny instruktora/zkoušejícího. Mějte plnou kontrolu nad vozidlem a sledujte aktuální stav vozovky. Verze: %1$s",
+    "reference.traffic_signs_source_note": "Na základě britského DfT \\\"Znáte své dopravní značky\\\" referenčních aktiv a dat indexu obrázků. Používejte jako podporu při revizi a dodržujte aktuální dopravní značky a zákonné požadavky.",
+    "reference.highway_code_footer_note": "Založeno na The Highway Code (GOV.UK). Pouze doporučení – vždy dodržujte aktuální dopravní značky a zákonné požadavky.",
+    "marketplace.find_instructors.legal_body": "Drivest pomáhá studentům objevovat instruktory a spravovat požadavky na lekce. Výuku jízdy poskytují nezávislí instruktoři, nikoli Drivest.\\n\\nSeznamy nezaručují kvalitu, dostupnost, výsledky ani úspěšné výsledky. Záznamy o cenách lekcí a provizích se vztahují na rezervace na tržišti podle pravidel platformy.\\n\\nSpory nebo kontroly zásad mohou vést k pozastavení záznamů. Zůstáváte odpovědní za zákonné, přesné a čestné použití. Nic v tomto oznámení neomezuje vaše zákonná práva spotřebitelů.",
+    "marketplace.instructor_hub.legal_body": "Drivest používáte jako nezávislý instruktor, nikoli jako zaměstnanec nebo nabyvatel franšízy.\\n\\nJste odpovědní za zákonné pokyny, licencování, pojištění a dodržování předpisů. Drivest poskytuje zjišťování na tržišti, plánování, požadavky na lekce a záznamy zásad.\\n\\nProvize za rezervace na tržišti je zaznamenána ve výši 8 procent. Stav výplaty se zaznamenává a může být zadržen pro spory nebo kontrolu zásad. Drivest může v případě potřeby zkontrolovat, pozastavit nebo omezit aktivitu na tržišti. Nic v tomto oznámení neomezuje nevylučitelná zákonná práva."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

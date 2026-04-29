@@ -14,6 +14,8 @@ import { UserLegalAcceptanceEntity } from './entities/user-legal-acceptance.enti
 import { LegalAcceptanceController } from './legal-acceptance.controller';
 import { LegalAcceptanceIosController } from './legal-acceptance-ios.controller';
 import { LegalAcceptanceService } from './legal-acceptance.service';
+import { PublicLegalController } from './public-legal.controller';
+import { PublicLegalService } from './public-legal.service';
 
 @Module({
   imports: [
@@ -35,8 +37,13 @@ import { LegalAcceptanceService } from './legal-acceptance.service';
       AuditLog,
     ]),
   ],
-  controllers: [LegalAcceptanceController, LegalAcceptanceIosController, AppLegalController],
-  providers: [LegalAcceptanceService, AppLegalService],
-  exports: [LegalAcceptanceService, AppLegalService],
+  controllers: [
+    LegalAcceptanceController,
+    LegalAcceptanceIosController,
+    AppLegalController,
+    PublicLegalController,
+  ],
+  providers: [LegalAcceptanceService, AppLegalService, PublicLegalService],
+  exports: [LegalAcceptanceService, AppLegalService, PublicLegalService],
 })
 export class LegalAcceptanceModule {}

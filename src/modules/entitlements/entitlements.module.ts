@@ -10,11 +10,13 @@ import { Product } from '../../entities/product.entity';
 import { Purchase } from '../../entities/purchase.entity';
 import { AuditLog } from '../../entities/audit-log.entity';
 import { SimpleThrottleGuard } from '../../common/simple-throttle.guard';
+import { ReferralsModule } from '../referrals/referrals.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Entitlement, User, TestCentre, Product, Purchase, AuditLog]),
     AccessOverridesModule,
+    ReferralsModule,
   ],
   providers: [EntitlementsService, SimpleThrottleGuard],
   controllers: [EntitlementsController],

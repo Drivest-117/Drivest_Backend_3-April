@@ -12,6 +12,7 @@ import { Entitlement, EntitlementScope } from '../../entities/entitlement.entity
 import { AuditLog } from '../../entities/audit-log.entity';
 import { User } from '../../entities/user.entity';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { ReferralsService } from '../referrals/referrals.service';
 
 @Injectable()
 export class WebhooksService {
@@ -21,6 +22,7 @@ export class WebhooksService {
     @InjectRepository(Entitlement) private entRepo: Repository<Entitlement>,
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    private readonly referralsService: ReferralsService,
   ) {}
 
   verifySignature(body: Buffer | string, signature: string, secret: string) {
@@ -89,6 +91,17 @@ export class WebhooksService {
         userId: user.id,
       },
     });
+
+    // Trigger L2L referral reward if applicable (EPIC-22)
+    const isPracticePack =
+      product.iosProductId === process.env.APP_PLAN_PRACTICE_MONTHLY_PRODUCT_ID ||
+      product.androidProductId === process.env.APP_PLAN_PRACTICE_MONTHLY_PRODUCT_ID ||
+      product.metadata?.label?.toLowerCase().includes('practice');
+
+    if (isPracticePack) {
+      await this.referralsService.grantL2LBonusForPurchase(user.id, purchase.id);
+    }
+
     return { success: true };
   }
 

@@ -5,6 +5,9 @@ services:
     command: npm run start:dev
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgres://route_master:password@db:5432/route_master
+      REDIS_HOST: redis
     ports:
       - "3000:3000"
     depends_on:

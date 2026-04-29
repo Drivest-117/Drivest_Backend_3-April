@@ -1,0 +1,37 @@
+{
+  "locale": "vi",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest là nền tảng hỗ trợ lái xe. Nó chỉ cung cấp hướng dẫn và không thay thế phán đoán của bạn, người hướng dẫn của bạn hoặc luật pháp.\\n\\nBạn phải luôn tuân theo biển báo đường bộ, luật giao thông và điều kiện thực tế. Nếu bất cứ điều gì trong ứng dụng xung đột với đường đi, hãy đi theo đường đi.\\n\\nBằng cách tiếp tục, bạn xác nhận rằng bạn từ 16 tuổi trở lên, rằng bạn hiểu và chấp nhận thông báo an toàn cũng như bạn đồng ý với Điều khoản và Điều kiện cũng như Chính sách quyền riêng tư.",
+    "onboarding.legal_checkbox": "Tôi xác nhận rằng tôi từ 16 tuổi trở lên, tôi hiểu thông báo an toàn và tôi đồng ý với Điều khoản và Điều kiện cũng như Chính sách quyền riêng tư.",
+    "onboarding.permissions.body": "Drivest cần một số quyền nhất định để hoạt động bình thường. Vị trí được sử dụng cho các tuyến đường và điều hướng khi hoạt động. Phân tích giúp cải thiện hiệu suất và độ tin cậy và là tùy chọn. Thông báo giúp bạn cập nhật về đặt chỗ và hoạt động.",
+    "onboarding.location.body": "Vị trí được sử dụng cho các tuyến đường và điều hướng khi hoạt động.",
+    "onboarding.analytics.body": "Phân tích giúp cải thiện hiệu suất và độ tin cậy và là tùy chọn.",
+    "onboarding.notifications.body": "Thông báo giúp bạn cập nhật về đặt chỗ và hoạt động.",
+    "settings.content_accuracy.body": "Drivest nội dung chỉ mang tính chất tư vấn và có thể chưa đầy đủ hoặc lỗi thời. Lớp phủ tuyến đường, tín hiệu nguy hiểm và hướng dẫn tốc độ mang tính thông tin và không được coi là đảm bảo. Luôn tuân theo các biển hiệu, dấu hiệu trực tiếp và các yêu cầu pháp lý. Bộ luật Đường cao tốc vẫn là nguồn có thẩm quyền về các quy tắc đường bộ và hành vi lái xe an toàn của Vương quốc Anh.",
+    "settings.service_availability.body": "Một số dịch vụ phụ thuộc vào phạm vi phủ sóng của mạng và nhà cung cấp bên thứ ba; tính khả dụng có thể thay đổi tùy theo vị trí.",
+    "settings.safety_notice.body": "Drivest chỉ cung cấp hỗ trợ học tập. Hãy chú ý và không bao giờ sử dụng ứng dụng theo cách làm giảm khả năng kiểm soát phương tiện của bạn.",
+    "disclaimer.driving_guidance.body": "Drivest hướng dẫn chỉ mang tính chất tư vấn và không thay thế biển báo đường bộ, nghĩa vụ pháp lý hoặc hướng dẫn của người hướng dẫn/người kiểm tra. Kiểm soát hoàn toàn phương tiện và tuân theo các điều kiện đường thực tế. Phiên bản: %1$s",
+    "reference.traffic_signs_source_note": "Dựa trên DfT \\\"Biết biển báo giao thông của bạn\\\" nội dung tham chiếu và dữ liệu chỉ mục hình ảnh của Vương quốc Anh. Sử dụng làm hỗ trợ sửa đổi và tuân theo các biển báo đường bộ trực tiếp cũng như các yêu cầu pháp lý.",
+    "reference.highway_code_footer_note": "Dựa trên Bộ luật Quốc lộ (GOV.UK). Chỉ tư vấn - luôn tuân theo các biển báo đường trực tiếp và các yêu cầu pháp lý.",
+    "marketplace.find_instructors.legal_body": "Drivest giúp người học khám phá người hướng dẫn và quản lý các yêu cầu bài học. Hướng dẫn lái xe được cung cấp bởi những người hướng dẫn độc lập chứ không phải bởi Drivest.\\n\\nDanh sách không đảm bảo chất lượng, tính sẵn có, kết quả hoặc kết quả vượt qua. Hồ sơ về giá và hoa hồng của bài học áp dụng cho các đặt chỗ trên thị trường theo quy tắc nền tảng.\\n\\nCác tranh chấp hoặc kiểm tra chính sách có thể khiến hồ sơ bị giữ lại. Bạn vẫn chịu trách nhiệm về việc sử dụng hợp pháp, chính xác và trung thực. Không có nội dung nào trong thông báo này giới hạn quyền lợi người tiêu dùng theo luật định của bạn.",
+    "marketplace.instructor_hub.legal_body": "Bạn sử dụng Drivest với tư cách là một doanh nghiệp hướng dẫn độc lập chứ không phải với tư cách là nhân viên hoặc bên nhận quyền.\\n\\nBạn chịu trách nhiệm hướng dẫn, cấp phép, bảo hiểm và tuân thủ hợp pháp. Drivest cung cấp khả năng khám phá thị trường, lập kế hoạch, yêu cầu bài học và hồ sơ chính sách.\\n\\nHoa hồng cho việc đặt chỗ thị trường được ghi nhận ở mức 8 phần trăm. Trạng thái thanh toán được ghi lại và có thể được giữ lại để tranh chấp hoặc xem xét chính sách. Drivest có thể xem xét, tạm dừng hoặc hạn chế hoạt động trên thị trường khi cần thiết. Không có nội dung nào trong thông báo này giới hạn các quyền hợp pháp không thể loại trừ."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

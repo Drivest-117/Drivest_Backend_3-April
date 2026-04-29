@@ -1,0 +1,37 @@
+{
+  "locale": "so",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Drivest waa madal taageero wadista Waxay ku siinaysaa hagitaan kaliya mana beddeleyso xukunkaaga, macalinkaaga, ama sharciga. Haddii wax abka ah uu khilaafo wadada, raac wadada",
+    "onboarding.legal_checkbox": "Waxaan xaqiijinayaa inaan ahay 16 ama ka weyn, waan fahmay ogeysiiska badbaadada, waxaanan aqbalay Shuruudaha iyo Shuruudaha iyo Siyaasadda Qarsoonnimada.",
+    "onboarding.permissions.body": "Drivest wuxuu u baahan yahay rukhsad gaar ah si uu si sax ah ugu shaqeeyo. Goobta waxaa loo adeegsadaa waddooyinka iyo hagidda marka ay firfircoon tahay. Falanqaynta waxay caawisaa hagaajinta waxqabadka iyo isku halaynta waana ikhtiyaari. Ogeysiisyadu waxay kugula socodsiin doonaan wixii ku saabsan ballan-qaadista iyo dhaqdhaqaaqa",
+    "onboarding.location.body": "Goobta waxaa loo adeegsadaa waddooyinka iyo hagidda marka ay firfircoon tahay.",
+    "onboarding.analytics.body": "Falanqaynta waxay caawisaa hagaajinta waxqabadka iyo isku halaynta waana ikhtiyaari.",
+    "onboarding.notifications.body": "Ogeysiisyadu waxay kugula socodsiin doonaan wixii ku saabsan ballan-qaadista iyo dhaqdhaqaaqa",
+    "settings.content_accuracy.body": "Drivest waxa ku jira waa talobixin kaliya waxaana laga yaabaa inay tahay mid aan dhamaystirnayn ama duugowday. Duldhigidda marinnada, tilmaamaha khatarta, iyo hagidda xawaaraha waa xog-warran oo waa inaan loola dhaqmin sidii dammaanad. Had iyo jeer raac calaamadaha nool, calamadaha, iyo shuruudaha sharciga. Xeerka Waddada Waynuhu wuxuu ahaanayaa isha awoodda leh ee sharciyada waddooyinka UK iyo habdhaqanka wadista badbaadada leh.",
+    "settings.service_availability.body": "Adeegyada qaar waxay ku xidhan yihiin daboolida shabakada iyo bixiyayaasha dhinac saddexaad; helitaanku wuu ku kala duwanaan karaa goobta.",
+    "settings.safety_notice.body": "Drivest waxay bixisaa taageero waxbarasho oo keliya. U fiirso oo waligaa ha u isticmaalin abka si ay u yarayso xakamaynta gaadhigaaga.",
+    "disclaimer.driving_guidance.body": "Drivest hagitaanku waa talobixin kaliya mana baddalayo calaamadaha wadooyinka, waajibaadka sharciga, ama tilmaamaha macalinka/baaraha. Si buuxda u kontorool baabuurka oo la soco xaaladaha waddooyinka. Nooca: %1$s",
+    "reference.traffic_signs_source_note": "Iyada oo ku saleysan UK DfT \\\"Ogow calamadaha taraafikad\\\" hantida tixraaca iyo xogta sawirka sawirka. U adeegso sidii taageero dib u eegis oo raac calaamadaha waddooyinka iyo shuruudaha sharciga ah.",
+    "reference.highway_code_footer_note": "Iyada oo ku saleysan Xeerka Waddada Weyn (GOV.UK). La-talin kaliya - had iyo jeer raac calaamadaha waddooyinka iyo shuruudaha sharciga ah.",
+    "marketplace.find_instructors.legal_body": "Drivest waxay ka caawisaa ardayda inay ogaadaan macalimiin oo ay maamulaan codsiyada casharrada. Waxbarashada wadista waxaa bixiya macalimiin madax-banaan, ma aha Drivest.\\n\\nLiiska ma dammaanad qaadayaan tayada, helitaanka, natiijooyinka, ama natiijooyinka gudbinta. Qiimaha casharka iyo diiwaanada komishanka ayaa lagu dabaqaa kaydinta suuqa marka loo eego qawaaniinta goobta. Waxaad masuul ka tahay isticmaalka sharciga ah, saxda ah, iyo isticmaalka daacadda ah. Ma jiro wax ogaysiiskan ku jira oo xaddidaya xuquuqahaaga macaamilka ee sharciga ah.",
+    "marketplace.instructor_hub.legal_body": "Waxaad u isticmaashaa Drivest sida macalimiin madax banaan, ma aha shaqaale ahaan ama franchise ahaan. Drivest waxa uu bixiyaa sahaminta goobta suuqa, jadwal samaynta, codsiyada casharka, iyo diiwaanada siyaasada Heerka lacag bixinta waa la duubay waxaana loo hayn karaa khilaaf ama dib u eegis siyaasadeed. Drivest waxa laga yaabaa inay dib u eegis ku sameyso, hakiso, ama xaddiddo dhaqdhaqaaqa suuqa marka loo baahdo. Ma jiro wax ogaysiiskan ku jira oo xaddidaya xuquuqaha sharci ee aan laga saari karin."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}

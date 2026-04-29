@@ -1,0 +1,37 @@
+{
+  "locale": "cy",
+  "generatedAt": "2026-04-05T12:52:08.712Z",
+  "strategy": "existing_mobile_localizations_plus_manual_overrides",
+  "snippets": {
+    "onboarding.before_you_start.body": "Mae Drivest yn blatfform cymorth gyrru. Mae'n darparu arweiniad yn unig ac nid yw'n disodli eich barn, eich hyfforddwr, na'r gyfraith.\\n\\nRhaid i chi bob amser ddilyn arwyddion ffyrdd, cyfreithiau traffig, ac amodau'r byd go iawn. Os oes unrhyw beth yn yr ap yn gwrthdaro â’r ffordd, dilynwch y ffordd.\\n\\nDrwy barhau, rydych yn cadarnhau eich bod yn 16 oed neu’n hŷn, eich bod yn deall ac yn derbyn yr hysbysiad diogelwch, a’ch bod yn cytuno i’r Telerau ac Amodau a’r Polisi Preifatrwydd.",
+    "onboarding.legal_checkbox": "Rwy’n cadarnhau fy mod yn 16 oed neu’n hŷn, rwy’n deall yr hysbysiad diogelwch, ac rwy’n cytuno i’r Telerau ac Amodau a’r Polisi Preifatrwydd.",
+    "onboarding.permissions.body": "Mae Drivest angen rhai caniatâd i weithio'n iawn. Defnyddir lleoliad ar gyfer llwybrau a llywio pan fydd yn weithredol. Mae dadansoddeg yn helpu i wella perfformiad a dibynadwyedd ac mae'n ddewisol. Mae hysbysiadau yn rhoi'r wybodaeth ddiweddaraf i chi am archebion a gweithgarwch.",
+    "onboarding.location.body": "Defnyddir lleoliad ar gyfer llwybrau a llywio pan fydd yn weithredol.",
+    "onboarding.analytics.body": "Mae dadansoddeg yn helpu i wella perfformiad a dibynadwyedd ac mae'n ddewisol.",
+    "onboarding.notifications.body": "Mae hysbysiadau yn rhoi'r wybodaeth ddiweddaraf i chi am archebion a gweithgarwch.",
+    "settings.content_accuracy.body": "Drivest cynghorol yn unig yw'r cynnwys a gall fod yn anghyflawn neu wedi dyddio. Mae troshaenau llwybrau, ciwiau perygl, a chanllawiau cyflymder yn wybodaeth ac ni ddylid eu trin fel rhai gwarantedig. Dilynwch arwyddion byw, marciau, a gofynion cyfreithiol bob amser. Mae Rheolau'r Ffordd Fawr yn parhau i fod yn ffynhonnell awdurdodol ar gyfer rheolau ffyrdd y DU ac ymddygiad gyrru diogel.",
+    "settings.service_availability.body": "Mae rhai gwasanaethau'n dibynnu ar ddarpariaeth rhwydwaith a darparwyr trydydd parti; gall argaeledd amrywio yn ôl lleoliad.",
+    "settings.safety_notice.body": "Mae Drivest yn darparu cymorth dysgu yn unig. Byddwch yn ofalus a pheidiwch byth â defnyddio'r ap mewn ffordd sy'n lleihau rheolaeth ar eich cerbyd.",
+    "disclaimer.driving_guidance.body": "Drivest cynghorol yn unig yw'r arweiniad ac nid yw'n disodli arwyddion ffordd, dyletswyddau cyfreithiol, na chyfarwyddiadau hyfforddwr/arholwr. Cadwch reolaeth lawn o'r cerbyd a dilynwch amodau byw y ffordd. Fersiwn: %1$s",
+    "reference.traffic_signs_source_note": "Yn seiliedig ar UK DfT \\\"Gwybod eich arwyddion traffig\\\" asedau cyfeirio a data mynegai delweddau. Defnyddiwch fel cymorth adolygu a dilynwch arwyddion ffordd byw a gofynion cyfreithiol.",
+    "reference.highway_code_footer_note": "Yn seiliedig ar Reolau'r Ffordd Fawr (GOV.UK). Cynghori yn unig — dilynwch arwyddion ffordd byw a gofynion cyfreithiol bob amser.",
+    "marketplace.find_instructors.legal_body": "Mae Drivest yn helpu dysgwyr i ddarganfod hyfforddwyr a rheoli ceisiadau am wersi. Mae hyfforddiant gyrru yn cael ei ddarparu gan hyfforddwyr annibynnol, nid gan Drivest.\\n\\nNid yw'r rhestr yn gwarantu ansawdd, argaeledd, canlyniadau, neu ganlyniadau pasio. Mae prisiau gwersi a chofnodion comisiwn yn berthnasol i archebion marchnad o dan reolau platfform.\\n\\nGall anghydfodau neu wiriadau polisi atal cofnodion. Rydych chi'n parhau i fod yn gyfrifol am ddefnydd cyfreithlon, cywir a gonest. Nid oes dim yn yr hysbysiad hwn yn cyfyngu ar eich hawliau defnyddiwr statudol.",
+    "marketplace.instructor_hub.legal_body": "Rydych chi'n defnyddio Drivest fel busnes hyfforddwr annibynnol, nid fel gweithiwr neu ddeiliad rhyddfraint. \\n\\nRydych chi'n gyfrifol am gyfarwyddyd cyfreithlon, trwyddedu, yswiriant a chydymffurfiaeth. Mae Drivest yn darparu darganfyddiad marchnad, amserlennu, ceisiadau am wersi, a chofnodion polisi.\\n\\nMae'r Comisiwn ar gyfer archebion marchnad wedi'i gofnodi ar 8 y cant. Mae statws talu allan yn cael ei gofnodi a gellir ei gadw ar gyfer anghydfodau neu adolygu polisi. Gall Drivest adolygu, atal neu gyfyngu ar weithgarwch y farchnad lle bo angen. Nid oes dim yn yr hysbysiad hwn sy'n cyfyngu ar hawliau cyfreithiol nad ydynt yn eithriedig."
+  },
+  "sources": {
+    "onboarding.before_you_start.body": "android:onboarding_consent_message",
+    "onboarding.legal_checkbox": "android:onboarding_legal_checkbox",
+    "onboarding.permissions.body": "android:onboarding_permissions_message",
+    "onboarding.location.body": "android:onboarding_location_message",
+    "onboarding.analytics.body": "android:onboarding_analytics_message_v2",
+    "onboarding.notifications.body": "android:onboarding_notifications_message_v2",
+    "settings.content_accuracy.body": "android:content_accuracy_body",
+    "settings.service_availability.body": "ios:settings.service_availability_body",
+    "settings.safety_notice.body": "ios:settings.safety_notice_body",
+    "disclaimer.driving_guidance.body": "android:disclaimer_message",
+    "reference.traffic_signs_source_note": "android:traffic_signs_source_note",
+    "reference.highway_code_footer_note": "android:highway_code_footer_note",
+    "marketplace.find_instructors.legal_body": "android:instructors_legal_find_body",
+    "marketplace.instructor_hub.legal_body": "android:instructors_legal_hub_body"
+  }
+}
