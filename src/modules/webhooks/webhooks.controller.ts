@@ -48,4 +48,22 @@ export class WebhooksController {
     };
     return this.webhookService.handleRevenueCat(event);
   }
+
+  @Post('stripe')
+  async stripe(
+    @Body() body: any,
+    @Req() req: Request & { rawBody?: Buffer },
+    @Headers('stripe-signature') signature?: string,
+  ) {
+    const secret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    if (!secret) {
+      throw new ServiceUnavailableException('Stripe webhook secret not configured');
+    }
+    if (!signature) {
+      throw new BadRequestException('Stripe signature missing');
+    }
+    const payload = req.rawBody ?? Buffer.from(JSON.stringify(body));
+    const event = this.webhookService.parseStripeEvent(payload, signature, secret);
+    return this.webhookService.handleStripe(event);
+  }
 }

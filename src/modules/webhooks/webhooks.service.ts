@@ -1,6 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { RevenueCatEventDto } from './dto/revenuecat-event.dto';
 import {
   Purchase,
@@ -13,6 +17,15 @@ import { AuditLog } from '../../entities/audit-log.entity';
 import { User } from '../../entities/user.entity';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ReferralsService } from '../referrals/referrals.service';
+import { LessonPaymentEntity } from '../instructors/entities/lesson-payment.entity';
+
+type StripeWebhookEvent = {
+  id?: string;
+  type?: string;
+  data?: {
+    object?: Record<string, unknown>;
+  };
+};
 
 @Injectable()
 export class WebhooksService {
@@ -23,7 +36,12 @@ export class WebhooksService {
     @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
     @InjectRepository(User) private userRepo: Repository<User>,
     private readonly referralsService: ReferralsService,
+    @InjectDataSource() private dataSource: DataSource,
   ) {}
+
+  private get lessonPaymentRepo(): Repository<LessonPaymentEntity> {
+    return this.dataSource.getRepository(LessonPaymentEntity);
+  }
 
   verifySignature(body: Buffer | string, signature: string, secret: string) {
     const payload = Buffer.isBuffer(body) ? body : Buffer.from(body);
@@ -105,6 +123,57 @@ export class WebhooksService {
     return { success: true };
   }
 
+  parseStripeEvent(
+    payload: Buffer | string,
+    signatureHeader: string,
+    secret: string,
+  ): StripeWebhookEvent {
+    const rawPayload = Buffer.isBuffer(payload)
+      ? payload.toString('utf8')
+      : String(payload);
+    const parsedHeader = this.parseStripeSignatureHeader(signatureHeader);
+    const timestamp = parsedHeader.t;
+    const providedSignatures = parsedHeader.v1;
+    if (!timestamp || providedSignatures.length === 0) {
+      throw new UnauthorizedException('Invalid Stripe signature');
+    }
+
+    const ageSeconds = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
+    if (!Number.isFinite(ageSeconds) || ageSeconds > 300) {
+      throw new UnauthorizedException('Stripe signature timestamp outside tolerance');
+    }
+
+    const expected = createHmac('sha256', secret)
+      .update(`${timestamp}.${rawPayload}`)
+      .digest('hex');
+    const isValid = providedSignatures.some((signature) =>
+      this.safeCompare(signature, expected),
+    );
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid Stripe signature');
+    }
+
+    try {
+      return JSON.parse(rawPayload) as StripeWebhookEvent;
+    } catch {
+      throw new BadRequestException('Invalid Stripe webhook payload');
+    }
+  }
+
+  async handleStripe(event: StripeWebhookEvent) {
+    const session = event.data?.object;
+    switch (event.type) {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+        return this.handleStripeCheckoutSession(session, event.type);
+      case 'checkout.session.async_payment_failed':
+      case 'checkout.session.expired':
+        return this.handleStripeCheckoutSession(session, event.type);
+      default:
+        return { ignored: true };
+    }
+  }
+
   private async resolveRevenueCatUser(userIdRaw: string): Promise<User> {
     const externalUserId = String(userIdRaw ?? '').trim();
     if (!externalUserId) {
@@ -141,6 +210,146 @@ export class WebhooksService {
 
   private looksLikeEmail(value: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+
+  private async handleStripeCheckoutSession(
+    session: Record<string, unknown> | undefined,
+    eventType: string | undefined,
+  ) {
+    const checkoutSessionId = this.readString(session?.id);
+    if (!checkoutSessionId) {
+      return { ignored: true };
+    }
+
+    const metadata = this.readObject(session?.metadata);
+    const lessonId =
+      this.readString(metadata?.lesson_id) ??
+      this.readString(session?.client_reference_id);
+    const learnerUserId = this.readString(metadata?.learner_user_id);
+    const paymentStatus = this.readString(session?.payment_status)?.toLowerCase();
+    const resolvedStatus = this.stripeLessonPaymentStatus(eventType, paymentStatus);
+
+    let payment = await this.lessonPaymentRepo.findOne({
+      where: { checkoutSessionId },
+    });
+    if (!payment && lessonId) {
+      payment = await this.lessonPaymentRepo.findOne({ where: { lessonId } });
+    }
+    if (!payment && !lessonId) {
+      return { ignored: true };
+    }
+
+    const upsert = payment ?? this.lessonPaymentRepo.create({ lessonId: lessonId! });
+    upsert.provider = 'stripe';
+    upsert.status = resolvedStatus;
+    upsert.lessonId = upsert.lessonId ?? lessonId!;
+    upsert.checkoutSessionId = checkoutSessionId;
+    upsert.checkoutUrl = this.normaliseOptionalText(this.readString(session?.url));
+    upsert.paymentIntentId = this.normaliseOptionalText(
+      this.readStripePaymentIntent(session?.payment_intent),
+    );
+    upsert.transactionId = upsert.paymentIntentId;
+    upsert.currencyCode = this.readString(session?.currency)?.toUpperCase() ?? 'GBP';
+    upsert.amountPence =
+      this.readNumber(session?.amount_total) ??
+      this.readNumber(session?.amount_subtotal) ??
+      upsert.amountPence ??
+      null;
+    upsert.rawProviderPayload = session ?? null;
+    upsert.failureReason =
+      resolvedStatus === 'captured'
+        ? null
+        : eventType === 'checkout.session.expired'
+          ? 'Stripe checkout session expired'
+          : eventType === 'checkout.session.async_payment_failed'
+            ? 'Stripe async payment failed'
+            : 'Stripe payment not yet paid';
+    upsert.capturedAt =
+      resolvedStatus === 'captured'
+        ? upsert.capturedAt ?? new Date()
+        : null;
+
+    const saved = await this.lessonPaymentRepo.save(upsert);
+    await this.auditRepo.save({
+      userId: learnerUserId ?? null,
+      action: 'LESSON_PAYMENT_STRIPE_WEBHOOK',
+      metadata: {
+        eventType,
+        checkoutSessionId,
+        lessonId: saved.lessonId,
+        status: saved.status,
+      },
+    });
+
+    return { success: true, lessonId: saved.lessonId, status: saved.status };
+  }
+
+  private stripeLessonPaymentStatus(
+    eventType: string | undefined,
+    paymentStatus: string | undefined,
+  ): LessonPaymentEntity['status'] {
+    if (
+      eventType === 'checkout.session.completed' ||
+      eventType === 'checkout.session.async_payment_succeeded'
+    ) {
+      return paymentStatus === 'paid' ? 'captured' : 'pending';
+    }
+    if (eventType === 'checkout.session.expired') {
+      return 'cancelled';
+    }
+    if (eventType === 'checkout.session.async_payment_failed') {
+      return 'failed';
+    }
+    return 'pending';
+  }
+
+  private parseStripeSignatureHeader(header: string) {
+    return header.split(',').reduce(
+      (acc, part) => {
+        const [key, ...rest] = part.split('=');
+        const value = rest.join('=').trim();
+        if (key === 't') {
+          acc.t = value;
+        } else if (key === 'v1' && value) {
+          acc.v1.push(value);
+        }
+        return acc;
+      },
+      { t: '', v1: [] as string[] },
+    );
+  }
+
+  private readObject(value: unknown): Record<string, unknown> | undefined {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+    return undefined;
+  }
+
+  private readString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  private readNumber(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  private readStripePaymentIntent(value: unknown): string | undefined {
+    if (typeof value === 'string') {
+      return this.readString(value);
+    }
+    return this.readString(this.readObject(value)?.id);
+  }
+
+  private normaliseOptionalText(value: string | undefined): string | null {
+    return value?.trim() ? value.trim() : null;
   }
 
   private safeCompare(a: string, b: string): boolean {
