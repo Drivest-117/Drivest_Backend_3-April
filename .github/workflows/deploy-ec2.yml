@@ -68,12 +68,14 @@ jobs:
               echo "EC2_APP_DIR=/var/www/drivest-backend" >> "$GITHUB_ENV"
               echo "PM2_APP_NAME=drivest-backend" >> "$GITHUB_ENV"
               echo "APP_PORT=3000" >> "$GITHUB_ENV"
+              echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PROD }}" >> "$GITHUB_ENV"
               ;;
             dev)
               echo "DEPLOY_ENV=dev" >> "$GITHUB_ENV"
               echo "EC2_APP_DIR=/var/www/drivest-backend-dev" >> "$GITHUB_ENV"
               echo "PM2_APP_NAME=drivest-backend-dev" >> "$GITHUB_ENV"
               echo "APP_PORT=3001" >> "$GITHUB_ENV"
+              echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_DEV }}" >> "$GITHUB_ENV"
               ;;
             *)
               echo "Unsupported deploy target: $TARGET_ENV" >&2
@@ -94,4 +96,7 @@ jobs:
           DEPLOY_GIT_REF: ${{ github.ref_name }}
           DEPLOY_RUN_ID: ${{ github.run_id }}
           DEPLOY_RUN_NUMBER: ${{ github.run_number }}
+          STRIPE_SECRET_KEY: ${{ env.STRIPE_SECRET_KEY }}
+          STRIPE_LESSON_CHECKOUT_SUCCESS_URL: drivest://lesson-payment/success?session_id={CHECKOUT_SESSION_ID}
+          STRIPE_LESSON_CHECKOUT_CANCEL_URL: drivest://lesson-payment/cancel
         run: bash ./scripts/deploy_ec2.sh

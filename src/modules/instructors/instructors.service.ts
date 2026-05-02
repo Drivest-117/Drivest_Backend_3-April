@@ -53,6 +53,8 @@ import { ReportReviewDto } from "./dto/report-review.dto";
 import { ReferralsService } from "../referrals/referrals.service";
 import { ReferralType } from "../../entities/referral-event.entity";
 
+const STRIPE_CHECKOUT_REUSE_WINDOW_MS = 20 * 60 * 60 * 1000;
+
 @Injectable()
 export class InstructorsService {
   constructor(
@@ -1484,10 +1486,8 @@ export class InstructorsService {
       };
     }
     if (
-      existingPayment?.provider === "stripe" &&
-      existingPayment.status === "checkout_created" &&
-      existingPayment.checkoutSessionId &&
-      existingPayment.checkoutUrl
+      existingPayment &&
+      this.canReuseStripeCheckout(existingPayment)
     ) {
       return {
         lessonId,
@@ -3285,10 +3285,39 @@ export class InstructorsService {
 
   private requireStripeSecretKey(): string {
     const key = this.normaliseOptionalText(process.env.STRIPE_SECRET_KEY);
-    if (!key) {
+    if (!key || this.isPlaceholderStripeSecretKey(key)) {
       throw new ServiceUnavailableException("Stripe payment is not configured");
     }
     return key;
+  }
+
+  private isPlaceholderStripeSecretKey(key: string): boolean {
+    const normalized = key.trim().toLowerCase();
+    return (
+      normalized === "sk_live_xxx" ||
+      normalized === "sk_test_xxx" ||
+      normalized.endsWith("_xxx") ||
+      normalized.includes("placeholder") ||
+      normalized.includes("replace")
+    );
+  }
+
+  private canReuseStripeCheckout(payment: LessonPaymentEntity): boolean {
+    if (
+      payment.provider !== "stripe" ||
+      payment.status !== "checkout_created" ||
+      !payment.checkoutSessionId ||
+      !payment.checkoutUrl
+    ) {
+      return false;
+    }
+
+    const lastUpdated = payment.updatedAt ?? payment.createdAt;
+    if (!(lastUpdated instanceof Date) || Number.isNaN(lastUpdated.getTime())) {
+      return false;
+    }
+
+    return Date.now() - lastUpdated.getTime() < STRIPE_CHECKOUT_REUSE_WINDOW_MS;
   }
 
   private async postStripeForm(
@@ -3333,6 +3362,13 @@ export class InstructorsService {
         typeof error.response?.data?.error?.message === "string"
           ? error.response?.data?.error?.message
           : error.message;
+      const normalizedMessage = stripeMessage.toLowerCase();
+      if (
+        normalizedMessage.includes("invalid api key") ||
+        normalizedMessage.includes("no api key provided")
+      ) {
+        return new ServiceUnavailableException("Stripe payment is not configured");
+      }
       if (statusCode >= 500) {
         return new InternalServerErrorException(
           `Stripe error: ${stripeMessage}`,

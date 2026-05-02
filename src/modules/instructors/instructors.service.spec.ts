@@ -14,6 +14,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { User } from "../../entities/user.entity";
 import { AuditLog } from "../../entities/audit-log.entity";
 import { DisputeCaseEntity } from "../disputes/entities/dispute-case.entity";
+import { ReferralsService } from "../referrals/referrals.service";
 
 type MockRepo<T extends object> = {
   findOne: jest.Mock;
@@ -54,6 +55,7 @@ describe("InstructorsService", () => {
   let usersRepo: MockRepo<User>;
   let auditRepo: MockRepo<AuditLog>;
   let notificationsService: { createForUser: jest.Mock };
+  let referralsService: { recordReferralConversion: jest.Mock };
 
   beforeEach(async () => {
     instructorsRepo = createMockRepo<InstructorEntity>();
@@ -68,6 +70,7 @@ describe("InstructorsService", () => {
     usersRepo = createMockRepo<User>();
     auditRepo = createMockRepo<AuditLog>();
     notificationsService = { createForUser: jest.fn() };
+    referralsService = { recordReferralConversion: jest.fn() };
 
     lessonsRepo.manager = {
       transaction: async (cb: any) =>
@@ -130,6 +133,7 @@ describe("InstructorsService", () => {
         },
         { provide: getRepositoryToken(AuditLog), useValue: auditRepo },
         { provide: NotificationsService, useValue: notificationsService },
+        { provide: ReferralsService, useValue: referralsService },
       ],
     }).compile();
 
@@ -224,7 +228,7 @@ describe("InstructorsService", () => {
   });
 
   it("lists pending reviews for completed lessons without existing reviews", async () => {
-    const completedAt = new Date("2026-03-20T10:00:00.000Z");
+    const completedAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
     lessonsRepo.find.mockResolvedValue([
       {
         id: "lesson-1",
@@ -707,5 +711,160 @@ describe("InstructorsService", () => {
     );
     expect(result.fullName).toBe("Taylor Coach ADI");
     expect(result.adiNumber).toBe("ADI-778899");
+  });
+
+  it("reuses a recent Stripe checkout session for lesson payment", async () => {
+    const previousStripeKey = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_SECRET_KEY = "sk_test_reuse";
+    try {
+      lessonsRepo.findOne.mockResolvedValue({
+        id: "lesson-1",
+        instructorId: "ins-1",
+        learnerUserId: "learner-1",
+        status: "accepted",
+        durationMinutes: 60,
+        deletedAt: null,
+      });
+      instructorsRepo.findOne.mockResolvedValue({
+        id: "ins-1",
+        fullName: "Jane Instructor",
+        hourlyRatePence: 4200,
+        deletedAt: null,
+      });
+      lessonPaymentsRepo.findOne.mockResolvedValue({
+        id: "payment-1",
+        lessonId: "lesson-1",
+        provider: "stripe",
+        status: "checkout_created",
+        checkoutSessionId: "cs_existing",
+        checkoutUrl: "https://checkout.stripe.com/c/pay/existing",
+        productId: null,
+        transactionId: null,
+        updatedAt: new Date(),
+        createdAt: new Date(),
+      });
+      const postStripeForm = jest.spyOn(service as any, "postStripeForm");
+
+      const result = await service.createLessonStripeCheckout(
+        { userId: "learner-1", role: "USER" },
+        "lesson-1",
+      );
+
+      expect(result).toMatchObject({
+        lessonId: "lesson-1",
+        paymentStatus: "pending",
+        checkoutSessionId: "cs_existing",
+        checkoutUrl: "https://checkout.stripe.com/c/pay/existing",
+      });
+      expect(postStripeForm).not.toHaveBeenCalled();
+      expect(lessonPaymentsRepo.save).not.toHaveBeenCalled();
+    } finally {
+      if (previousStripeKey === undefined) {
+        delete process.env.STRIPE_SECRET_KEY;
+      } else {
+        process.env.STRIPE_SECRET_KEY = previousStripeKey;
+      }
+    }
+  });
+
+  it("rejects placeholder Stripe secret keys before contacting Stripe", async () => {
+    const previousStripeKey = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_SECRET_KEY = "sk_live_xxx";
+    try {
+      lessonsRepo.findOne.mockResolvedValue({
+        id: "lesson-1",
+        instructorId: "ins-1",
+        learnerUserId: "learner-1",
+        status: "accepted",
+        durationMinutes: 60,
+        deletedAt: null,
+      });
+      instructorsRepo.findOne.mockResolvedValue({
+        id: "ins-1",
+        fullName: "Jane Instructor",
+        hourlyRatePence: 4200,
+        deletedAt: null,
+      });
+      const postStripeForm = jest.spyOn(service as any, "postStripeForm");
+
+      await expect(
+        service.createLessonStripeCheckout(
+          { userId: "learner-1", role: "USER" },
+          "lesson-1",
+        ),
+      ).rejects.toThrow("Stripe payment is not configured");
+
+      expect(postStripeForm).not.toHaveBeenCalled();
+    } finally {
+      if (previousStripeKey === undefined) {
+        delete process.env.STRIPE_SECRET_KEY;
+      } else {
+        process.env.STRIPE_SECRET_KEY = previousStripeKey;
+      }
+    }
+  });
+
+  it("creates a fresh Stripe checkout session when the saved one is stale", async () => {
+    const previousStripeKey = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_SECRET_KEY = "sk_test_refresh";
+    try {
+      lessonsRepo.findOne.mockResolvedValue({
+        id: "lesson-1",
+        instructorId: "ins-1",
+        learnerUserId: "learner-1",
+        status: "accepted",
+        durationMinutes: 60,
+        deletedAt: null,
+      });
+      instructorsRepo.findOne.mockResolvedValue({
+        id: "ins-1",
+        fullName: "Jane Instructor",
+        hourlyRatePence: 4200,
+        deletedAt: null,
+      });
+      lessonPaymentsRepo.findOne.mockResolvedValue({
+        id: "payment-1",
+        lessonId: "lesson-1",
+        provider: "stripe",
+        status: "checkout_created",
+        checkoutSessionId: "cs_stale",
+        checkoutUrl: "https://checkout.stripe.com/c/pay/stale",
+        productId: null,
+        transactionId: null,
+        updatedAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+      });
+      jest.spyOn(service as any, "postStripeForm").mockResolvedValue({
+        id: "cs_fresh",
+        url: "https://checkout.stripe.com/c/pay/fresh",
+        payment_status: "unpaid",
+      });
+
+      const result = await service.createLessonStripeCheckout(
+        { userId: "learner-1", role: "USER" },
+        "lesson-1",
+      );
+
+      expect(lessonPaymentsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "payment-1",
+          checkoutSessionId: "cs_fresh",
+          checkoutUrl: "https://checkout.stripe.com/c/pay/fresh",
+          status: "checkout_created",
+        }),
+      );
+      expect(result).toMatchObject({
+        lessonId: "lesson-1",
+        paymentStatus: "pending",
+        checkoutSessionId: "cs_fresh",
+        checkoutUrl: "https://checkout.stripe.com/c/pay/fresh",
+      });
+    } finally {
+      if (previousStripeKey === undefined) {
+        delete process.env.STRIPE_SECRET_KEY;
+      } else {
+        process.env.STRIPE_SECRET_KEY = previousStripeKey;
+      }
+    }
   });
 });
